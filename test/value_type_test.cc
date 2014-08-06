@@ -3,6 +3,7 @@
 #include <set>
 #include <deque>
 #include <vector>
+#include <limits>
 
 using namespace virtdb::test;
 using namespace virtdb::interface;
@@ -151,30 +152,152 @@ TEST_F(ValueTypeTest, TestU32)
 
 TEST_F(ValueTypeTest, TestU64)
 {
-  typedef uint64_t val_t;
+  typedef uint64_t  val_t;
+  typedef float     other_t;
+  
+  static const other_t zero = 0.0;
+  
+  // get without set
+  EXPECT_EQ(this->get<val_t>(0,22), 22);
+  
+  // size without set
+  EXPECT_EQ(this->size<val_t>(), 0);
+  
+  // setting the values
   std::vector<val_t> values{2,66,89,123};
-  // TODO TestU64: get, set, size
+  this->set(values.begin(), values.end());
+  
+  // size after set
+  EXPECT_EQ(this->size<val_t>(), values.size());
+  
+  // size of wrong type
+  EXPECT_EQ(this->size<other_t>(), 0);
+  
+  // non-existant
+  EXPECT_EQ(this->get<val_t>(8,33),33);
+  
+  // real values
+  EXPECT_EQ(this->get<val_t>(0,1),2);
+  EXPECT_EQ(this->get<val_t>(1,1),66);
+  EXPECT_EQ(this->get<val_t>(2,1),89);
+  EXPECT_EQ(this->get<val_t>(3,1),123);
+  
+  // real values, wrong type
+  EXPECT_FLOAT_EQ(this->get<other_t>(0,zero),zero);
+  EXPECT_FLOAT_EQ(this->get<other_t>(1,zero),zero);
+  EXPECT_FLOAT_EQ(this->get<other_t>(2,zero),zero);
+  EXPECT_FLOAT_EQ(this->get<other_t>(3,zero),zero);
 }
 
 TEST_F(ValueTypeTest, TestDouble)
 {
-  typedef double val_t;
+  typedef double    val_t;
+  typedef uint64_t  other_t;
+  
+  static const val_t zero = 0.0;
+  
+  // get without set
+  EXPECT_DOUBLE_EQ(this->get<val_t>(0,zero), zero);
+  
+  // size without set
+  EXPECT_EQ(this->size<val_t>(), 0);
+  
+  // setting the values
   std::set<val_t> values{1.34,999.876,123.765};
-  // TODO TestDouble: get, set, size
+  this->set(values.begin(), values.end());
+  
+  // size after set
+  EXPECT_DOUBLE_EQ(this->size<val_t>(), values.size());
+  
+  // size of wrong type
+  EXPECT_EQ(this->size<other_t>(), 0);
+  
+  // non-existant
+  EXPECT_DOUBLE_EQ(this->get<val_t>(8,zero),zero);
+  
+  // real values
+  EXPECT_DOUBLE_EQ(this->get<val_t>(0,zero),1.34);
+  EXPECT_DOUBLE_EQ(this->get<val_t>(1,zero),123.765);
+  EXPECT_DOUBLE_EQ(this->get<val_t>(2,zero),999.876);
+  
+  // real values, wrong type
+  EXPECT_EQ(this->get<other_t>(0,0),0);
+  EXPECT_EQ(this->get<other_t>(1,0),0);
+  EXPECT_EQ(this->get<other_t>(2,0),0);
 }
 
 TEST_F(ValueTypeTest, TestFloat)
 {
-  typedef float val_t;
+  typedef float        val_t;
+  typedef std::string  other_t;
+  
+  static const val_t zero = 0.0;
+
+  // get without set
+  EXPECT_FLOAT_EQ(this->get<val_t>(0,9.9), 9.9);
+  
+  // size without set
+  EXPECT_EQ(this->size<val_t>(), 0);
+  
+  // setting the values
   std::list<val_t> values{13.4,111.23,998.23};
-  // TODO TestFloat: get, set, size
+  this->set(values.begin(), values.end());
+  
+  // size after set
+  EXPECT_FLOAT_EQ(this->size<val_t>(), values.size());
+  
+  // size of wrong type
+  EXPECT_EQ(this->size<other_t>(), 0);
+  
+  // non-existant
+  EXPECT_FLOAT_EQ(this->get<val_t>(8,zero),zero);
+  
+  // real values
+  EXPECT_FLOAT_EQ(this->get<val_t>(0,zero),13.4);
+  EXPECT_FLOAT_EQ(this->get<val_t>(1,zero),111.23);
+  EXPECT_FLOAT_EQ(this->get<val_t>(2,zero),998.23);
+  
+  // real values, wrong type
+  EXPECT_EQ(this->get<other_t>(0,"0"),"0");
+  EXPECT_EQ(this->get<other_t>(1,"0"),"0");
+  EXPECT_EQ(this->get<other_t>(2,"0"),"0");
 }
 
 TEST_F(ValueTypeTest, TestBool)
 {
-  typedef bool val_t;
+  typedef bool     val_t;
+  typedef int32_t  other_t;
+  
+  // get without set
+  EXPECT_EQ(this->get<val_t>(0,false), false);
+  
+  // size without set
+  EXPECT_EQ(this->size<val_t>(), 0);
+
+  // setting the values
   std::deque<val_t> values{true, false, false, true};
-  // TODO TestBool: get, set, size
+  this->set(values.begin(), values.end());
+  
+  // size after set
+  EXPECT_EQ(this->size<val_t>(), values.size());
+  
+  // size of wrong type
+  EXPECT_EQ(this->size<other_t>(), 0);
+  
+  // non-existant
+  EXPECT_EQ(this->get<val_t>(8,true),true);
+  
+  // real values
+  EXPECT_EQ(this->get<val_t>(0,false),true);
+  EXPECT_EQ(this->get<val_t>(1,true),false);
+  EXPECT_EQ(this->get<val_t>(2,true),false);
+  EXPECT_EQ(this->get<val_t>(3,false),true);
+  
+  // real values, wrong type
+  EXPECT_EQ(this->get<other_t>(0,-1),-1);
+  EXPECT_EQ(this->get<other_t>(1,-1),-1);
+  EXPECT_EQ(this->get<other_t>(2,-1),-1);
+  EXPECT_EQ(this->get<other_t>(3,-1),-1);
 }
 
 TEST_F(ValueTypeTest, TestNulls)
