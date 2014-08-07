@@ -1,4 +1,5 @@
 #include "value_type_test.hh"
+#include "logger_test.hh"
 
 int main(int argc, char **argv)
 {

@@ -4,8 +4,7 @@
 #include "../value_type.hh"
 #include <memory>
 
-namespace virtdb {
-namespace test {
+namespace virtdb { namespace test {
 
   class ValueTypeTest : public ::testing::Test
   {
