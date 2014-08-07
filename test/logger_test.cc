@@ -1,7 +1,7 @@
 #include "logger_test.hh"
+#include "../logger.hh"
 
 using namespace virtdb::test;
-using namespace virtdb::interface;
 using namespace virtdb::logger;
 
 TEST_F(LoggerTest, LogInfo)
