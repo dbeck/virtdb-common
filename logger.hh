@@ -7,6 +7,7 @@
 #include "logger/log_record.hh"
 #include "logger/macros.hh"
 #include "logger/on_return.hh"
+#include "logger/variable.hh"
 
 #define LOG_INFO(MSG) \
   LOG_COMMON_( MSG, \
@@ -34,4 +35,4 @@
                virtdb::logger::on_return LOG_INTERNAL_LOCAL_VAR(_on_return_) \
                  ( LOG_INTERNAL_LOCAL_VAR(_log_record_)  )
 
-#define V_(VARIABLE) virtdb::logger::make_var( #VARIABLE, VARIABLE )
+#define V_(VARIABLE) virtdb::logger::make_variable( #VARIABLE, VARIABLE )

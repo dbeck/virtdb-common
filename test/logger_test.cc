@@ -6,7 +6,8 @@ using namespace virtdb::logger;
 
 TEST_F(LoggerTest, LogInfo)
 {
-  LOG_INFO("info message");
+  std::string username("me");
+  LOG_INFO("test" << V_(username) << "loggged in");
 }
 
 TEST_F(LoggerTest, LogError)

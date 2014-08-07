@@ -54,9 +54,7 @@
       ENABLED,                                                    \
       /* here we fill the LogPart section of the message */       \
       (                                                           \
-        _s_signature <<                                           \
-        MSG <<                                                    \
-        virtdb::logger::end_msg()                                 \
+        _s_signature << MSG << virtdb::logger::end_msg()          \
       ),                                                          \
       #MSG                                                        \
     );                                                            \
