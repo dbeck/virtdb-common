@@ -4,6 +4,9 @@
 #include <atomic>
 #include "signature.hh"
 #include <iostream>
+#include <map>
+#include <mutex>
+#include <map>
 
 namespace virtdb { namespace logger {
   
@@ -13,16 +16,16 @@ namespace virtdb { namespace logger {
     
   private:
     uint32_t            id_;
-    std::string         file_;
     uint32_t            file_symbol_;
     uint32_t            line_;
-    std::string         func_;
     uint32_t            func_symbol_;
     log_level           level_;
     std::atomic<bool>   enabled_;
     const signature *   signature_;
-    std::string         msg_string_;
     uint32_t            msg_symbol_;
+    
+    static uint32_t get_symbol_id(const char *);
+    static uint32_t get_new_id();
     
   public:
     log_record(const char *        file,
@@ -32,16 +35,17 @@ namespace virtdb { namespace logger {
                bool                enabled,
                const signature &   sig,
                const char *        msg)
-    : id_(0), // TODO
-      file_(file), file_symbol_(0), // TODO
+    :
+      id_(get_new_id()),
+      file_symbol_(get_symbol_id(file)),
       line_(line),
-      func_(func), func_symbol_(0), // TODO
+      func_symbol_(get_symbol_id(func)),
       level_(level),
       enabled_(enabled),
       signature_(&sig),
-      msg_string_(msg), msg_symbol_(0) // TODO
+      msg_symbol_(get_symbol_id(msg))
     {
-      std::cout << msg_string_ << "\n";
+      std::cout << msg<< "\n";
     }
     
     template <typename T>
@@ -50,7 +54,7 @@ namespace virtdb { namespace logger {
     
     void on_return() const
     {
-      std::cout << msg_string_ << " RET \n";
+      std::cout << "msg symbol:" << msg_symbol_ << " RET \n";
     }
     
     bool enabled() const { return enabled_; }

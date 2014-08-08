@@ -35,7 +35,7 @@ namespace virtdb { namespace util {
     }
   };
 
-} }
+}}
 
 #ifndef THROW_
 #define THROW_(MSG) throw virtdb::util::exception(__FILE__,__LINE__,__func__,MSG);
