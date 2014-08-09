@@ -4,6 +4,7 @@
 #include "signature.hh"
 #include "end_msg.hh"
 #include "symbol_store.hh"
+#include "header_store.hh"
 #include "process_info.hh"
 #include "log_sink.hh"
 #include <iostream>
@@ -30,29 +31,10 @@ namespace virtdb { namespace logger {
       
     public:
       // the last item in the list
-      sender(const end_msg &, sender * parent)
-      : record_(parent->record_),
-        parent_(parent),
-        root_(parent->root_)
-      {
-        assert( root_ != nullptr );
-        if( root_ && root_->pb_record_ )
-        {
-          auto sink = log_sink::get_sptr();
-          if( sink )
-            return sink->send_record(root_->pb_record_);
-        }
-      }
+      sender(const end_msg &, sender * parent);
 
       // zero items
-      sender(const end_msg &, log_record * record)
-      : record_(record),
-        parent_(nullptr),
-        root_(this)
-      {
-        // ignoring this one because it has no data
-        // shouldn't happen at all
-      }
+      sender(const end_msg &, log_record * record);
       
       // the first item in the list
       template <typename T>
@@ -85,13 +67,16 @@ namespace virtdb { namespace logger {
         }
         
         {
-          // TODO : check if the header had been sent already
           assert( record_ != nullptr );
           if( record_ )
           {
-            auto headers = pb_record_->mutable_headers();
-            auto header_item = headers->Add();
-            header_item->MergeFrom(record_->get_pb_header());
+            if( !header_store::header_sent(record_->id()) )
+            {
+              auto headers = pb_record_->mutable_headers();
+              auto header_item = headers->Add();
+              header_item->MergeFrom(record_->get_pb_header());
+              header_store::header_sent(record_->id(),true);
+            }
           }
         }
   
@@ -122,11 +107,7 @@ namespace virtdb { namespace logger {
       }
       
       // iterating over the last item
-      sender
-      operator<<(const end_msg & v)
-      {
-        return sender(v, this);
-      }
+      sender operator<<(const end_msg & v);
     };
 
   private:
@@ -149,28 +130,7 @@ namespace virtdb { namespace logger {
                log_level                level,
                bool                     enabled,
                const signature::part &  part,
-               const char *             msg)
-    :
-      id_(get_new_id()),
-      file_symbol_(symbol_store::get_symbol_id(file)),
-      line_(line),
-      func_symbol_(symbol_store::get_symbol_id(func)),
-      level_(level),
-      enabled_(enabled),
-      msg_symbol_(symbol_store::get_symbol_id(msg))
-    {
-      // TODO : prepare the header to be included in the message
-      header_.set_seqno(id_);
-      header_.set_filenamesymbol(file_symbol_);
-      header_.set_linenumber(line_);
-      header_.set_functionnamesymbol(func_symbol_);
-      header_.set_level(level_);
-      header_.set_logstringsymbol(msg_symbol_);
-      // TODO : fill: LogParts
-      // header_.add_parts()
-      // use parts here ...
-      std::cout << msg<< "\n";
-    }
+               const char *             msg);
     
     template <typename T>
     sender
@@ -179,22 +139,10 @@ namespace virtdb { namespace logger {
       return sender(v,this);
     }
     
-    void on_return() const
-    {
-      // TODO : send a
-      std::cout << "msg symbol:" << msg_symbol_ << " RET \n";
-    }
-    
-    bool enabled() const
-    {
-      return enabled_;
-    }
-      
-    const interface::pb::LogHeader &
-    get_pb_header() const
-    {
-      return header_;
-    }
+    void on_return() const;
+    bool enabled() const;
+    uint32_t id() const;
+    const interface::pb::LogHeader & get_pb_header() const;
   };
 
 }}
