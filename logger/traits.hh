@@ -2,4 +2,5 @@
 
 namespace virtdb { namespace logger {
   
-} }
+}}
+

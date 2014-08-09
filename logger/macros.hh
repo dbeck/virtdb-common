@@ -32,6 +32,7 @@
 #define LOG_INTERNAL_RECORD_SET_1 \
   LOG_INTERNAL_LOCAL_VAR(_log_record_) = &_s_log_record_
 
+// TODO : take care of thread safety
 #define LOG_COMMON_(MSG,LEVEL,ENABLED,SCOPED)                     \
   LOG_INTERNAL_RECORD_DECL_##SCOPED ;                             \
   {                                                               \

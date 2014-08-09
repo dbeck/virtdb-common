@@ -21,4 +21,4 @@ namespace virtdb { namespace logger {
     return variable<T>(_name, _val);
   }
   
-} }
+}}
