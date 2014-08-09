@@ -104,7 +104,8 @@ LoggerTest::receiver_entry()
       }
       rec.ParseFromArray(message.data(), message.size());
       ++n_received_;
-      std::cout << "Received #" << n_received_ << ": \n" << rec.DebugString() << "\n";
+      std::cout << "Received #" << n_received_ <<'[' << message.size() << ']'
+                << ": \n" << rec.DebugString() << "\n";
       if( n_received_ == 1 )
         message_promise_.set_value(true);
     }
@@ -119,23 +120,43 @@ LoggerTest::receiver_entry()
 
 TEST_F(LoggerTest, LogInfo)
 {
+  EXPECT_TRUE(this->init_zmq_receiver());
+  EXPECT_TRUE(this->init_zmq_sink());
+  
   std::string username("me");
   LOG_INFO("test" << V_(username) << "loggged in");
+  
+  received_message_.wait();
 }
 
 TEST_F(LoggerTest, LogError)
 {
+  EXPECT_TRUE(this->init_zmq_receiver());
+  EXPECT_TRUE(this->init_zmq_sink());
+  
   LOG_ERROR("error message");
+  
+  received_message_.wait();
 }
 
 TEST_F(LoggerTest, LogTrace)
 {
+  EXPECT_TRUE(this->init_zmq_receiver());
+  EXPECT_TRUE(this->init_zmq_sink());
+  
   LOG_TRACE("trace message");
+
+  received_message_.wait();
 }
 
 TEST_F(LoggerTest, LogScoped)
 {
+  EXPECT_TRUE(this->init_zmq_receiver());
+  EXPECT_TRUE(this->init_zmq_sink());
+  
   LOG_SCOPED("scoped message");
+  
+  received_message_.wait();
 }
 
 // OK ----------------------

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "log_record.hh"
+#include "signature.hh"
+#include "on_return.hh"
+
 // build time Defines may override these macros
 // so the user may switch off them induvidually
 

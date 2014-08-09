@@ -1,14 +1,17 @@
 #pragma once
 
 #include "../diag.pb.h"
-#include <atomic>
 #include "signature.hh"
 #include "end_msg.hh"
+#include "symbol_store.hh"
+#include "process_info.hh"
+#include "log_sink.hh"
 #include <iostream>
 #include <map>
 #include <mutex>
 #include <map>
 #include <memory>
+#include <cassert>
 
 namespace virtdb { namespace logger {
   
@@ -32,8 +35,13 @@ namespace virtdb { namespace logger {
         parent_(parent),
         root_(parent->root_)
       {
-        // TODO : This is the point when we can send the message out
-        std::cout << "END constructor\n";
+        assert( root_ != nullptr );
+        if( root_ && root_->pb_record_ )
+        {
+          auto sink = log_sink::get_sptr();
+          if( sink )
+            return sink->send_record(root_->pb_record_);
+        }
       }
 
       // zero items
@@ -56,8 +64,8 @@ namespace virtdb { namespace logger {
       {
         // TODO : This is the point when we create the pb_record_ object
         {
-          // TODO : fill the process info
           auto process = pb_record_->mutable_process();
+          process->MergeFrom(process_info::instance().get_pb());
         }
         
         {
@@ -65,11 +73,16 @@ namespace virtdb { namespace logger {
         }
         
         {
-          // TODO : fill the header and check what has been send
-          //        (note: the header info here has to be created
-          //               by the static object)
+          // TODO : check if the header had been sent already
+          assert( record_ != nullptr );
+          if( record_ )
+          {
+            auto headers = pb_record_->mutable_headers();
+            auto header_item = headers->Add();
+            header_item->MergeFrom(record_->get_pb_header());
+          }
         }
-        
+  
         {
           // TODO : initialize data and add the current value
         }
@@ -127,12 +140,12 @@ namespace virtdb { namespace logger {
                const char *             msg)
     :
       id_(get_new_id()),
-      file_symbol_(get_symbol_id(file)),
+      file_symbol_(symbol_store::get_symbol_id(file)),
       line_(line),
-      func_symbol_(get_symbol_id(func)),
+      func_symbol_(symbol_store::get_symbol_id(func)),
       level_(level),
       enabled_(enabled),
-      msg_symbol_(get_symbol_id(msg))
+      msg_symbol_(symbol_store::get_symbol_id(msg))
     {
       // TODO : prepare the header to be included in the message
       header_.set_seqno(id_);
@@ -160,7 +173,16 @@ namespace virtdb { namespace logger {
       std::cout << "msg symbol:" << msg_symbol_ << " RET \n";
     }
     
-    bool enabled() const { return enabled_; }
+    bool enabled() const
+    {
+      return enabled_;
+    }
+      
+    const interface::pb::LogHeader &
+    get_pb_header() const
+    {
+      return header_;
+    }
   };
 
 }}
