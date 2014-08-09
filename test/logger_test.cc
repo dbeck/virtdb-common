@@ -124,7 +124,16 @@ TEST_F(LoggerTest, LogInfo)
   EXPECT_TRUE(this->init_zmq_sink());
   
   std::string username("me");
-  LOG_INFO("test" << V_(username) << "loggged in");
+  for(int i=0;i<2;++i)
+  {
+    LOG_INFO("test" << V_(username) << "loggged in");
+  }
+  
+  symbol_store::for_each( [](const std::string & symbol_str,
+                             uint32_t symbol_id) {
+    std::cout << "Symbol[" << symbol_id << "]=" << symbol_str << "\n";
+    return true;
+  });
   
   received_message_.wait();
 }

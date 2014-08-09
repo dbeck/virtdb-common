@@ -62,14 +62,26 @@ namespace virtdb { namespace logger {
         root_(this),
         pb_record_(new interface::pb::LogRecord)
       {
-        // TODO : This is the point when we create the pb_record_ object
         {
           auto process = pb_record_->mutable_process();
           process->MergeFrom(process_info::instance().get_pb());
         }
         
         {
-          // TODO : fill the symbols and check what has been sent
+          uint32_t last_sent = symbol_store::max_id_sent();
+          if( symbol_store::has_more(last_sent) )
+          {
+            auto symbols = pb_record_->mutable_symbols();
+            symbol_store::for_each( [&last_sent,symbols](const std::string & symbol_str,
+                                                          uint32_t symbol_id) {
+              auto symbol = symbols->Add();
+              symbol->set_seqno(symbol_id);
+              symbol->set_value(symbol_str);
+              last_sent = symbol_id;
+              return true;
+            }, last_sent);
+            symbol_store::max_id_sent(last_sent);
+          }
         }
         
         {
