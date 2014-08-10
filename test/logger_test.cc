@@ -126,7 +126,7 @@ TEST_F(LoggerTest, LogInfo)
   std::string username("me");
   for(int i=0;i<2;++i)
   {
-    LOG_INFO("test" << V_(username) << "loggged in");
+    LOG_INFO("test" << V_(username) << "loggged in, foobar=" << 123);
   }
   
   symbol_store::for_each( [](const std::string & symbol_str,

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "diag.pb.h"
 #include "logger/macros.hh"
-#include "logger/variable.hh"
 #include "logger/log_sink.hh"
 
 #define LOG_INFO(MSG) \

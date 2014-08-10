@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "../value_type.hh"
+#include "util/value_type.hh"
 #include <memory>
 
 namespace virtdb { namespace test {

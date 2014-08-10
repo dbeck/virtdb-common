@@ -1,58 +1,92 @@
 #pragma once
 
-#include "count_items.hh"
+#include "diag.pb.h"
 #include "end_msg.hh"
+#include "variable.hh"
+#include "symbol_store.hh"
+#include "util/value_type.hh"
 #include <iostream>
+#include <memory>
 
 namespace virtdb { namespace logger {
-
-  class signature
+  
+  class signature final
   {
   public:
-    class part
+    typedef std::shared_ptr<interface::pb::LogHeader> pb_header_sptr;
+
+    class part final
     {
-    public:
-      template <typename T>
-      part(signature *, const T &)
-      {
-        // TODO
-        std::cout << "FIRST part\n";
-      }
+      signature * signature_;
       
       template <typename T>
-      part(part *, const T &)
+      void add_signature(const T & val, signature * sig)
       {
-        // TODO
-        std::cout << "OTHER part\n";
+        auto pb_header = sig->get_pb_header();
+        auto log_part = pb_header->add_parts();
+        log_part->set_isvariable(false);
+        log_part->set_type(interface::value_type<T>::kind);
       }
 
-      part(part *, const end_msg &)
+      template <typename T>
+      void add_signature(const variable<T> & val, signature * sig)
       {
-        // TODO
-        std::cout << "END part\n";
+        auto pb_header = sig->get_pb_header();
+        auto log_part = pb_header->add_parts();
+        log_part->set_isvariable(true);
+        log_part->set_type(interface::value_type<T>::kind);
+        log_part->set_partsymbol(symbol_store::get_symbol_id(val.name_));
+      }
+      
+      void add_signature(const char * val, signature * sig);
+      
+    public:
+      // the last item in the list
+      part(const end_msg &, part * parent);
+      
+      // zero items
+      part(const end_msg &, signature * sig);
+
+      // first part
+      template <typename T>
+      part(const T & val, signature * sig)
+      : signature_(sig)
+      {
+        add_signature(val, signature_);
+      }
+      
+      // n-th part
+      template <typename T>
+      part(const T & val, part * parent)
+      : signature_(parent->signature_)
+      {
+        add_signature(val, signature_);
       }
       
       template <typename T>
       part
-      operator<<(const T & val) { return part(this, val); }
-
+      operator<<(const T & val)
+      {
+        return part(val, this);
+      }
     };
     
-    signature(const count_items & ci_) : _ci(&ci_) {};
+    signature();
     
-    // TODO : generate LogParts here
     template <typename T>
     part
-    operator<<(const T & val) { return part(this, val); }
-    
-    const count_items &
-    counts() const
+    operator<<(const T & val)
     {
-      return *_ci;
+      return part(val, this);
     }
+    
+    pb_header_sptr get_pb_header() const;
 
   private:
-    const count_items * _ci;
+    pb_header_sptr       header_sptr_;
+    
+    signature(const signature &) = delete;
+    signature& operator=(const signature&) = delete;
   };
   
 }}

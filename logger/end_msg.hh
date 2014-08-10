@@ -1,5 +1,5 @@
 #pragma once
 
 namespace virtdb { namespace logger {
-  struct end_msg {};
+  struct end_msg final {};
 } }

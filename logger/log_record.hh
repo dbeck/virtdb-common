@@ -1,12 +1,14 @@
 #pragma once
 
-#include "../diag.pb.h"
+#include "diag.pb.h"
 #include "signature.hh"
 #include "end_msg.hh"
 #include "symbol_store.hh"
 #include "header_store.hh"
 #include "process_info.hh"
 #include "log_sink.hh"
+#include "variable.hh"
+#include "util/value_type.hh"
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -16,18 +18,42 @@
 
 namespace virtdb { namespace logger {
   
-  class log_record {
+  class log_record final
+  {
   public:
     typedef interface::pb::LogLevel log_level;
     
-    class sender
+    class sender final
     {
-      typedef std::shared_ptr<interface::pb::LogRecord> pb_record_sptr_;
+      typedef std::shared_ptr<interface::pb::LogRecord> pb_record_sptr;
       
-      log_record       * record_;
-      sender           * parent_;
-      sender           * root_;
-      pb_record_sptr_    pb_record_;
+      log_record              * record_;
+      sender                  * root_;
+      pb_record_sptr            pb_record_;
+      interface::pb::LogData  * pb_data_ptr_;
+      
+      template <typename T>
+      void add_data(const T & val,
+                    interface::pb::LogData * pb_data)
+      {
+        auto pb_value = pb_data->add_values();
+        interface::value_type<T>::set(*pb_value, val);
+      }
+
+      template <typename T>
+      void add_data(const variable<T> & val,
+                    interface::pb::LogData * pb_data)
+      {
+        auto pb_value = pb_data->add_values();
+        interface::value_type<T>::set(*pb_value, *val.val_);
+      }
+
+      void add_data(const char * str,
+                    interface::pb::LogData * pb_data)
+      {
+        // not adding C-String values, because they should already be
+        // in the symbol table and handled by the header signature
+      }
       
     public:
       // the last item in the list
@@ -40,9 +66,9 @@ namespace virtdb { namespace logger {
       template <typename T>
       sender(const T & v, log_record * record)
       : record_(record),
-        parent_(nullptr),
         root_(this),
-        pb_record_(new interface::pb::LogRecord)
+        pb_record_(new interface::pb::LogRecord),
+        pb_data_ptr_(nullptr)
       {
         {
           auto process = pb_record_->mutable_process();
@@ -81,21 +107,32 @@ namespace virtdb { namespace logger {
         }
   
         {
-          // TODO : initialize data and add the current value
+          assert( record_ != nullptr );
+          if( record_ )
+          {
+            auto data_array = pb_record_->mutable_data();
+            pb_data_ptr_ = data_array->Add();
+            pb_data_ptr_->set_headerseqno(record_->id());
+            // TODO : add proper timestamp here
+            pb_data_ptr_->set_elapsedmicrosec(11);
+            // TODO : make this platform independent
+#warning "pthread_self is not platform independet here...."
+            auto thr_id = pthread_self();
+            pb_data_ptr_->set_threadid(reinterpret_cast<uint64_t>(thr_id));
+            add_data(v, pb_data_ptr_);
+          }
         }
-        
-        std::cout << "FIRST constructor\n";
       }
       
       // all other items
       template <typename T>
       sender(const T & v, sender * parent)
       : record_(parent->record_),
-        parent_(parent),
-        root_(parent->root_)
+        root_(parent->root_),
+        pb_data_ptr_(parent->pb_data_ptr_)
       {
-        // TODO : add item into the pb message
-        std::cout << "OTHER constructor\n";
+        if( pb_data_ptr_)
+          add_data(v, pb_data_ptr_);
       }
 
       // iterating over the next item
@@ -130,6 +167,7 @@ namespace virtdb { namespace logger {
                log_level                level,
                bool                     enabled,
                const signature::part &  part,
+               const signature &        sig,
                const char *             msg);
     
     template <typename T>

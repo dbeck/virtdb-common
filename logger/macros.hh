@@ -43,12 +43,7 @@
     /* the purpose of these static objects is to offload all */   \
     /* possbile log related work from runtime                */   \
                                                                   \
-    /* signature is initialized w/ the item count */              \
-    static virtdb::logger::signature _s_signature(                \
-      virtdb::logger::count_items() <<                            \
-      MSG <<                                                      \
-      virtdb::logger::end_msg()                                   \
-    );                                                            \
+    static virtdb::logger::signature _s_signature;                \
                                                                   \
     /* this static variable handles the log header */             \
     static virtdb::logger::log_record _s_log_record_(             \
@@ -61,6 +56,7 @@
       (                                                           \
         _s_signature << MSG << virtdb::logger::end_msg()          \
       ),                                                          \
+      _s_signature,                                               \
       #MSG                                                        \
     );                                                            \
                                                                   \

@@ -1,11 +1,11 @@
 #pragma once
 
 #include <chrono>
-#include "../diag.pb.h"
+#include "diag.pb.h"
 
 namespace virtdb { namespace logger {
 
-  class process_info
+  class process_info final
   {
   public:
     typedef std::chrono::high_resolution_clock      highres_clock;

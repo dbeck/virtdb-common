@@ -4,7 +4,7 @@
 
 namespace virtdb { namespace logger {
 
-  class on_return
+  class on_return final
   {
     const log_record * log_record_;
     
