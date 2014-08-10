@@ -5,7 +5,7 @@
 
 namespace virtdb { namespace logger {
 
-  class count_items
+  class count_items final
   {
     size_t items_;
     size_t symbols_;
@@ -22,7 +22,7 @@ namespace virtdb { namespace logger {
     count_items & operator<<(const T &)
     {
       ++items_;
-      /*
+      /* TODO
       symbols_    += traits<T>::is_symbol_;
       variables_  += traits<T>::is_variable_;
       data_       += traits<T>::is_data_;
