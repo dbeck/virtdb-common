@@ -13,7 +13,7 @@ namespace virtdb { namespace logger {
     {
       auto sink = log_sink::get_sptr();
       if( sink )
-        return sink->send_record(root_->pb_record_);
+        sink->send_record(root_->pb_record_);
     }
   }
   
