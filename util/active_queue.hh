@@ -46,6 +46,10 @@ namespace virtdb { namespace util {
       
       // this won't return till all threads are ready
       barrier_.wait();
+      
+      // give a chance to the workers to reach wait() before this
+      // thread start sending in the items
+      std::this_thread::yield();
     }
     
     void push(const ITEM & i)

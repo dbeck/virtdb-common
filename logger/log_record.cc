@@ -3,7 +3,8 @@
 namespace virtdb { namespace logger {
   
   // the last item in the list
-  log_record::sender::sender(const end_msg &, log_record::sender * parent)
+  log_record::sender::sender(const end_msg &,
+                             log_record::sender * parent)
   : record_(parent->record_),
     root_(parent->root_),
     pb_data_ptr_(nullptr)
@@ -17,13 +18,40 @@ namespace virtdb { namespace logger {
     }
   }
   
-  log_record::sender::sender(const end_msg &, log_record * record)
+  // return from scoped message
+  log_record::sender::sender(const end_msg &,
+                             const log_record * record)
   : record_(record),
     root_(this),
+    pb_record_(new interface::pb::LogRecord),
     pb_data_ptr_(nullptr)
   {
-    // ignoring this one because it has no data
-    // shouldn't happen at all
+    prepare_record();
+    
+    {
+      assert( record_ != nullptr );
+      if( record_ )
+      {
+        auto data_array = pb_record_->mutable_data();
+        pb_data_ptr_ = data_array->Add();
+        pb_data_ptr_->set_headerseqno(record_->id());
+        pb_data_ptr_->set_elapsedmicrosec(util::relative_time::instance().get_usec());
+        // TODO : make this platform independent
+#warning "pthread_self is not platform independet here...."
+        auto thr_id = pthread_self();
+        pb_data_ptr_->set_threadid(reinterpret_cast<uint64_t>(thr_id));
+        pb_data_ptr_->set_endscope(true);
+      }
+    }
+    
+    // pb_record_ must be set by prepare_record
+    assert( root_ != nullptr );
+    if( root_ && root_->pb_record_ )
+    {
+      auto sink = log_sink::get_sptr();
+      if( sink )
+        sink->send_record(root_->pb_record_);
+    }
   }
   
   // iterating over the last item
@@ -31,6 +59,45 @@ namespace virtdb { namespace logger {
   log_record::sender::operator<<(const end_msg & v)
   {
     return log_record::sender(v, this);
+  }
+  
+  void log_record::sender::prepare_record()
+  {
+    {
+      auto process = pb_record_->mutable_process();
+      process->MergeFrom(process_info::instance().get_pb());
+    }
+    
+    {
+      uint32_t last_sent = symbol_store::max_id_sent();
+      if( symbol_store::has_more(last_sent) )
+      {
+        auto symbols = pb_record_->mutable_symbols();
+        symbol_store::for_each( [&last_sent,symbols](const std::string & symbol_str,
+                                                     uint32_t symbol_id) {
+          auto symbol = symbols->Add();
+          symbol->set_seqno(symbol_id);
+          symbol->set_value(symbol_str);
+          last_sent = symbol_id;
+          return true;
+        }, last_sent);
+        symbol_store::max_id_sent(last_sent);
+      }
+    }
+    
+    {
+      assert( record_ != nullptr );
+      if( record_ )
+      {
+        if( !header_store::header_sent(record_->id()) )
+        {
+          auto headers = pb_record_->mutable_headers();
+          auto header_item = headers->Add();
+          header_item->MergeFrom(record_->get_pb_header());
+          header_store::header_sent(record_->id(),true);
+        }
+      }
+    }
   }
 
   log_record::log_record(const char *             file,
@@ -66,9 +133,7 @@ namespace virtdb { namespace logger {
   void
   log_record::on_return() const
   {
-    // NOTE: use sender constructor here ...
-    // TODO : send an end-scope message
-    std::cout << "msg symbol:" << msg_symbol_ << " RET \n";
+    *this << end_msg();
   }
   
   bool

@@ -1,5 +1,6 @@
 #include "process_info.hh"
 #include "symbol_store.hh"
+#include "../util/relative_time.hh"
 #include <thread>
 #include <memory>
 #include <mutex>
@@ -10,7 +11,7 @@
 
 namespace virtdb { namespace logger {
   
-  process_info::process_info() : started_at_(highres_clock::now())
+  process_info::process_info() : started_at_(util::relative_time::instance().started_at())
   {
     using namespace std::chrono;
     time_t now = system_clock::to_time_t(system_clock::now());

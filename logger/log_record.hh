@@ -9,6 +9,7 @@
 #include "log_sink.hh"
 #include "variable.hh"
 #include "util/value_type.hh"
+#include "util/relative_time.hh"
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -27,7 +28,7 @@ namespace virtdb { namespace logger {
     {
       typedef std::shared_ptr<interface::pb::LogRecord> pb_record_sptr;
       
-      log_record              * record_;
+      const log_record        * record_;
       sender                  * root_;
       pb_record_sptr            pb_record_;
       interface::pb::LogData  * pb_data_ptr_;
@@ -56,55 +57,24 @@ namespace virtdb { namespace logger {
       }
       
     public:
+      void prepare_record();
+      
       // the last item in the list
       sender(const end_msg &, sender * parent);
 
-      // zero items
-      sender(const end_msg &, log_record * record);
+      // return from scoped message
+      sender(const end_msg &, const log_record * record);
       
       // the first item in the list
       template <typename T>
-      sender(const T & v, log_record * record)
+      sender(const T & v,
+             const log_record * record)
       : record_(record),
         root_(this),
         pb_record_(new interface::pb::LogRecord),
         pb_data_ptr_(nullptr)
       {
-        {
-          auto process = pb_record_->mutable_process();
-          process->MergeFrom(process_info::instance().get_pb());
-        }
-        
-        {
-          uint32_t last_sent = symbol_store::max_id_sent();
-          if( symbol_store::has_more(last_sent) )
-          {
-            auto symbols = pb_record_->mutable_symbols();
-            symbol_store::for_each( [&last_sent,symbols](const std::string & symbol_str,
-                                                          uint32_t symbol_id) {
-              auto symbol = symbols->Add();
-              symbol->set_seqno(symbol_id);
-              symbol->set_value(symbol_str);
-              last_sent = symbol_id;
-              return true;
-            }, last_sent);
-            symbol_store::max_id_sent(last_sent);
-          }
-        }
-        
-        {
-          assert( record_ != nullptr );
-          if( record_ )
-          {
-            if( !header_store::header_sent(record_->id()) )
-            {
-              auto headers = pb_record_->mutable_headers();
-              auto header_item = headers->Add();
-              header_item->MergeFrom(record_->get_pb_header());
-              header_store::header_sent(record_->id(),true);
-            }
-          }
-        }
+        prepare_record();
   
         {
           assert( record_ != nullptr );
@@ -113,10 +83,9 @@ namespace virtdb { namespace logger {
             auto data_array = pb_record_->mutable_data();
             pb_data_ptr_ = data_array->Add();
             pb_data_ptr_->set_headerseqno(record_->id());
-            // TODO : add proper timestamp here
-            pb_data_ptr_->set_elapsedmicrosec(11);
+            pb_data_ptr_->set_elapsedmicrosec(util::relative_time::instance().get_usec());
             // TODO : make this platform independent
-#warning "pthread_self is not platform independet here...."
+            #warning "pthread_self is not platform independet here...."
             auto thr_id = pthread_self();
             pb_data_ptr_->set_threadid(reinterpret_cast<uint64_t>(thr_id));
             add_data(v, pb_data_ptr_);
@@ -172,7 +141,7 @@ namespace virtdb { namespace logger {
     
     template <typename T>
     sender
-    operator<<(const T & v)
+    operator<<(const T & v) const
     {
       return sender(v,this);
     }

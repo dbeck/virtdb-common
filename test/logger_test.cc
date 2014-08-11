@@ -103,8 +103,14 @@ LoggerTest::receiver_entry()
         break;
       }
       rec.ParseFromArray(message.data(), message.size());
+      size_t data_len = 0;
+      for( int i=0; i<rec.data_size(); ++i )
+      {
+        data_len += rec.data(i).ByteSize();
+      }
       ++n_received_;
       std::cout << "Received #" << n_received_ <<'[' << message.size() << ']'
+                << " ndata=" << rec.data_size() << " len=" << data_len
                 << ": \n" << rec.DebugString() << "\n";
       if( n_received_ == 1 )
         message_promise_.set_value(true);
@@ -163,7 +169,15 @@ TEST_F(LoggerTest, LogScoped)
   EXPECT_TRUE(this->init_zmq_receiver());
   EXPECT_TRUE(this->init_zmq_sink());
   
-  LOG_SCOPED("scoped message");
+  for(int i=0;i<2;++i)
+  {
+    // scoped message has to be inside a block
+    // in this special test case, because the destructor
+    // of the test may destroy the log receiver before
+    // the message reaches it, because of the logger's
+    // asynch nature
+    LOG_SCOPED("scoped message");
+  }
   
   received_message_.wait();
 }
