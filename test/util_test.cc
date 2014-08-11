@@ -1,5 +1,5 @@
 #include "util_test.hh"
-#include "../util.hh"
+#include "util.hh"
 
 using namespace virtdb::test;
 using namespace virtdb::util;
