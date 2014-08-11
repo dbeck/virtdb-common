@@ -44,6 +44,7 @@
     /* static initialization                                */      \
     static const virtdb::logger::log_record * _s_log_rec_once_ = 0; \
     static std::once_flag _s_once_flag;                             \
+    static const char * _s_func_ = __func__;                        \
     std::call_once(_s_once_flag, [&]() {                            \
                                                                     \
       /* the purpose of these static objects is to offload all */   \
@@ -54,7 +55,7 @@
       static virtdb::logger::log_record _s_log_record_(             \
         __FILE__,                                                   \
         __LINE__,                                                   \
-        __func__,                                                   \
+        _s_func_,                                                   \
         LEVEL,                                                      \
         ENABLED,                                                    \
         /* here we fill the LogPart section of the message */       \

@@ -26,8 +26,9 @@ namespace virtdb { namespace logger {
     pb_info_.set_starttime(time);
     pb_info_.set_pid(getpid());
     
-    std::srand(std::time(0));
-    pb_info_.set_random(std::rand());
+    std::srand(std::time(0)+getpid());
+    int random_variable = std::rand();
+    pb_info_.set_random(random_variable);
 
     const char * app_name = getenv("LOGGER_APP_NAME");
     if( app_name )
