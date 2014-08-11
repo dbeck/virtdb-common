@@ -48,5 +48,18 @@ namespace virtdb { namespace logger {
     static std::unique_ptr<process_info> ptr(new process_info());
     return *ptr;
   }
+  
+  const interface::pb::ProcessInfo &
+  process_info::get_pb() const
+  {
+    return pb_info_;
+  }
+  
+  const process_info::timepoint &
+  process_info::started_at() const
+  {
+    return started_at_;
+  }
+
 
 }}

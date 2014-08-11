@@ -4,7 +4,22 @@
 using namespace virtdb::test;
 using namespace virtdb::util;
 
-TEST_F(UtilTest, Barrier) { }
-TEST_F(UtilTest, ActiveQueue) { }
-TEST_F(UtilTest, Exception) { }
+TEST_F(BarrierTest, DummyTest)
+{
+  // TODO : BarrierTest
+}
 
+TEST_F(ActiveQueueTest, DummyTest)
+{
+  // TODO : ActiveQueueTest
+}
+
+TEST_F(RelativeTimeTest, DummyTest)
+{
+  // TODO : RelativeTimeTest
+}
+
+TEST_F(ExceptionTest, DummyTest)
+{
+  // TODO : ExceptionTest
+}

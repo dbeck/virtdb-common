@@ -1,9 +1,43 @@
 #include "logger_test.hh"
+#include "util/relative_time.hh"
 #include <iostream>
+#include <chrono>
+#include <set>
+#include <map>
 
 using namespace virtdb::test;
 using namespace virtdb::logger;
 using namespace virtdb::interface;
+
+// #define PRINT_LOG_MESSAGES
+
+void
+LoggerTest::signal_new_message()
+{
+  std::unique_lock<std::mutex> lock(expected_lock_);
+  expected_cv_.notify_all();
+}
+
+bool
+LoggerTest::wait_for_messages(uint32_t expected_messages,
+                              uint32_t timeout_ms)
+{
+  uint64_t start      = util::relative_time().instance().get_msec();
+  uint64_t act_time   = start;
+  
+  while( n_received_ < expected_messages )
+  {
+    std::unique_lock<std::mutex> lock(expected_lock_);
+    expected_cv_.wait_for(lock,
+                          std::chrono::milliseconds(100));
+    act_time = util::relative_time().instance().get_msec();
+    if( act_time  > (start+timeout_ms) )
+    {
+      return false;
+    }
+  }
+  return true;
+}
 
 const char *
 LoggerTest::inproc_endpoint()
@@ -31,7 +65,6 @@ void LoggerTest::TearDown()
 
 LoggerTest::LoggerTest() : n_received_(0)
 {
-  received_message_ = message_promise_.get_future();
 }
 
 bool
@@ -68,22 +101,6 @@ LoggerTest::init_zmq_receiver()
   return true;
 }
 
-bool
-LoggerTest::send_empty_record()
-{
-  using logger::log_sink;
-  log_sink::pb_logrec_sptr rec(new pb::LogRecord);
-  auto process = rec->mutable_process();
-  process->set_startdate(1);
-  process->set_starttime(2);
-  process->set_pid(3);
-  process->set_random(4);
-  auto sink = log_sink::get_sptr();
-  if( sink )
-    return sink->send_record(rec);
-  return true;
-}
-
 void
 LoggerTest::receiver_entry()
 {
@@ -108,12 +125,13 @@ LoggerTest::receiver_entry()
       {
         data_len += rec.data(i).ByteSize();
       }
-      ++n_received_;
+#ifdef PRINT_LOG_MESSAGES
       std::cout << "Received #" << n_received_ <<'[' << message.size() << ']'
                 << " ndata=" << rec.data_size() << " len=" << data_len
                 << ": \n" << rec.DebugString() << "\n";
-      if( n_received_ == 1 )
-        message_promise_.set_value(true);
+#endif
+      ++n_received_;
+      signal_new_message();
     }
   }
   catch(const std::exception & e)
@@ -121,8 +139,6 @@ LoggerTest::receiver_entry()
     std::cout << "!! Caught exception: " << e.what() << "\n";
   }
 }
-
-// TODO ---------------------
 
 TEST_F(LoggerTest, LogInfo)
 {
@@ -135,13 +151,7 @@ TEST_F(LoggerTest, LogInfo)
     LOG_INFO("test" << V_(username) << "loggged in, foobar=" << 123);
   }
   
-  symbol_store::for_each( [](const std::string & symbol_str,
-                             uint32_t symbol_id) {
-    std::cout << "Symbol[" << symbol_id << "]=" << symbol_str << "\n";
-    return true;
-  });
-  
-  received_message_.wait();
+  EXPECT_TRUE( this->wait_for_messages(2,3000) );
 }
 
 TEST_F(LoggerTest, LogError)
@@ -151,7 +161,7 @@ TEST_F(LoggerTest, LogError)
   
   LOG_ERROR("error message");
   
-  received_message_.wait();
+  EXPECT_TRUE( this->wait_for_messages(1,3000) );
 }
 
 TEST_F(LoggerTest, LogTrace)
@@ -161,7 +171,7 @@ TEST_F(LoggerTest, LogTrace)
   
   LOG_TRACE("trace message");
 
-  received_message_.wait();
+  EXPECT_TRUE( this->wait_for_messages(1,3000) );
 }
 
 TEST_F(LoggerTest, LogScoped)
@@ -179,14 +189,7 @@ TEST_F(LoggerTest, LogScoped)
     LOG_SCOPED("scoped message");
   }
   
-  received_message_.wait();
-}
-
-// OK ----------------------
-
-TEST_F(LoggerTest, SendEmptyRecordWithoutInit)
-{
-  EXPECT_TRUE(this->send_empty_record());
+  EXPECT_TRUE( this->wait_for_messages(4,3000) );
 }
 
 TEST_F(LoggerTest, InitZmqReceiver)
@@ -194,13 +197,98 @@ TEST_F(LoggerTest, InitZmqReceiver)
   EXPECT_TRUE(this->init_zmq_receiver());
 }
 
-TEST_F(LoggerTest, SendEmptyRecordWithZmq)
+TEST_F(HeaderStoreTest, NewIdUnique)
 {
-  EXPECT_TRUE(this->init_zmq_receiver());
-  EXPECT_TRUE(this->init_zmq_sink());
-  EXPECT_TRUE(this->send_empty_record());
-  // need to synchronize, otherwise we shutdown the active queue
-  // and our thread before it has a chance to handle our dummy message
-  received_message_.wait();
+  log_record * records[] = {
+    reinterpret_cast<log_record *>(1),
+    reinterpret_cast<log_record *>(2),
+    reinterpret_cast<log_record *>(3)
+  };
+  
+  uint32_t record_ids[] = {
+    header_store::get_new_id(records[0]),
+    header_store::get_new_id(records[1]),
+    header_store::get_new_id(records[2])
+  };
+  
+  EXPECT_TRUE(header_store::has_header(records[0]));
+  EXPECT_TRUE(header_store::has_header(records[1]));
+  EXPECT_TRUE(header_store::has_header(records[2]));
+  
+  EXPECT_NE(record_ids[0], record_ids[1]);
+  EXPECT_NE(record_ids[0], record_ids[2]);
+  EXPECT_NE(record_ids[1], record_ids[2]);
+}
+
+TEST_F(HeaderStoreTest, NonExistantRecordAndId)
+{
+  log_record * record = reinterpret_cast<log_record *>(0xDeadBeaf);
+  
+  EXPECT_FALSE(header_store::has_header(record));
+  EXPECT_FALSE(header_store::header_sent(0xDeadBeaf));
+  
+  uint32_t dead_beaf_id = header_store::get_new_id(record);
+  
+  EXPECT_TRUE(header_store::has_header(record));
+  EXPECT_FALSE(header_store::header_sent(dead_beaf_id));
+  
+  header_store::header_sent(dead_beaf_id,true);
+  EXPECT_TRUE(header_store::header_sent(dead_beaf_id));
+  
+  header_store::header_sent(0xDeadBeaf,true);
+  EXPECT_TRUE(header_store::header_sent(0xDeadBeaf));
+}
+
+TEST_F(SymbolStoreTest, SymbolMapping)
+{
+  uint32_t id0 = symbol_store::get_symbol_id("MapMe");
+  uint32_t id1 = symbol_store::get_symbol_id("MapMeToo");
+  uint32_t min_id = std::min(id0, id1);
+  
+  // basic id checks
+  EXPECT_NE(id0, 0);
+  EXPECT_NE(id1, 0);
+  EXPECT_NE(id0, id1);
+  
+  // check has_more function
+  EXPECT_TRUE(symbol_store::has_more(0));
+  EXPECT_TRUE(symbol_store::has_more(1));
+  
+  uint32_t max_id = symbol_store::max_id_sent();
+  symbol_store::max_id_sent(min_id);
+  
+  // make sure we have what we have set
+  EXPECT_EQ(symbol_store::max_id_sent(), min_id);
+  
+  {
+    std::map<std::string, uint32_t> symbol_map;
+    
+    // iterate all over symbols and store the data into symbol_map
+    symbol_store::for_each([&symbol_map](const std::string & symbol_string, uint32_t symbol_id) {
+      symbol_map[symbol_string] = symbol_id;
+      return true;
+    }, 0);
+    
+    // check we received our symbols with the right id
+    EXPECT_EQ( symbol_map["MapMe"], id0 );
+    EXPECT_EQ( symbol_map["MapMeToo"], id1 );
+  }
+
+  {
+    std::map<std::string, uint32_t> symbol_map;
+    
+    // iterate all over the symbols > min_id-1 and store the data into symbol_map
+    symbol_store::for_each([&symbol_map](const std::string & symbol_string, uint32_t symbol_id) {
+      symbol_map[symbol_string] = symbol_id;
+      return true;
+    }, min_id-1);
+    
+    // check we received our symbols with the right id
+    EXPECT_EQ( symbol_map["MapMe"], id0 );
+    EXPECT_EQ( symbol_map["MapMeToo"], id1 );
+  }
+
+  // restore max id
+  symbol_store::max_id_sent(max_id);
 }
 

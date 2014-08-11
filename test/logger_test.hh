@@ -5,6 +5,7 @@
 #include <thread>
 #include <future>
 #include <atomic>
+#include <condition_variable>
 #include "../logger.hh"
 
 namespace virtdb { namespace test {
@@ -19,7 +20,6 @@ namespace virtdb { namespace test {
     bool init_zmq_ctx();
     bool init_zmq_sink();
     bool init_zmq_receiver();
-    bool send_empty_record();
     
     void shutdown_receiver();
     void receiver_entry();
@@ -33,7 +33,14 @@ namespace virtdb { namespace test {
     logger::log_sink::socket_sptr    receiver_sptr_;
     std::atomic<uint32_t>            n_received_;
     std::thread                      receiver_thread_;
-    std::future<bool>                received_message_;
-    std::promise<bool>               message_promise_;
+    
+    std::mutex                       expected_lock_;
+    std::condition_variable          expected_cv_;
+    void signal_new_message();
+    bool wait_for_messages(uint32_t expected_messages,
+                           uint32_t timeout_ms);
   };
+  
+  class HeaderStoreTest : public ::testing::Test { };
+  class SymbolStoreTest : public ::testing::Test { };
 }}

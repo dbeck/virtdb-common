@@ -5,11 +5,9 @@
 
 namespace virtdb { namespace test {
   
-  class UtilTest : public ::testing::Test
-  {
-  protected:
-    virtual void SetUp() { }
-    virtual void TearDown() {}
-  };
+  class ActiveQueueTest : public ::testing::Test { };
+  class BarrierTest : public ::testing::Test { };
+  class RelativeTimeTest : public ::testing::Test { };
+  class ExceptionTest : public ::testing::Test { };
   
 }}

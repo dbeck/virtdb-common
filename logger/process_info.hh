@@ -16,20 +16,11 @@ namespace virtdb { namespace logger {
     timepoint                    started_at_;
     
     process_info();
+
   public:
     static process_info & instance();
-    
-    const interface::pb::ProcessInfo &
-    get_pb() const
-    {
-      return pb_info_;
-    }
-    
-    const timepoint &
-    started_at() const
-    {
-      return started_at_;
-    }
+    const interface::pb::ProcessInfo & get_pb() const;
+    const timepoint & started_at() const;
   };
   
 }}
