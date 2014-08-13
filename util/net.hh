@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <utility>
 
 namespace virtdb { namespace util {
 
@@ -12,25 +13,20 @@ namespace virtdb { namespace util {
     
     // gets own hostname and try to resolve its hostname to IPs
     static string_vector
-    get_own_ips();
+    get_own_ips(bool ipv6_support=false);
     
     // get own hostname
     static std::string
     get_own_hostname();
     
-    // resolve a hostname and return the IP as string "123.123.123.123"
-    static std::string
-    resolve_hostname(const std::string & name);
+    // resolve a hostname and return the IP as vector of IP strings
+    // ["123.123.123.123", ...]
+    static string_vector
+    resolve_hostname(const std::string & name,
+                     bool ipv6_support=false);
     
-    // find #count unused TCP port on the 'hostname' interface
-    // - hostname has to be a local machine's name or IP
-    // - or hostname can be a '*' wildcard, which means all local interfaces
-    static port_vector
-    find_unused_tcp_ports(unsigned short count,
-                         const std::string & hostname="*");
-    
-    // find 1 unused TCP port like find_unused_ports(...)
-    static unsigned short
-    find_unused_tcp_port(const std::string & hostname="*");
+    // get peer IP:Port of a given socket
+    static std::pair<std::string, unsigned short>
+    get_peer_ip(int fd);
   };
 }}

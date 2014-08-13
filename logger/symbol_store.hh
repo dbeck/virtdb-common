@@ -9,6 +9,7 @@ namespace virtdb { namespace logger {
   {
   public:
     static uint32_t get_symbol_id(const char * str);
+    static uint32_t get_symbol_id(const std::string & str);
     static uint32_t max_id_sent();
     static void max_id_sent(uint32_t id);
     static bool has_more(uint32_t id);

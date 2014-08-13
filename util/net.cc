@@ -5,93 +5,122 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <string.h>
 
 namespace virtdb { namespace util {
-
-  namespace
+  
+  std::pair<std::string, unsigned short>
+  convert(const struct sockaddr *sa)
   {
-    struct auto_close_fd
-    {
-      int value_;
-      auto_close_fd() : value_(-1) {}
-      auto_close_fd(int fd) : value_(fd) {}
-      ~auto_close_fd()
-      {
-        if( value_ >= 0 ) ::close( value_ );
-        value_ = -1;
-      }
-    };
+    char result[2048];
+    size_t maxlen = sizeof(result);
+    std::pair<std::string, unsigned short> ret;
+    result[0] = 0;
+    result[sizeof(result)-1] = 0;
     
-    struct net_helper
-    {
-      struct addrinfo *    addrinfo_;
-      std::string          name_;
-      net::port_vector     ports_;
-      net::string_vector   ips_;
-      
-      net_helper() : addrinfo_(0) {}
-    };
+    switch(sa->sa_family) {
+      case AF_INET:
+      {
+        struct sockaddr_in *s = (struct sockaddr_in *)sa;
+        inet_ntop(AF_INET,
+                  &(s->sin_addr),
+                  result,
+                  maxlen);
+        ret.first = result;
+        ret.second = ntohs(s->sin_port);
+        break;
+      }
+        
+      case AF_INET6:
+      {
+        struct sockaddr_in6 *s = (struct sockaddr_in6 *)sa;
+        inet_ntop(AF_INET6,
+                  &(s->sin6_addr),
+                  result,
+                  maxlen);
+        ret.first = result;
+        ret.second = ntohs(s->sin6_port);
+        break;
+      }
+        
+      default:
+        return ret;
+    }
+
+    return ret;
   }
   
-  // gets own hostname and try to resolve its hostname to IPs
   net::string_vector
-  net::get_own_ips()
+  net::get_own_ips(bool ipv6_support)
   {
-    return string_vector();
+    return resolve_hostname(get_own_hostname(),
+                            ipv6_support);
   }
   
-  // get own hostname
   std::string
   net::get_own_hostname()
   {
-    return std::string();
+    char name[2048];
+    gethostname(name, sizeof(name));
+    return std::string(name);
   }
   
-  // resolve a hostname and return the IP as string "123.123.123.123"
-  std::string
-  resolve_hostname(const std::string & name)
+  net::string_vector
+  net::resolve_hostname(const std::string & name,
+                        bool ipv6_support)
   {
-    return std::string();
-  }
-  
-  // find #count unused TCP port on the 'hostname' interface
-  // - hostname has to be a local machine's name or IP
-  // - or hostname can be a '*' wildcard, which means all local interfaces
-  net::port_vector
-  net::find_unused_tcp_ports(unsigned short count,
-                             const std::string & hostname)
-  {
-    return port_vector();
-  }
-  
-  unsigned short
-  net::find_unused_tcp_port(const std::string & hostname)
-  {
-    if( hostname.empty() )
+    string_vector ret;
+    
+    if( name.empty() )
+      return ret;
+    
+    // check if this is a '123.123.123.123'
+    // if it is, then we don't resolve
+    in_addr_t dotted_addr = inet_addr(name.c_str());
+    if( dotted_addr != INADDR_NONE )
+      return string_vector{ name };
+    
     {
-      THROW_("empty hostname parameter");
+      struct addrinfo hints, *servinfo;
+      
+      memset(&hints, 0, sizeof hints);
+      hints.ai_socktype  = SOCK_STREAM;
+      if( ipv6_support )  hints.ai_family    = AF_UNSPEC;
+      else                hints.ai_family    = AF_INET;
+      
+      if ( !getaddrinfo(name.c_str(), "65432", &hints, &servinfo) )
+      {
+        struct addrinfo *p;
+        for(struct addrinfo *p = servinfo;
+            p != NULL;
+            p = p->ai_next)
+        {
+          ret.push_back(convert(p->ai_addr).first);
+        }
+        freeaddrinfo(servinfo); // all done with this structure
+      }
     }
+    return ret;
+  }
+  
+  std::pair<std::string, unsigned short>
+  net::get_peer_ip(int fd)
+  {
+    std::pair<std::string, unsigned short> ret{"",0};
+    if( fd < 0 ) return ret;
     
-    auto_close_fd fd{::socket(PF_INET, SOCK_STREAM, 0)};
+    socklen_t len;
+    struct sockaddr_storage addr;
+    char ipstr[INET6_ADDRSTRLEN];
     
-    if( fd.value_ < 0 )
+    len = sizeof (addr);
+    if( !getpeername(fd, (struct sockaddr*)&addr, &len) )
     {
-      THROW_("socket() failed");
+      ret = convert((struct sockaddr*)&addr);
     }
-    
-    struct sockaddr_in sa;
-    bzero(&sa, sizeof sa);
+    return ret;
+  }
 
-    // resolve hostname:
-    // inet_aton
-    // inet_addr
-    // gethostbyname
-    //  - wildcard host: htonl(INADDR_ANY)
-    //  - wildcard port: 0
-    // getsockname
-    // no SO_REUSEADDR needed, because we don't want real connections
-  }
-  
 }}

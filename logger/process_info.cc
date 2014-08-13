@@ -1,6 +1,7 @@
 #include "process_info.hh"
 #include "symbol_store.hh"
 #include "../util/relative_time.hh"
+#include "../util/net.hh"
 #include <thread>
 #include <memory>
 #include <mutex>
@@ -41,6 +42,22 @@ namespace virtdb { namespace logger {
     {
       pb_info_.set_hostsymbol(symbol_store::get_symbol_id(host_name));
     }
+    else
+    {
+      util::net::string_vector my_ips{util::net::get_own_ips()};
+      if( my_ips.size() > 0 )
+      {
+        pb_info_.set_hostsymbol(symbol_store::get_symbol_id(my_ips[0]));
+      }
+      else
+      {
+        std::string name{util::net::get_own_hostname()};
+        if( !name.empty() )
+        {
+          pb_info_.set_hostsymbol(symbol_store::get_symbol_id(name));
+        }
+      }
+    }
   }
   
   process_info &
@@ -61,6 +78,5 @@ namespace virtdb { namespace logger {
   {
     return started_at_;
   }
-
-
 }}
+

@@ -37,6 +37,15 @@ namespace virtdb { namespace logger {
   }
   
   uint32_t
+  symbol_store::get_symbol_id(const std::string & str)
+  {
+    if( str.empty())
+      return 0;
+    else
+      return get_symbol_id(str.c_str());
+  }
+  
+  uint32_t
   symbol_store::max_id_sent()
   {
     return g_last_sent_symbol_;
