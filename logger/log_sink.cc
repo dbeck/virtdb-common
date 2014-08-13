@@ -1,6 +1,7 @@
 
 #include "logger.hh"
 #include "util/active_queue.hh"
+#include <iostream>
 
 using namespace std::placeholders;
 
@@ -8,17 +9,32 @@ namespace virtdb { namespace logger {
 
   struct log_sink::queue_impl
   {
-    typedef util::active_queue<pb_logrec_sptr>   queue;
-    typedef std::unique_ptr<queue>               queue_uptr;
-    queue_uptr                                   queue_;
+    typedef util::active_queue<pb_logrec_sptr,1000>   queue;
+    typedef std::unique_ptr<queue>                    queue_uptr;
+    queue_uptr                                        zmq_queue_;
+    queue_uptr                                        print_queue_;
 
     queue_impl(log_sink * sink)
-    : queue_(new queue(1,std::bind(&log_sink::handle_record,sink,_1)))
+    : zmq_queue_(new queue(1,std::bind(&log_sink::handle_record,sink,_1))),
+      print_queue_(new queue(1,std::bind(&log_sink::print_record,sink,_1)))
     {
     }
   };
   
   log_sink::log_sink_wptr log_sink::global_sink_;
+  
+  void
+  log_sink::print_record(log_sink::pb_logrec_sptr rec)
+  {
+    // TODO : make this nicer...
+    try
+    {
+      std::cout << "Printing log record because ZMQ log sink is not ready yet:\n"
+                << rec->DebugString() << "\n";
+    }
+    catch (...) {
+    }
+  }
   
   void
   log_sink::handle_record(log_sink::pb_logrec_sptr rec)
@@ -92,14 +108,15 @@ namespace virtdb { namespace logger {
   {
     try
     {
-      if( rec && queue_impl_ && queue_impl_->queue_ && socket_is_valid())
+      if( rec && queue_impl_ && queue_impl_->zmq_queue_ && socket_is_valid())
       {
-        queue_impl_->queue_->push( std::move(rec) );
+        queue_impl_->zmq_queue_->push( std::move(rec) );
         return true;
       }
-      else
+      else if( rec && queue_impl_ && queue_impl_->print_queue_ )
       {
-        return false;
+        queue_impl_->print_queue_->push( std::move(rec) );
+        return true;
       }
     }
     catch( ... )
@@ -107,6 +124,7 @@ namespace virtdb { namespace logger {
       // we shouldn't ever throw an exception from this function otherwise we'll
       // end up in an endless exception loop
     }
+    return false;
   }
   
   log_sink::log_sink_sptr

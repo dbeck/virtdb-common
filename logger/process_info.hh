@@ -18,6 +18,8 @@ namespace virtdb { namespace logger {
     process_info();
 
   public:
+    static void set_app_name(const std::string & name);
+    static void set_host_name(const std::string & name);
     static process_info & instance();
     const interface::pb::ProcessInfo & get_pb() const;
     const timepoint & started_at() const;

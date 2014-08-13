@@ -28,6 +28,7 @@ namespace virtdb { namespace logger {
     socket_sptr            socket_;
     
     void handle_record(pb_logrec_sptr rec);
+    void print_record(pb_logrec_sptr rec);
     bool socket_is_valid() const;
     
   public:
