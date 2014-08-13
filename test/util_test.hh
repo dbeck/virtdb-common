@@ -9,5 +9,7 @@ namespace virtdb { namespace test {
   class BarrierTest : public ::testing::Test { };
   class RelativeTimeTest : public ::testing::Test { };
   class ExceptionTest : public ::testing::Test { };
+  class NetTest : public ::testing::Test { };
   
 }}
+

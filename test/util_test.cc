@@ -23,3 +23,9 @@ TEST_F(ExceptionTest, DummyTest)
 {
   // TODO : ExceptionTest
 }
+
+TEST_F(NetTest, DummyTest)
+{
+  // TODO : NetTest
+}
+
