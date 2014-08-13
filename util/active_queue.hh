@@ -11,6 +11,7 @@
 #include <algorithm>
 #include "barrier.hh"
 #include "exception.hh"
+#include <logger.hh>
 
 namespace virtdb { namespace util {
 
@@ -122,9 +123,14 @@ namespace virtdb { namespace util {
           {
             handler_(std::move(tmp));
           }
+          catch( const std::exception & e )
+          {
+            std::string exception_text(e.what());
+            LOG_ERROR("exception caught: " << exception_text);
+          }
           catch(...)
           {
-            // TODO : log here
+            LOG_ERROR("unknown exception caught");
           }
         }
       }

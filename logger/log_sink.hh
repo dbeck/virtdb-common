@@ -2,7 +2,6 @@
 
 #include "diag.pb.h"
 #include "cppzmq/zmq.hpp"
-#include "util/active_queue.hh"
 #include <memory>
 
 namespace virtdb { namespace logger {
@@ -14,17 +13,19 @@ namespace virtdb { namespace logger {
     typedef std::shared_ptr<log_sink>                  log_sink_sptr;
     typedef std::weak_ptr<log_sink>                    log_sink_wptr;
     typedef std::shared_ptr<interface::pb::LogRecord>  pb_logrec_sptr;
-    typedef util::active_queue<pb_logrec_sptr>         queue;
-    typedef std::unique_ptr<queue>                     queue_uptr;
     
   private:
+    // hiding implementation se we break circular dependency with active_queue
+    // and active_queue will be able to use logger ...
+    struct queue_impl;
+    std::unique_ptr<queue_impl> queue_impl_;
+
     log_sink();
     log_sink(const log_sink &) = delete;
     
     static log_sink_wptr   global_sink_;
     log_sink_sptr          local_sink_;
     socket_sptr            socket_;
-    queue_uptr             queue_;
     
     void handle_record(pb_logrec_sptr rec);
     bool socket_is_valid() const;
