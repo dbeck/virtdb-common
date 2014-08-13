@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <cassert>
+#include <atomic>
 
 namespace virtdb { namespace logger {
   
