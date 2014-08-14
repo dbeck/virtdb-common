@@ -55,4 +55,14 @@ namespace virtdb { namespace logger {
     g_header_sent_[id] = yes_no;
   }
   
+  void
+  header_store::reset_all()
+  {
+    std::lock_guard<std::mutex> lock(g_mutex_);
+    for( auto & it : g_header_sent_ )
+    {
+      it.second = false;
+    }
+  }
+  
 }}

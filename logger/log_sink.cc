@@ -92,6 +92,9 @@ namespace virtdb { namespace logger {
   {
     local_sink_->socket_ = socket_;
     global_sink_         = local_sink_;
+    // make sure we resend symbols and headers on reconnect
+    symbol_store::max_id_sent(0);
+    header_store::reset_all();
   }
   
   bool
