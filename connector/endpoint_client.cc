@@ -18,9 +18,7 @@ namespace virtdb { namespace connector {
     zmqctx_(1),
     ep_req_socket_(zmqctx_, ZMQ_REQ),
     ep_sub_socket_(zmqctx_,ZMQ_SUB),
-    barrier_(2),
-    stop_(false),
-    worker_(std::bind(&endpoint_client::worker_entry,this))
+    worker_(std::bind(&endpoint_client::worker_function,this))
   {
     process_info::set_app_name(name_);
     ep_req_socket_.connect(svc_config_ep.c_str());
@@ -28,10 +26,11 @@ namespace virtdb { namespace connector {
     // setup a monitor so handle_endpoint_data will connect
     // the sub socket when we receive one
     watch(pb::ServiceType::ENDPOINT,
-          [this](const pb::EndpointData & data){
-            for( int i=0; i<data.connections_size(); ++i )
+          [this](const pb::EndpointData & ep) {
+            
+            for( int i=0; i<ep.connections_size(); ++i )
             {
-              auto conn = data.connections(i);
+              auto conn = ep.connections(i);
               if( conn.type() == pb::ConnectionType::PUB_SUB )
               {
                 for( int ii=0; ii<conn.address_size(); ++ii )
@@ -39,15 +38,24 @@ namespace virtdb { namespace connector {
                   try
                   {
                     // TODO : revise this later : only one subscription is allowed
-                    if( this->ep_sub_socket_.connected() )
-                      this->ep_sub_socket_.close();
+                    //if( ep_sub_socket_.connected() )
+                    //  ep_sub_socket_.close();
+                    
+                    ep_sub_socket_.connect(conn.address(ii).c_str());
+                    
+                    // TODO : revise subscription logic...
+                    ep_sub_socket_.setsockopt(ZMQ_SUBSCRIBE, "*", 0);
 
-                    this->ep_sub_socket_.connect(conn.address(ii).c_str());
                     // telling that we are done and don't want more addresses
                     return false;
                   }
+                  catch (const std::exception & e)
+                  {
+                    std::cerr << "exception: " << e.what() << "\n";
+                  }
                   catch (...)
                   {
+                    std::cerr << "exception\n";
                     // ignore connection failure
                   }
                 }
@@ -58,7 +66,7 @@ namespace virtdb { namespace connector {
     
     pb::Endpoint diag_ep;
     auto ep_data = diag_ep.add_endpoints();
-    ep_data->set_name(svc_config_ep);
+    ep_data->set_name(service_name);
     ep_data->set_svctype(pb::ServiceType::NONE);
     int ep_size = diag_ep.ByteSize();
     
@@ -89,45 +97,41 @@ namespace virtdb { namespace connector {
       for( int i=0; i<peers.endpoints_size(); ++i )
         handle_endpoint_data(peers.endpoints(i));
     }
-    
-    barrier_.wait();
+    worker_.start();
   }
   
-  void
-  endpoint_client::worker_entry()
+  bool
+  endpoint_client::worker_function()
   {
-    barrier_.wait();
-    while( stop_ == false )
+    if( !ep_sub_socket_.connected() )
     {
-      if( !ep_sub_socket_.connected() )
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    else
+    {
+      zmq::message_t msg;
+      if( ep_sub_socket_.recv(&msg) )
       {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-      else
-      {
-        zmq::message_t msg;
-        if( ep_sub_socket_.recv(&msg) )
+        if( !msg.data() || !msg.size() )
         {
-          if( !msg.data() || !msg.size() )
-          {
-            // TODO : publisher ???? name, address, ???
-            LOG_ERROR("empty endpoint message arrived from the publisher");
-            continue;
-          }
-          
-          pb::Endpoint peers;
-          bool serialized = peers.ParseFromArray(msg.data(), msg.size());
-          if( !serialized )
-          {
-            LOG_ERROR("couldn't process peer Endpoints from publisher");
-            continue;
-          }
-          
-          for( int i=0; i<peers.endpoints_size(); ++i )
-            handle_endpoint_data(peers.endpoints(i));
+          // TODO : publisher ???? name, address, ???
+          LOG_ERROR("empty endpoint message arrived from the publisher");
+          return true;
         }
+        
+        pb::Endpoint peers;
+        bool serialized = peers.ParseFromArray(msg.data(), msg.size());
+        if( !serialized )
+        {
+          LOG_ERROR("couldn't process peer Endpoints from publisher");
+          return true;
+        }
+        
+        for( int i=0; i<peers.endpoints_size(); ++i )
+          handle_endpoint_data(peers.endpoints(i));
       }
     }
+    return true;
   }
   
   void
@@ -156,8 +160,6 @@ namespace virtdb { namespace connector {
       // insert the new one
       endpoints_.insert(ep);
     }
-    
-    std::cerr << "handled: \n" << ep.DebugString() << "\n\n";
   }
   
   void
@@ -185,6 +187,16 @@ namespace virtdb { namespace connector {
         }
       }
     }
+    
+    /* TODO : check this
+    // add subscription
+    std::ostringstream os;
+    os << pb::ServiceType::ENDPOINT << '.';
+    std::string subscription{os.str()};
+    ep_sub_socket_.setsockopt(ZMQ_SUBSCRIBE,
+                              subscription.c_str(),
+                              subscription.size());
+    */
   }
 
   bool
@@ -206,14 +218,12 @@ namespace virtdb { namespace connector {
     {
       LOG_ERROR("caught unknown exception");
     }
-    
     return ret;
   }
   
   endpoint_client::~endpoint_client()
   {
-    if( worker_.joinable() )
-      worker_.join();
+    worker_.stop();
   }
   
 }}
