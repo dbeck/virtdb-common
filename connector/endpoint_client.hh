@@ -4,16 +4,13 @@
 #include <zmq.hpp>
 #include <svc_config.pb.h>
 #include <util/compare_messages.hh>
-#include <util/barrier.hh>
 #include <util/async_worker.hh>
 #include <map>
 #include <vector>
 #include <set>
 #include <vector>
 #include <functional>
-#include <thread>
 #include <mutex>
-#include <atomic>
 
 namespace virtdb { namespace connector {
 
@@ -27,14 +24,14 @@ namespace virtdb { namespace connector {
     typedef std::vector<monitor> monitor_vector;
     typedef std::map<interface::pb::ServiceType, monitor_vector> monitor_map;
 
-    std::string        name_;
-    zmq::context_t     zmqctx_;
-    zmq::socket_t      ep_req_socket_;
-    zmq::socket_t      ep_sub_socket_;
-    ep_data_set        endpoints_;
-    monitor_map        monitors_;
-    util::async_worker worker_;
-    std::mutex         mtx_;
+    std::string          name_;
+    zmq::context_t       zmqctx_;
+    zmq::socket_t        ep_req_socket_;
+    zmq::socket_t        ep_sub_socket_;
+    ep_data_set          endpoints_;
+    monitor_map          monitors_;
+    util::async_worker   worker_;
+    std::mutex           mtx_;
     
     bool fire_monitor(monitor &, const interface::pb::EndpointData & ep);
     bool worker_function();

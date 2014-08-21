@@ -44,9 +44,7 @@ namespace virtdb { namespace connector {
   }
   
   ip_discovery_server::ip_discovery_server()
-  : barrier_(2),
-    stop_me_(false),
-    worker_(std::bind(&ip_discovery_server::handle_requests,this)),
+  : worker_(std::bind(&ip_discovery_server::handle_requests,this)),
     fd_ipv4_(-1),
     fd_ipv6_(-1)
   {
@@ -82,7 +80,7 @@ namespace virtdb { namespace connector {
       {
         std::ostringstream os;
         os << "raw_udp://" << ip << ':' << ntohs(svr_addr_4.sin_port);
-        endpoints_.push_back(os.str());
+        endpoints_.insert(os.str());
       }
     }
     
@@ -125,7 +123,7 @@ namespace virtdb { namespace connector {
             {
               std::ostringstream os;
               os << "raw_udp://" << '[' << ip << "]:" << ntohs(svr_addr_6.sin6_port);
-              endpoints_.push_back(os.str());
+              endpoints_.insert(os.str());
             }
           }
         }
@@ -133,157 +131,151 @@ namespace virtdb { namespace connector {
     }
     
     // let worker go
-    barrier_.wait();
+    worker_.start();
   }
   
   ip_discovery_server::~ip_discovery_server()
   {
-    stop_me_ = true;
-    if( worker_.joinable() )
-      worker_.join();
+    worker_.stop();
     
     if( fd_ipv4_ >= 0 )
       ::close(fd_ipv4_);
     
     if( fd_ipv6_ >= 0 )
       ::close(fd_ipv6_);
+    
+    fd_ipv4_ = -1;
+    fd_ipv6_ = -1;
   }
   
-  const ip_discovery_server::endpoint_vector &
+  const ip_discovery_server::endpoint_set &
   ip_discovery_server::endpoints() const
   {
     return endpoints_;
   }
   
-  void
+  bool
   ip_discovery_server::handle_requests()
   {
-    // wait for the constructor to complete initialization
-    barrier_.wait();
-    
     fd_set handles;
     
-    // handler loop
-    while( !stop_me_ )
+    FD_ZERO(&handles);
+    FD_SET( fd_ipv4_, &handles);
+    
+    if( fd_ipv6_ >= 0) { FD_SET( fd_ipv6_, &handles ); }
+    
+    struct timeval tv { 1, 0 };
+    int rc = ::select(std::max(fd_ipv6_+1, fd_ipv4_+1),
+                      &handles,
+                      NULL,
+                      NULL,
+                      &tv);
+    
+    if( rc == 0 )
     {
-      FD_ZERO(&handles);
-      FD_SET( fd_ipv4_, &handles);
-      if( fd_ipv6_ >= 0) { FD_SET( fd_ipv6_, &handles ); }
-      
-      struct timeval tv { 1, 0 };
-      int rc = ::select( std::max(fd_ipv6_+1, fd_ipv4_+1),
-                        &handles,
-                        NULL,
-                        NULL,
-                        &tv );
-      
-      if( rc == 0 )
+      // timed out
+      return true;
+    }
+    else if( rc < 0 )
+    {
+      if( errno == EAGAIN )
       {
-        // timed out
-        continue;
-      }
-      else if( rc < 0 )
-      {
-        if( errno == EAGAIN )
-        {
-          // transient error
-          continue;
-        }
-        else
-        {
-          // permanent error
-          LOG_ERROR("select failed" << V_(errno) );
-          break;
-        }
+        // transient error
+        return true;
       }
       else
       {
-        // we should have data
-        char peer[2048];
-        peer[0] = 0;
-        
-        if( FD_ISSET(fd_ipv4_, &handles) )
+        // permanent error
+        LOG_ERROR("select failed" << V_(errno) );
+        return false;
+      }
+    }
+    else
+    {
+      // we should have data
+      char peer[2048];
+      peer[0] = 0;
+      
+      if( FD_ISSET(fd_ipv4_, &handles) )
+      {
+        struct sockaddr_in addr_4;
+        bzero((char *) &addr_4, sizeof(addr_4));
+        socklen_t len = sizeof(addr_4);
+        ssize_t recvret = ::recvfrom( fd_ipv4_,
+                                     peer,
+                                     sizeof(peer),
+                                     0,
+                                     (struct sockaddr *)&addr_4,
+                                     &len );
+        if( recvret > 0 )
         {
-          struct sockaddr_in addr_4;
-          bzero((char *) &addr_4, sizeof(addr_4));
-          socklen_t len = sizeof(addr_4);
-          ssize_t recvret = ::recvfrom( fd_ipv4_,
+          if( inet_ntop( AF_INET,
+                        &(addr_4.sin_addr),
+                        peer,
+                        sizeof(peer)) != NULL )
+          {
+            // make sure this is zero terminated
+            peer[sizeof(peer)-1] = 0;
+            
+            ssize_t sendret = ::sendto(fd_ipv4_,
                                        peer,
-                                       sizeof(peer),
+                                       strlen(peer),
                                        0,
                                        (struct sockaddr *)&addr_4,
-                                       &len );
-          if( recvret > 0 )
-          {
-            if( inet_ntop( AF_INET,
-                          &(addr_4.sin_addr),
-                          peer,
-                          sizeof(peer)) != NULL )
-            {
-              // make sure this is zero terminated
-              peer[sizeof(peer)-1] = 0;
-              
-              ssize_t sendret = ::sendto( fd_ipv4_,
-                                         peer,
-                                         strlen(peer),
-                                         0,
-                                         (struct sockaddr *)&addr_4,
-                                         len );
-              
-              std::string peer_ip{peer};
-              LOG_ERROR("sendto() failed" << V_(peer_ip));
-            }
-          }
-          else if( recvret < 0 )
-          {
-            LOG_ERROR("recvfrom failed" << V_(errno));
+                                       len );
+            
+            std::string peer_ip{peer};
+            LOG_ERROR("sendto() failed" << V_(peer_ip));
           }
         }
-        
-        if( fd_ipv6_ >=0 && FD_ISSET(fd_ipv6_, &handles) )
+        else if( recvret < 0 )
         {
-          struct sockaddr_in6 addr_6;
-          bzero((char *) &addr_6, sizeof(addr_6));
-          
-          socklen_t len = sizeof(addr_6);
-          ssize_t recvret = ::recvfrom( fd_ipv6_,
+          LOG_ERROR("recvfrom failed" << V_(errno));
+        }
+      }
+      
+      if( fd_ipv6_ >=0 && FD_ISSET(fd_ipv6_, &handles) )
+      {
+        struct sockaddr_in6 addr_6;
+        bzero((char *) &addr_6, sizeof(addr_6));
+        
+        socklen_t len = sizeof(addr_6);
+        ssize_t recvret = ::recvfrom( fd_ipv6_,
+                                     peer,
+                                     sizeof(peer),
+                                     0,
+                                     (struct sockaddr *)&addr_6,
+                                     &len );
+        
+        
+        if( recvret > 0 )
+        {
+          if( inet_ntop( AF_INET6,
+                        &(addr_6.sin6_addr),
+                        peer,
+                        sizeof(peer)) != NULL )
+          {
+            // make sure this is zero terminated
+            peer[sizeof(peer)-1] = 0;
+            
+            ssize_t sendret = ::sendto( fd_ipv6_,
                                        peer,
-                                       sizeof(peer),
+                                       strlen(peer),
                                        0,
                                        (struct sockaddr *)&addr_6,
-                                       &len );
-          
-          
-          if( recvret > 0 )
-          {
-            if( inet_ntop( AF_INET6,
-                          &(addr_6.sin6_addr),
-                          peer,
-                          sizeof(peer)) != NULL )
-            {
-              // make sure this is zero terminated
-              peer[sizeof(peer)-1] = 0;
-              
-              ssize_t sendret = ::sendto( fd_ipv6_,
-                                         peer,
-                                         strlen(peer),
-                                         0,
-                                         (struct sockaddr *)&addr_6,
-                                         len );
-              
-              std::string peer_ip{peer};
-              LOG_ERROR("sendto() failed" << V_(peer_ip));
-            }
+                                       len );
+            
+            std::string peer_ip{peer};
+            LOG_ERROR("sendto() failed" << V_(peer_ip));
           }
-          else if( recvret < 0 )
-          {
-            LOG_ERROR("recvfrom failed" << V_(errno));
-          }
+        }
+        else if( recvret < 0 )
+        {
+          LOG_ERROR("recvfrom failed" << V_(errno));
         }
       }
     }
-    
-    LOG_TRACE("exiting ip discovery thread");
+    return true;
   }
   
 }}

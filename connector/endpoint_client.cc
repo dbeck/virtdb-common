@@ -119,6 +119,13 @@ namespace virtdb { namespace connector {
           return true;
         }
         
+        // assume this is a proper pub message
+        const char * msg_ptr = (const char *)msg.data();
+        if( msg.more() && msg_ptr[0] >= '0' && msg_ptr[0] <= '9' )
+        {
+          ep_sub_socket_.recv(&msg);
+        }
+        
         pb::Endpoint peers;
         bool serialized = peers.ParseFromArray(msg.data(), msg.size());
         if( !serialized )
@@ -130,6 +137,10 @@ namespace virtdb { namespace connector {
         for( int i=0; i<peers.endpoints_size(); ++i )
           handle_endpoint_data(peers.endpoints(i));
       }
+      else
+      {
+        LOG_ERROR("ep_sub_socket_.recv() failed");
+      }
     }
     return true;
   }
@@ -138,7 +149,6 @@ namespace virtdb { namespace connector {
   endpoint_client::handle_endpoint_data(const interface::pb::EndpointData & ep)
   {
     std::lock_guard<std::mutex> lock(mtx_);
-
     {
       // run monitors first
       auto it = monitors_.find( ep.svctype() );
