@@ -122,6 +122,13 @@ namespace virtdb { namespace connector {
   {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
+    zmq::pollitem_t poll_item{ ep_rep_socket_, 0, ZMQ_POLLIN, 0 };
+    if( zmq::poll(&poll_item, 1, 3000) == -1 ||
+        !(poll_item.revents & ZMQ_POLLIN) )
+    {
+      return true;
+    }
+    
     zmq::message_t message;
     if( !ep_rep_socket_.recv(&message) )
       return true;

@@ -38,12 +38,7 @@ namespace virtdb { namespace connector {
                   try
                   {
                     // TODO : revise this later : only one subscription is allowed
-                    //if( ep_sub_socket_.connected() )
-                    //  ep_sub_socket_.close();
-                    
                     ep_sub_socket_.connect(conn.address(ii).c_str());
-                    
-                    // TODO : revise subscription logic...
                     ep_sub_socket_.setsockopt(ZMQ_SUBSCRIBE, "*", 0);
 
                     // telling that we are done and don't want more addresses
@@ -64,19 +59,30 @@ namespace virtdb { namespace connector {
             return true;
           });
     
-    pb::Endpoint diag_ep;
-    auto ep_data = diag_ep.add_endpoints();
-    ep_data->set_name(service_name);
-    ep_data->set_svctype(pb::ServiceType::NONE);
-    int ep_size = diag_ep.ByteSize();
+    pb::EndpointData ep_data;
+    ep_data.set_name(service_name);
+    ep_data.set_svctype(pb::ServiceType::NONE);
+    register_endpoint(ep_data);
+    
+    worker_.start();
+  }
+  
+  void
+  endpoint_client::register_endpoint(const interface::pb::EndpointData & ep_data)
+  {
+    pb::Endpoint ep;
+    auto ep_data_ptr = ep.add_endpoints();
+    ep_data_ptr->MergeFrom(ep_data);
+
+    int ep_size = ep.ByteSize();
     
     if( ep_size > 0 )
     {
       flex_alloc<char, 256> buffer(ep_size);
-      bool serialized = diag_ep.SerializeToArray(buffer.get(), ep_size);
+      bool serialized = ep.SerializeToArray(buffer.get(), ep_size);
       if( !serialized )
       {
-        THROW_("Couldn't serialize our own endpoint data");
+        THROW_("Couldn't serialize endpoint data");
       }
       ep_req_socket_.send( buffer.get(), ep_size );
       zmq::message_t msg;
@@ -97,7 +103,6 @@ namespace virtdb { namespace connector {
       for( int i=0; i<peers.endpoints_size(); ++i )
         handle_endpoint_data(peers.endpoints(i));
     }
-    worker_.start();
   }
   
   bool
@@ -109,7 +114,15 @@ namespace virtdb { namespace connector {
     }
     else
     {
+      zmq::pollitem_t poll_item{ ep_sub_socket_, 0, ZMQ_POLLIN, 0 };
+      if( zmq::poll(&poll_item, 1, 3000) == -1 ||
+         !(poll_item.revents & ZMQ_POLLIN) )
+      {
+        return true;
+      }
+      
       zmq::message_t msg;
+
       if( ep_sub_socket_.recv(&msg) )
       {
         if( !msg.data() || !msg.size() )
@@ -172,6 +185,15 @@ namespace virtdb { namespace connector {
     }
   }
   
+  void
+  endpoint_client::remove_watches(interface::pb::ServiceType st)
+  {
+    std::lock_guard<std::mutex> lock(mtx_);
+    auto it = monitors_.find(st);
+    if( it != monitors_.end() )
+      monitors_.erase(it);
+  }
+
   void
   endpoint_client::watch(interface::pb::ServiceType st,
                          monitor m)

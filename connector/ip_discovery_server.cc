@@ -223,9 +223,11 @@ namespace virtdb { namespace connector {
                                        0,
                                        (struct sockaddr *)&addr_4,
                                        len );
-            
-            std::string peer_ip{peer};
-            LOG_ERROR("sendto() failed" << V_(peer_ip));
+            if( sendret < 0 )
+            {
+              std::string peer_ip{peer};
+              LOG_ERROR("sendto() failed" << V_(peer_ip));
+            }
           }
         }
         else if( recvret < 0 )
@@ -265,8 +267,11 @@ namespace virtdb { namespace connector {
                                        (struct sockaddr *)&addr_6,
                                        len );
             
-            std::string peer_ip{peer};
-            LOG_ERROR("sendto() failed" << V_(peer_ip));
+            if( sendret < 0 )
+            {
+              std::string peer_ip{peer};
+              LOG_ERROR("sendto() failed" << V_(peer_ip));
+            }
           }
         }
         else if( recvret < 0 )
