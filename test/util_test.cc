@@ -43,3 +43,9 @@ TEST_F(CompareMessagesTest, DummyTest)
 {
   // TODO : CompareMessagesTest
 }
+
+TEST_F(ZmqTest, DummyTest)
+{
+  // TODO : ZmqTest
+}
+

@@ -71,6 +71,7 @@ bool
 LoggerTest::init_zmq_ctx()
 {
   sink_ctx_.reset(new zmq::context_t(1));
+  return true;
 }
 
 void

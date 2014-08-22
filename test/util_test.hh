@@ -13,5 +13,6 @@ namespace virtdb { namespace test {
   class FlexAllocTest : public ::testing::Test { };
   class AsyncWorkerTest : public ::testing::Test { };
   class CompareMessagesTest : public ::testing::Test { };
+  class ZmqTest : public ::testing::Test { };
 }}
 
