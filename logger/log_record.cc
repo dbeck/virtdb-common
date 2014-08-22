@@ -1,6 +1,4 @@
 #include "log_record.hh"
-#include <functional>
-#include <thread>
 
 namespace virtdb { namespace logger {
   

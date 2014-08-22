@@ -17,6 +17,8 @@
 #include <memory>
 #include <cassert>
 #include <atomic>
+#include <functional>
+#include <thread>
 
 namespace virtdb { namespace logger {
   
@@ -85,10 +87,9 @@ namespace virtdb { namespace logger {
             pb_data_ptr_ = data_array->Add();
             pb_data_ptr_->set_headerseqno(record_->id());
             pb_data_ptr_->set_elapsedmicrosec(util::relative_time::instance().get_usec());
-            // TODO : make this platform independent
-            #warning "pthread_self is not platform independent here...."
-            auto thr_id = pthread_self();
-            pb_data_ptr_->set_threadid(reinterpret_cast<uint64_t>(thr_id));
+            std::hash<std::thread::id> hash_fn;
+            std::size_t thr_hash = hash_fn(std::this_thread::get_id());        
+            pb_data_ptr_->set_threadid(static_cast<uint64_t>(thr_hash));
             add_data(v, pb_data_ptr_);
           }
         }
