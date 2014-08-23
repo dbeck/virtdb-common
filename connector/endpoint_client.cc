@@ -11,10 +11,12 @@ using namespace virtdb::logger;
 namespace virtdb { namespace connector {
   
   const std::string & endpoint_client::name() const { return name_; }
+  const std::string & endpoint_client::service_ep() const { return name_; }
   
   endpoint_client::endpoint_client(const std::string & svc_config_ep,
                                    const std::string & service_name)
-  : name_(service_name),
+  : service_ep_(svc_config_ep),
+    name_(service_name),
     zmqctx_(1),
     ep_req_socket_(zmqctx_, ZMQ_REQ),
     ep_sub_socket_(zmqctx_,ZMQ_SUB),

@@ -11,10 +11,14 @@ using namespace virtdb::interface;
 
 namespace virtdb { namespace connector {
   
+  const std::string & endpoint_server::local_ep() const { return local_ep_; }
+  const std::string & endpoint_server::global_ep() const { return global_ep_; }
+  
   endpoint_server::endpoint_server(const std::string & svc_endpoint,
                                    const std::string & service_name)
   : name_(service_name),
     local_ep_(svc_endpoint),
+    global_ep_(svc_endpoint),
     zmqctx_(1),
     ep_rep_socket_(zmqctx_, ZMQ_REP),
     ep_pub_socket_(zmqctx_, ZMQ_PUB),
@@ -23,29 +27,6 @@ namespace virtdb { namespace connector {
     ep_rep_socket_.bind( svc_endpoint.c_str() );
     // pub sub sockets, kernel to chose a port available on all IPs
     ep_pub_socket_.bind( "tcp://*:*" );
-    
-    int pub_zmq_port = 0;
-    {
-      // TODO: refactor to separate class ...
-      char last_zmq_endpoint[512];
-      last_zmq_endpoint[0] = 0;
-      size_t opt_size = sizeof(last_zmq_endpoint);
-      ep_pub_socket_.getsockopt(ZMQ_LAST_ENDPOINT, last_zmq_endpoint, &opt_size);
-      last_zmq_endpoint[sizeof(last_zmq_endpoint)-1] = 0;
-      if( opt_size > 0 )
-      {
-        char * ptr = last_zmq_endpoint+opt_size;
-        while( ptr > last_zmq_endpoint )
-        {
-          if( *ptr == ':' )
-          {
-            pub_zmq_port = atoi(ptr+1);
-            break;
-          }
-          --ptr;
-        }
-      }
-    }
     
     {
       // add discovery endpoints
@@ -89,27 +70,16 @@ namespace virtdb { namespace connector {
       }
       
       // pub sub sockets, one each on each IPs on a kernel chosen port
-      if( pub_zmq_port )
       {
-        // TODO : refactor self IP discovery to a support class...
         auto conn = self_endpoint.add_connections();
         conn->set_type(pb::ConnectionType::PUB_SUB);
         
-        auto ips = util::net::get_own_ips(true);
-        for( auto const & ip : ips )
+        for( const auto & bound_to : ep_pub_socket_.endpoints() )
         {
-          std::ostringstream os;
-          os << "tcp://";
-          if( ip.find(':') == std::string::npos )
-            os << ip << ":" << pub_zmq_port; // ipv4
-          else
-            os << '[' << ip << "]:" << pub_zmq_port; //ipv6
-          
-          auto address = conn->add_address();
-          *address = os.str();
+          *(conn->add_address()) = bound_to;
           ++svc_config_address_count;
         }
-      }
+              }
       if( svc_config_address_count > 0 )
         endpoints_.insert(self_endpoint);
     }
@@ -209,8 +179,8 @@ namespace virtdb { namespace connector {
               std::ostringstream os;
               os << ep.svctype() << '.' << ep.name();
               std::string subscription{os.str()};
-              ep_pub_socket_.send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
-              ep_pub_socket_.send(pub_buffer.get(), pub_size);
+              ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
+              ep_pub_socket_.get().send(pub_buffer.get(), pub_size);
               //std::cerr << "Published (" << subscription << ")\n" << publish_ep.DebugString() << "\n";
             }
           }
@@ -230,12 +200,6 @@ namespace virtdb { namespace connector {
     worker_.stop();
   }
 
-  const std::string &
-  endpoint_server::local() const
-  {
-    return local_ep_;
-  }
-  
   const std::string &
   endpoint_server::name() const
   {

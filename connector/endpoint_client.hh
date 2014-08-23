@@ -24,6 +24,7 @@ namespace virtdb { namespace connector {
     typedef std::vector<monitor> monitor_vector;
     typedef std::map<interface::pb::ServiceType, monitor_vector> monitor_map;
 
+    std::string          service_ep_;
     std::string          name_;
     zmq::context_t       zmqctx_;
     zmq::socket_t        ep_req_socket_;
@@ -46,6 +47,7 @@ namespace virtdb { namespace connector {
     void remove_watches(interface::pb::ServiceType);
     void register_endpoint(const interface::pb::EndpointData &);
     const std::string & name() const;
+    const std::string & service_ep() const;
     
   private:
     endpoint_client() = delete;
