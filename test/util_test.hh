@@ -2,13 +2,28 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <util.hh>
+#include <atomic>
 
 namespace virtdb { namespace test {
   
-  class ActiveQueueTest : public ::testing::Test { };
-  class BarrierTest : public ::testing::Test { };
-  class RelativeTimeTest : public ::testing::Test { };
-  class ExceptionTest : public ::testing::Test { };
+  class ActiveQueueTest : public ::testing::Test
+  {
+  protected:
+    ActiveQueueTest();
+    
+    std::atomic<int> value_;
+    util::active_queue<int> queue_;
+  };
+  
+  class BarrierTest : public ::testing::Test
+  {
+  protected:
+    BarrierTest();
+    
+    util::barrier barrier_;
+  };
+  
   class NetTest : public ::testing::Test { };
   class FlexAllocTest : public ::testing::Test { };
   class AsyncWorkerTest : public ::testing::Test { };

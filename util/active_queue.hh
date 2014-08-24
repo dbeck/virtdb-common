@@ -55,7 +55,7 @@ namespace virtdb { namespace util {
     
     void push(const ITEM & i)
     {
-      if( stop_ ) return;
+      if( stopped() ) return;
       lock l(mutex_);
       queue_.push(i);
       cond_.notify_one();
@@ -63,19 +63,31 @@ namespace virtdb { namespace util {
     
     void push(ITEM && i)
     {
-      if( stop_ ) return;
+      if( stopped() ) return;
       lock l(mutex_);
       queue_.push(std::move(i));
       cond_.notify_one();
     }
     
-    ~active_queue()
+    bool stopped() const
+    {
+      return stop_;
+    }
+    
+    void stop()
     {
       stop_ = true;
       cond_.notify_all();
-      std::for_each(threads_.begin(),
-                    threads_.end(),
-                    std::mem_fn(&std::thread::join));
+      for( auto & t : threads_ )
+      {
+        if( t.joinable() )
+          t.join();
+      }
+    }
+    
+    ~active_queue()
+    {
+      stop();
     }
     
   private:
@@ -93,7 +105,7 @@ namespace virtdb { namespace util {
       barrier_.wait();
       
       // check if we can still run
-      while( stop_ == false )
+      while( !stopped() )
       {
         ITEM tmp;
         bool has_item = false;

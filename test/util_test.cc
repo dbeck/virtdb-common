@@ -1,27 +1,70 @@
 #include "util_test.hh"
 #include "util.hh"
+#include <future>
+#include <thread>
 
 using namespace virtdb::test;
 using namespace virtdb::util;
 
-TEST_F(BarrierTest, DummyTest)
+ActiveQueueTest::ActiveQueueTest()
+: value_(0),
+  queue_(10,[this](int v){ value_ += v; })
 {
-  // TODO : BarrierTest
 }
 
-TEST_F(ActiveQueueTest, DummyTest)
+TEST_F(ActiveQueueTest, AddNumbers)
 {
-  // TODO : ActiveQueueTest
+  for( int i=1; i<=100; ++i )
+    this->queue_.push(i);
+
+  this->queue_.stop();
+  EXPECT_TRUE( this->queue_.stopped() );
+  EXPECT_EQ( this->value_, 5050 );
 }
 
-TEST_F(RelativeTimeTest, DummyTest)
+TEST_F(ActiveQueueTest, Stop3Times)
 {
-  // TODO : RelativeTimeTest
+  this->queue_.stop();
+  EXPECT_TRUE( this->queue_.stopped() );
+  this->queue_.stop();
+  EXPECT_TRUE( this->queue_.stopped() );
+  this->queue_.stop();
+  EXPECT_TRUE( this->queue_.stopped() );
 }
 
-TEST_F(ExceptionTest, DummyTest)
+BarrierTest::BarrierTest() : barrier_(10) {}
+
+TEST_F(BarrierTest, BarrierReady)
 {
-  // TODO : ExceptionTest
+  std::atomic<int> flag{0};
+  std::vector<std::thread> threads;
+  
+  // start 9 threads an make sure they are all waiting
+  for( int i=0; i<9; ++i )
+  {
+    EXPECT_FALSE( this->barrier_.ready() );
+    auto & b = this->barrier_;
+    threads.push_back(std::thread{[&b,&flag](){
+      b.wait();
+      ++flag;
+    }});
+    // all threads are waiting
+    EXPECT_EQ(flag, 0);
+    EXPECT_FALSE(b.ready());
+  }
+  
+  // let the detached threads go by doing a wait on the barrier
+  this->barrier_.wait();
+  EXPECT_TRUE( this->barrier_.ready() );
+
+  // cleanup threads
+  for( auto & t : threads )
+  {
+    if( t.joinable() )
+      t.join();
+  }
+  
+  EXPECT_EQ(flag, 9);
 }
 
 TEST_F(NetTest, DummyTest)

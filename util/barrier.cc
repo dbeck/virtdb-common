@@ -47,3 +47,18 @@ barrier::wait()
                    );
   }
 }
+
+bool
+barrier::ready()
+{
+  lock l(mutex_);
+  return (nwaiting_ >= nthreads_);
+}
+
+void
+barrier::reset()
+{
+  lock l(mutex_);
+  nwaiting_ = 0;
+}
+
