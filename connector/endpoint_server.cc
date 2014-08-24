@@ -24,9 +24,24 @@ namespace virtdb { namespace connector {
     ep_pub_socket_(zmqctx_, ZMQ_PUB),
     worker_(std::bind(&endpoint_server::worker_function,this))
   {
+    
+    // collect hosts to bind to
+    zmq_socket_wrapper::host_set hosts;
+    {
+      auto ep_global = parse_zmq_tcp_endpoint(global_ep());
+      auto ep_local = parse_zmq_tcp_endpoint(local_ep());
+
+      // add my ips
+      net::string_vector my_ips{net::get_own_ips(true)};
+      hosts.insert(my_ips.begin(), my_ips.end());
+      
+      // add endpoint_server hostnames too
+      hosts.insert(ep_global.first);
+      hosts.insert(ep_local.first);
+      hosts.insert("*");
+    }
     ep_rep_socket_.bind( svc_endpoint.c_str() );
-    // pub sub sockets, kernel to chose a port available on all IPs
-    ep_pub_socket_.bind( "tcp://*:*" );
+    ep_pub_socket_.batch_tcp_bind(hosts);
     
     {
       // add discovery endpoints
@@ -42,8 +57,7 @@ namespace virtdb { namespace connector {
         
         for( auto const & it : disc_ep )
         {
-          auto address = conn->add_address();
-          *address = it;
+          *(conn->add_address()) = it;
           ++discovery_address_count;
         }
       }
@@ -90,8 +104,6 @@ namespace virtdb { namespace connector {
   bool
   endpoint_server::worker_function()
   {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     zmq::pollitem_t poll_item{ ep_rep_socket_, 0, ZMQ_POLLIN, 0 };
     if( zmq::poll(&poll_item, 1, 3000) == -1 ||
         !(poll_item.revents & ZMQ_POLLIN) )
@@ -159,7 +171,8 @@ namespace virtdb { namespace connector {
       {
         // send reply
         ep_rep_socket_.send(reply_msg.get(), reply_size);
-          
+        std::cerr << "sent reply:\n" << reply_data.DebugString() << "\n";
+        
         // publish new messages one by one, so subscribers can choose what to
         // receive
         for( int i=0; i<request.endpoints_size(); ++i )

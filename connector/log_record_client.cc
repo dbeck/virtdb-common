@@ -19,13 +19,17 @@ namespace virtdb { namespace connector {
                         auto conn = ep.connections(i);
                         for( int ii=0; ii<conn.address_size(); ++ii )
                         {
-                          logger_push_socket_sptr_.reset(new zmq::socket_t(zmqctx_, ZMQ_PUSH));
-                          logger_push_socket_sptr_->connect(conn.address(ii).c_str());
-                          if( logger_push_socket_sptr_->connected() )
+                          if( logger_ep_.empty() || logger_ep_ != conn.address(ii) )
                           {
-                            log_sink_sptr_.reset(new log_sink(logger_push_socket_sptr_));
-                            LOG_INFO("logger configured");
-                            return false;
+                            logger_push_socket_sptr_.reset(new zmq::socket_t(zmqctx_, ZMQ_PUSH));
+                            logger_push_socket_sptr_->connect(conn.address(ii).c_str());
+                            if( logger_push_socket_sptr_->connected() )
+                            {
+                              log_sink_sptr_.reset(new log_sink(logger_push_socket_sptr_));
+                              logger_ep_ = conn.address(ii);
+                              LOG_INFO("logger configured" << V_(logger_ep_));
+                              return false;
+                            }
                           }
                         }
                       }

@@ -27,13 +27,40 @@ namespace virtdb { namespace connector {
       auto ep_local = parse_zmq_tcp_endpoint(ep_server.local_ep());
       hosts.insert(ep_global.first);
       hosts.insert(ep_local.first);
+      hosts.insert("*");
     }
     
     cfg_pull_socket_.batch_tcp_bind(hosts);
     cfg_pub_socket_.batch_tcp_bind(hosts);
-   
-    // TODO : initialize
-
+    
+    // setting up our own endpoints
+    {
+      pb::EndpointData ep_data;
+      {
+        ep_data.set_name(ep_server.name());
+        ep_data.set_svctype(pb::ServiceType::CONFIG);
+        
+        {
+          // PULL socket
+          auto conn = ep_data.add_connections();
+          conn->set_type(pb::ConnectionType::PUSH_PULL);
+          
+          for( auto const & ep : cfg_pull_socket_.endpoints() )
+            *(conn->add_address()) = ep;
+        }
+     
+        {
+          // PUB socket
+          auto conn = ep_data.add_connections();
+          conn->set_type(pb::ConnectionType::PUB_SUB);
+          
+          for( auto const & ep : cfg_pub_socket_.endpoints() )
+            *(conn->add_address()) = ep;
+        }
+        
+        cfg_client.get_endpoint_client().register_endpoint(ep_data);
+      }
+    }
     
     worker_.start();
   }
@@ -46,8 +73,25 @@ namespace virtdb { namespace connector {
   bool
   config_server::worker_function()
   {
+    zmq::pollitem_t poll_item{ cfg_pull_socket_.get(), 0, ZMQ_POLLIN, 0 };
+    if( zmq::poll(&poll_item, 1, 3000) == -1 ||
+       !(poll_item.revents & ZMQ_POLLIN) )
+    {
+      return true;
+    }
+
+    zmq::message_t message;
+    if( !cfg_pull_socket_.get().recv(&message) )
+      return true;
+    
+    pb::Config request;
+    if( !message.data() || !message.size())
+      return true;
+
+    // TODO : read pull socket and publish
     LOG_ERROR("TODO : implement me");
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    
     return true;
   }
 }}

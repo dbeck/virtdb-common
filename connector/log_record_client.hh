@@ -16,6 +16,7 @@ namespace virtdb { namespace connector {
     zmq::context_t                             zmqctx_;
     std::shared_ptr<zmq::socket_t>             logger_push_socket_sptr_;
     std::shared_ptr<virtdb::logger::log_sink>  log_sink_sptr_;
+    std::string                                logger_ep_;
 
   public:
     log_record_client(endpoint_client & ep_client);
