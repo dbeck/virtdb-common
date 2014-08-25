@@ -1,13 +1,7 @@
 BUILD_ROOT           := $(shell pwd)
-PROTO_PATH           := $(BUILD_ROOT)/
-PROTO_FILE_NAMES     := common.proto meta_data.proto db_config.proto data.proto svc_config.proto diag.proto
-PROTO_FILES          := $(patsubst %.proto,$(PROTO_PATH)/%.proto,$(PROTO_FILE_NAMES)) 
-PROTO_SOURCES        := $(patsubst %.proto,%.pb.cc,$(PROTO_FILES))
-PROTO_OBJECTS        := $(patsubst %.pb.cc,%.pb.o,$(PROTO_SOURCES))
-PROTO_DESCS          := $(patsubst %.pb.cc,%.pb.desc,$(PROTO_SOURCES))
+
 PROTOBUF_LDFLAGS     := $(shell pkg-config --libs protobuf)
 PROTOBUF_CFLAGS      := $(shell pkg-config --cflags protobuf)
-
 ZMQ_LDFLAGS          := $(shell pkg-config --libs libzmq)
 ZMQ_CFLAGS           := $(shell pkg-config --cflags libzmq)
 
@@ -28,7 +22,7 @@ FIX_CXX_11_BUG  = -Wl,--no-as-needed
 LINUX_LDFLAGS   = -pthread
 endif
 
-CXXFLAGS += -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/.
+CXXFLAGS += -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
 LDFLAGS += $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(GTEST_LDFLAGS)
 
 UTIL_SRCS            := $(wildcard util/*.cc)
@@ -43,16 +37,22 @@ LOGGER_OBJECTS     := $(patsubst %.cc,%.o,$(LOGGER_SRCS))
 CONNECTOR_OBJECTS  := $(patsubst %.cc,%.o,$(CONNECTOR_SRCS))
 TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
 
-PROTO_LIB := libproto.a
+PROTO_LIB := proto/libproto.a
+COMMON_LIB := libcommon.a
 
-all: proto-static-lib gtest-test $(PROTO_DESCS) 
+all: common-static-lib gtest-test 
 
 gtest-test: gtest-pkg-build-all test/gtest_main.o test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
 	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 	g++ -o test/netinfo test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 
-proto-static-lib: $(PROTO_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
-	ar rcs $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_OBJECTS) $(UTIL_OBJECTS)
+common-static-lib: $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
+	ar rcs $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
+
+$(PROTO_LIB):
+	@echo "building proto project in ./proto" 
+	cd ./proto; make -f proto.mk all
+	@echo "proto project built"
 
 gtest-pkg-build-all: gtest-pkg-configure gtest-pkg-lib
 
@@ -76,22 +76,7 @@ gtest-pkg-clean:
 	@make -C $(GTEST_PATH) clean
 	@echo "cleaning finished in gtest package"
 
-%.pb.o: %.pb.cc %.pb.h
-
-%.pb.cc %.pb.h: %.proto
-	protoc -I $(PROTO_PATH)/ --cpp_out=$(PROTO_PATH)/ $<
-
-%.pb.desc: %.proto
-	protoc -I $(PROTO_PATH)/ --descriptor_set_out=$@ --include_imports $<
-
-$(PROTO_PATH)/data.pb.cc: $(PROTO_PATH)/common.proto $(PROTO_PATH)/meta_data.proto
-
-$(PROTO_PATH)/meta_data.pb.cc: $(PROTO_PATH)/common.proto
-
-$(PROTO_PATH)/db_config.pb.cc: $(PROTO_PATH)/common.proto $(PROTO_PATH)/meta_data.proto 
-
-$(PROTO_PATH)/svc_config.pb.cc: $(PROTO_PATH)/meta_data.pb.h
-
 clean: gtest-pkg-clean
-	rm -f $(PROTO_OBEJCTS) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) *.a *.o *.pb.cc *.pb.h *.pb.desc
+	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) *.a *.o *.pb.cc *.pb.h *.pb.desc
+	cd ./proto; make -f proto.mk clean
 
