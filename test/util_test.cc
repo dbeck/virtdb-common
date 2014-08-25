@@ -17,6 +17,7 @@ TEST_F(ActiveQueueTest, AddNumbers)
   for( int i=1; i<=100; ++i )
     this->queue_.push(i);
 
+  EXPECT_TRUE( this->queue_.wait_empty(std::chrono::milliseconds(100)) );
   this->queue_.stop();
   EXPECT_TRUE( this->queue_.stopped() );
   EXPECT_EQ( this->value_, 5050 );

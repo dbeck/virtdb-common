@@ -74,6 +74,34 @@ namespace virtdb { namespace util {
       return stop_;
     }
     
+    template <typename T>
+    bool wait_empty(const T & progress_for)
+    {
+      size_t queued_items = 0;
+      {
+        lock l(mutex_);
+        queued_items = queue_.size();
+      }
+        
+      while( queued_items > 0 )
+      {
+        // give time to the threads to progress
+        std::this_thread::sleep_for(progress_for);
+        size_t tmp = queued_items;
+        {
+          lock l(mutex_);
+          queued_items = queue_.size();
+        }
+        
+        // if no progress has been made, then stop waiting for them
+        if( tmp == queued_items )
+        {
+          break;
+        }
+      }
+      return (queued_items == 0);
+    }
+    
     void stop()
     {
       stop_ = true;
