@@ -1,11 +1,10 @@
 #pragma once
 
 #include <string>
-#include <zmq.hpp>
 #include <svc_config.pb.h>
 #include <util/compare_messages.hh>
 #include <util/async_worker.hh>
-#include <util/zmq.hh>
+#include <util/zmq_utils.hh>
 #include "ip_discovery_server.hh"
 #include <set>
 
