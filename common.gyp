@@ -49,10 +49,10 @@
     {
       'conditions': [
         ['OS=="mac"', { 
-          'variables':  { 'proto_root':  '<!(pwd)/../proto/', },
+          'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            #'defines':            [ 'USING_PROTO_LIB', 'PROTO_MAC_BUILD', ],
-            #'include_dirs':       [ '<(proto_root)/', ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', ],
+            'include_dirs':       [ '<(common_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
@@ -60,7 +60,7 @@
         },],
         ['OS=="linux"', { 
           'direct_dependent_settings': {
-            #'defines':            [ 'USING_PROTO_LIB', 'PROTO_LINUX_BUILD', ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', ],
             'include_dirs':       [ '.', ],
           },
         },],
