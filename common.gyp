@@ -52,7 +52,7 @@
           'variables':  { 'proto_root':  '<!(pwd)/../proto/', },
           'direct_dependent_settings': {
             #'defines':            [ 'USING_PROTO_LIB', 'PROTO_MAC_BUILD', ],
-            'include_dirs':       [ '<(proto_root)/', ],
+            #'include_dirs':       [ '<(proto_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
@@ -67,7 +67,7 @@
       ],
       'target_name':       'common',
       'type':              'static_library',
-      'dependencies':      [ 'proto/proto.gyp:proto', ],
+      'dependencies':      [ 'proto/proto.gyp:*', ],
       'sources':           [
                              # generic utils
                              'util.hh',
