@@ -8,10 +8,10 @@ ZMQ_CFLAGS           := $(shell pkg-config --cflags libzmq)
 # FIXME integrate libtool better ...
 GTEST_PATH           := $(BUILD_ROOT)/gtest
 GTEST_CONFIG_STATUS  := $(GTEST_PATH)/config.status
-GTEST_LIBDIR         := $(GTEST_PATH)/lib/.libs/
+GTEST_LIBDIR         := $(GTEST_PATH)/lib/
 GTEST_INCLUDE        := $(GTEST_PATH)/include
-GTEST_LIBS           := $(GTEST_LIBDIR)/libgtest.a
-GTEST_LDFLAGS        := $(GTEST_LIBS) -L$(GTEST_LIBDIR)
+GTEST_LIBS           := -lgtest 
+GTEST_LDFLAGS        := -L$(GTEST_LIBDIR) -L$(GTEST_LIBDIR)/.libs $(GTEST_LIBS)
 GTEST_CFLAGS         := -I$(GTEST_INCLUDE)
 
 # FIXME on Windows
