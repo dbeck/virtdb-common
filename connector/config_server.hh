@@ -1,21 +1,24 @@
 #pragma once
 
-#include <string>
 #include <svc_config.pb.h>
-#include <util/compare_messages.hh>
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
 #include "config_client.hh"
 #include "endpoint_server.hh"
+#include <map>
 
 namespace virtdb { namespace connector {
   
   class config_server final
   {
+    typedef std::map<std::string, interface::pb::Config> config_map;
+    typedef std::lock_guard<std::mutex> lock;
+    
     zmq::context_t               zmqctx_;
-    util::zmq_socket_wrapper     cfg_pull_socket_;
+    util::zmq_socket_wrapper     cfg_rep_socket_;
     util::zmq_socket_wrapper     cfg_pub_socket_;
     util::async_worker           worker_;
+    config_map                   configs_;
     std::mutex                   mtx_;
 
     bool worker_function();

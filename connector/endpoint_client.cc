@@ -221,16 +221,6 @@ namespace virtdb { namespace connector {
         }
       }
     }
-    
-    /* TODO : check this
-    // add subscription
-    std::ostringstream os;
-    os << pb::ServiceType::ENDPOINT << '.';
-    std::string subscription{os.str()};
-    ep_sub_socket_.setsockopt(ZMQ_SUBSCRIBE,
-                              subscription.c_str(),
-                              subscription.size());
-    */
   }
 
   bool
