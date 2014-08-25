@@ -6,3 +6,7 @@
 	path = cppzmq
 	url = https://github.com/starschema/cppzmq.git
 	branch = master
+[submodule "proto"]
+	path = proto
+	url = https://github.com/starschema/virtdb-proto.git
+	branch = master

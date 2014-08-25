@@ -3,6 +3,7 @@
 *.lo
 *.o
 *.obj
+*.d
 
 # Compiled Dynamic libraries
 *.so
@@ -19,3 +20,19 @@
 *.exe
 *.out
 *.app
+test/gtest_main
+test/netinfo
+
+# protocol buffer generated
+*.pb.cc
+*.pb.h
+*.desc
+
+# gyp generated
+Makefile
+*.target.mk
+*.Makefile
+gyp-mac-tool
+*.xcodeproj
+out/
+Debug/
