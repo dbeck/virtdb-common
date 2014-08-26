@@ -8,6 +8,7 @@
 #include <diag.pb.h>
 #include <mutex>
 #include <memory>
+#include <tuple>
 
 namespace virtdb { namespace connector {
   
@@ -28,7 +29,8 @@ namespace virtdb { namespace connector {
     typedef std::map<process_info, header_map, comparator>     process_headers;
     typedef std::map<process_info, symbol_map, comparator>     process_symbols;
     typedef uint64_t                                           arrived_at_usec;
-    typedef std::deque<std::pair<arrived_at_usec,log_data>>    log_queue;
+    typedef std::tuple<arrived_at_usec,process_info,log_data>  log_data_item;
+    typedef std::deque<log_data_item>                          log_queue;
     typedef std::lock_guard<std::mutex>                        lock;
 
     process_headers                         headers_;
@@ -48,7 +50,8 @@ namespace virtdb { namespace connector {
 
     bool rep_worker_function();
     bool pull_worker_function();
-    void pub_function(record_sptr record);
+    void process_function(record_sptr record);
+    void enrich_record(record_sptr record);
 
     static const std::string & resolve(const symbol_map & smap,
                                        uint32_t id);

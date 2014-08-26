@@ -1,7 +1,10 @@
 #include "log_record_server.hh"
 #include "ip_discovery_client.hh"
 #include <util/net.hh>
+#include <util/flex_alloc.hh>
+#include <util/relative_time.hh>
 #include <logger.hh>
+#include <sstream>
 
 using namespace virtdb;
 using namespace virtdb::interface;
@@ -16,7 +19,7 @@ namespace virtdb { namespace connector {
     diag_pub_socket_(zmqctx_, ZMQ_PUB),
     pull_worker_(std::bind(&log_record_server::pull_worker_function, this)),
     rep_worker_(std::bind(&log_record_server::rep_worker_function, this)),
-    log_process_queue_(1,std::bind(&log_record_server::pub_function,this,std::placeholders::_1))
+    log_process_queue_(1,std::bind(&log_record_server::process_function,this,std::placeholders::_1))
   {
     // collect hosts to bind to
     zmq_socket_wrapper::host_set hosts;
@@ -97,13 +100,272 @@ namespace virtdb { namespace connector {
     {
       return true;
     }
+    
+    zmq::message_t message;
+    if( !diag_rep_socket_.get().recv(&message) )
+      return true;
+    
+    auto const & rel_timer = util::relative_time::instance();
+    uint64_t usec_tm = rel_timer.get_usec();
+    uint64_t start_tm = 0;
+    std::map<pb::LogLevel,bool> levels_requested;
+    
+    // default level request
+    levels_requested[pb::LogLevel::INFO]          = false;
+    levels_requested[pb::LogLevel::ERROR]         = false;
+    levels_requested[pb::LogLevel::SCOPED_TRACE]  = false;
+    levels_requested[pb::LogLevel::SIMPLE_TRACE]  = false;
+  
+    pb::GetLogs request;
+    if( !message.data() || !message.size())
+      return true;
+    
+    bool set_all_levels = true;
+    
+    try
+    {
+      if( request.ParseFromArray(message.data(), message.size()) )
+      {
+        if( request.levels_size() > 0 )
+        {
+          for( const auto & l : request.levels() )
+            levels_requested[(pb::LogLevel)l] = true;
+          
+          // don't set all levels to true
+          set_all_levels = false;
+        }
+        
+        if( request.has_microsecrange() )
+        {
+          uint64_t range = request.microsecrange();
+          if( range < usec_tm )
+            start_tm = usec_tm-range;
+        }
+      }
+    }
+    catch (const std::exception & e)
+    {
+      // ParseFromArray may throw exceptions here but we don't care
+      // of it does
+      std::string exception_text{e.what()};
+      LOG_ERROR("couldn't parse message" << exception_text);
+    }
+    catch( ... )
+    {
+      LOG_ERROR("unknown exception");
+    }
+    
+    if( set_all_levels )
+    {
+      // user interested in all levels
+      levels_requested[pb::LogLevel::INFO]          = true;
+      levels_requested[pb::LogLevel::ERROR]         = true;
+      levels_requested[pb::LogLevel::SCOPED_TRACE]  = true;
+      levels_requested[pb::LogLevel::SIMPLE_TRACE]  = true;
+    }
+
+    typedef std::map<process_info, record_sptr, comparator> result_map;
+    result_map results;
+    
+    // go through the log data and dump them to the caller
+    {
+      lock log_lock(log_mtx_);
+      auto it = logs_.begin();
+      while( it != logs_.end() )
+      {
+        const auto & tuple_ref = *it;
+        if( std::get<0>(tuple_ref) >= start_tm )
+          break;
+      }
+      
+      for( ; it != logs_.end(); ++it )
+      {
+        auto const & tuple_ref = *it;
+        auto rit = results.find(std::get<1>(tuple_ref));
+        if( rit == results.end() )
+        {
+          auto ret = results.insert(std::make_pair(std::get<1>(tuple_ref),record_sptr(new log_record)));
+          rit = ret.first;
+        }
+        
+        auto data = rit->second->add_data();
+        data->MergeFrom(std::get<2>(tuple_ref));
+      }
+    }
+    
+    {
+      for( auto & r : results )
+      {
+        auto proc = r.second->mutable_process();
+        proc->MergeFrom(r.first);
+        enrich_record(r.second);
+        
+        int rep_size = r.second->ByteSize();
+        if( rep_size >  0 )
+        {
+          flex_alloc<unsigned char, 2048> rep_buffer(rep_size);
+          if( r.second->SerializeToArray(rep_buffer.get(), rep_size) )
+          {
+            diag_rep_socket_.get().send(rep_buffer.get(), rep_size, ZMQ_SNDMORE);
+          }
+        }
+      }
+    }
+    
+    {
+      zmq::message_t empty;
+      diag_rep_socket_.get().send(empty);
+    }
+    
     return true;
+  }
+
+  void
+  log_record_server::process_function(record_sptr record)
+  {
+    if( !record ) return;
+    
+    auto const & rel_timer = util::relative_time::instance();
+    arrived_at_usec usec_tm = rel_timer.get_usec();
+    
+    auto const & proc = record->process();
+    
+    for( auto const & d : record->data() )
+    {
+      lock log_lock(log_mtx_);
+      logs_.push_back(std::make_tuple(usec_tm,proc,d));
+    }
+    
+    enrich_record(record);
+    
+    int pub_size = record->ByteSize();
+    if( pub_size > 0 )
+    {
+      flex_alloc<unsigned char, 2048> pub_buffer(pub_size);
+    
+      // generate channel key for subscribers
+      std::string hostname;
+      std::string procname;
+      uint32_t host_sym = UINT32_MAX;
+      uint32_t proc_sym = UINT32_MAX;
+      
+      if( !proc.has_hostsymbol() )
+        hostname = "?";
+      
+      if( !proc.has_namesymbol() )
+        procname = "?";
+      
+      for( const auto & s : record->symbols() )
+      {
+        // go until we have filled both strings
+        if( !hostname.empty() && !procname.empty() )
+          break;
+        
+        if( s.seqno() == host_sym )
+          hostname = s.value();
+        else if( s.seqno() == proc_sym )
+          procname = s.value();
+      }
+      
+      std::ostringstream os;
+      os << procname << " " << hostname;
+      std::string subscription{os.str()};
+      
+      diag_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
+      diag_pub_socket_.get().send(pub_buffer.get(), pub_size);
+    }
+  }
+  
+  namespace
+  {
+    inline void
+    check_add_id(const std::set<uint32_t> & source,
+                 std::set<uint32_t> & dest,
+                 uint32_t id)
+    {
+      if( !source.count(id) )
+        dest.insert(id);
+    }
   }
   
   void
-  log_record_server::pub_function(record_sptr record)
+  log_record_server::enrich_record(record_sptr record)
   {
-    // TODO
+    if( !record ) return;
+    
+    // store symbol ids
+    std::set<uint32_t> rec_symbols;
+    for( auto const & s : record->symbols() )
+      rec_symbols.insert(s.seqno());
+    
+    // store header ids
+    std::set<uint32_t> rec_heads;
+    for( auto const & h : record->headers() )
+      rec_heads.insert(h.seqno());
+
+    // collect missing headers
+    std::set<uint32_t> need_heads;
+    for( auto const & d : record->data() )
+      check_add_id(rec_heads, need_heads, d.headerseqno());
+
+    // collect missing symbols
+    std::set<uint32_t> need_symbols;
+    auto proc = record->process();
+    if( proc.has_hostsymbol() )
+      check_add_id(rec_symbols, need_symbols, proc.hostsymbol());
+    if( proc.has_namesymbol() )
+      check_add_id(rec_symbols, need_symbols, proc.namesymbol());
+    
+    // collect the actual headers
+    {
+      lock head_lock(header_mtx_);
+      
+      // find the header container for the given process
+      auto proc_heads = headers_.find(proc);
+      if( proc_heads != headers_.end() )
+      {
+        // iterate over the needed headers
+        for( auto hid : need_heads )
+        {
+          auto head_it = proc_heads->second.find(hid);
+          if( head_it != proc_heads->second.end())
+          {
+            auto head_data = record->add_headers();
+            head_data->MergeFrom(*(head_it->second));
+            check_add_id(rec_symbols, need_symbols, head_it->second->filenamesymbol());
+            check_add_id(rec_symbols, need_symbols, head_it->second->functionnamesymbol());
+            check_add_id(rec_symbols, need_symbols, head_it->second->logstringsymbol());
+            for( auto const & p : head_it->second->parts() )
+            {
+              if( p.has_partsymbol() )
+                check_add_id(rec_symbols, need_symbols, p.partsymbol());
+            }
+          }
+        }
+      }
+    }
+    
+    // collect symbols too
+    {
+      lock symbol_lock(symbol_mtx_);
+      
+      // find the symbol container for the given process
+      auto proc_syms = symbols_.find(proc);
+      if( proc_syms != symbols_.end() )
+      {
+        // iterate over the needed symbols
+        for( auto sid : need_symbols )
+        {
+          auto sym_it = proc_syms->second.find(sid);
+          if( sym_it != proc_syms->second.end())
+          {
+            auto sym_data = record->add_symbols();
+            sym_data->set_seqno(sid);
+            sym_data->set_value(sym_it->second);
+          }
+        }
+      }
+    }
   }
   
   bool
