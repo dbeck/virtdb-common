@@ -68,7 +68,13 @@ namespace virtdb { namespace util {
     for( auto const & host : hosts )
     {
       std::ostringstream os;
-      os << "tcp://" << host << ":*";
+      if( host.empty() ) continue;
+
+      if( host.find(":") != std::string::npos && host[0] != '[')
+        os << "tcp://[" << host << "]:*";
+      else
+        os << "tcp://" << host << ":*";
+      
       try
       {
         bind(os.str().c_str());
@@ -77,7 +83,8 @@ namespace virtdb { namespace util {
       {
         // ignore errors
         std::string text{e.what()};
-        LOG_ERROR("exception caught" << V_(text));
+        std::string endpoint{os.str()};
+        LOG_ERROR("exception caught" << V_(text) << "while trying to bind to" << V_(endpoint));
       }
     }
   }

@@ -8,6 +8,7 @@
 using namespace virtdb;
 using namespace virtdb::util;
 using namespace virtdb::interface;
+using namespace virtdb::logger;
 
 namespace virtdb { namespace connector {
   
@@ -24,6 +25,7 @@ namespace virtdb { namespace connector {
     ep_pub_socket_(zmqctx_, ZMQ_PUB),
     worker_(std::bind(&endpoint_server::worker_function,this))
   {
+    process_info::set_app_name(name_);
     
     // collect hosts to bind to
     zmq_socket_wrapper::host_set hosts;
@@ -42,6 +44,9 @@ namespace virtdb { namespace connector {
     }
     ep_rep_socket_.bind( svc_endpoint.c_str() );
     ep_pub_socket_.batch_tcp_bind(hosts);
+    
+    // start worker before we report endpoints
+    worker_.start();
     
     {
       // add discovery endpoints
@@ -97,8 +102,6 @@ namespace virtdb { namespace connector {
       if( svc_config_address_count > 0 )
         endpoints_.insert(self_endpoint);
     }
-    
-    worker_.start();
   }
   
   bool
@@ -138,7 +141,8 @@ namespace virtdb { namespace connector {
             endpoints_.insert(request.endpoints(i));
           }
         }
-        std::cerr << "endpoint request arrived: \n" << request.DebugString() << "\n";
+        std::string request_str{request.DebugString()};
+        LOG_INFO("endpoint request arrived" << V_(request_str));
       }
     }
     catch (const std::exception & e)
@@ -171,7 +175,8 @@ namespace virtdb { namespace connector {
       {
         // send reply
         ep_rep_socket_.send(reply_msg.get(), reply_size);
-        std::cerr << "sent reply:\n" << reply_data.DebugString() << "\n";
+        std::string reply_data_str{reply_data.DebugString()};
+        LOG_INFO("sent reply" << V_(reply_data_str));
         
         // publish new messages one by one, so subscribers can choose what to
         // receive
@@ -194,7 +199,6 @@ namespace virtdb { namespace connector {
               std::string subscription{os.str()};
               ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
               ep_pub_socket_.get().send(pub_buffer.get(), pub_size);
-              //std::cerr << "Published (" << subscription << ")\n" << publish_ep.DebugString() << "\n";
             }
           }
         }

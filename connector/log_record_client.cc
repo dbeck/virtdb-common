@@ -17,9 +17,16 @@ namespace virtdb { namespace connector {
                       for( int i=0; i<ep.connections_size(); ++i )
                       {
                         auto conn = ep.connections(i);
-                        for( int ii=0; ii<conn.address_size(); ++ii )
+                        if( conn.type() == pb::ConnectionType::PUSH_PULL )
                         {
-                          if( logger_ep_.empty() || logger_ep_ != conn.address(ii) )
+                          // check if the configured address is still valid
+                          for( int ii=0; ii<conn.address_size(); ++ii )
+                          {
+                            if( conn.address(ii) == logger_ep_ )
+                              return false;
+                          }
+                          
+                          for( int ii=0; ii<conn.address_size(); ++ii )
                           {
                             logger_push_socket_sptr_.reset(new zmq::socket_t(zmqctx_, ZMQ_PUSH));
                             logger_push_socket_sptr_->connect(conn.address(ii).c_str());

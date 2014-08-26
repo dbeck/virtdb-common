@@ -10,6 +10,7 @@ namespace virtdb { namespace logger {
   {
     // first naive implementation
     // TODO : make it fast ... later ...
+    
     std::atomic<uint32_t>             g_last_symbol_{0};
     std::atomic<uint32_t>             g_last_sent_symbol_{0};
     std::map<std::string, uint32_t>   g_symbols_;
@@ -17,6 +18,18 @@ namespace virtdb { namespace logger {
     std::mutex                        g_mutex_;
   }
   
+  const std::string &
+  symbol_store::get(uint32_t id)
+  {
+    static const std::string empty{"''"};
+    std::lock_guard<std::mutex> lock(g_mutex_);
+    auto it = g_id_map_.find(id);
+    if( it != g_id_map_.end() )
+      return it->second;
+    else
+      return empty;
+  }
+
   uint32_t
   symbol_store::get_symbol_id(const char * str)
   {

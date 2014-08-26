@@ -5,6 +5,8 @@
 
 namespace virtdb { namespace connector {
   
+  class endpoint_client;
+  
   class ip_discovery_client final
   {
   public:
@@ -17,5 +19,8 @@ namespace virtdb { namespace connector {
     //   [1::2::3::4::]:65432   for ipv6
     static std::string
     get_ip(const endpoint_vector & srv_endpoints);
+    
+    static std::string
+    get_ip(endpoint_client & ep_clnt);
   };
 }}

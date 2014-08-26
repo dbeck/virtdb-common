@@ -35,6 +35,13 @@ namespace virtdb { namespace logger {
       sender                  * root_;
       pb_record_sptr            pb_record_;
       interface::pb::LogData  * pb_data_ptr_;
+
+      void add_data(const char * str,
+                    interface::pb::LogData * pb_data)
+      {
+        // not adding C-String values, because they should already be
+        // in the symbol table and handled by the header signature
+      }
       
       template <typename T>
       void add_data(const T & val,
@@ -50,13 +57,6 @@ namespace virtdb { namespace logger {
       {
         auto pb_value = pb_data->add_values();
         interface::value_type<T>::set(*pb_value, *val.val_);
-      }
-
-      void add_data(const char * str,
-                    interface::pb::LogData * pb_data)
-      {
-        // not adding C-String values, because they should already be
-        // in the symbol table and handled by the header signature
       }
       
     public:
@@ -149,9 +149,14 @@ namespace virtdb { namespace logger {
     }
     
     void on_return() const;
-    bool enabled() const;
-    uint32_t id() const;
     const interface::pb::LogHeader & get_pb_header() const;
+    
+    uint32_t   id()           const { return id_;           }
+    uint32_t   file_symbol()  const { return file_symbol_;  }
+    uint32_t   line()         const { return line_;         }
+    uint32_t   func_symbol()  const { return func_symbol_;  }
+    log_level  level()        const { return level_;        }
+    bool       enabled()      const { return enabled_;      }
   };
 
 }}

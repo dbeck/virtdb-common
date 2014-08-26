@@ -7,14 +7,29 @@
 namespace virtdb { namespace logger {
   
   // TODO : do something faster here than std::map ...
+  // TODO : cleanup unneeded stuff, like g_ptr_map_ ???
   
   namespace {
     std::atomic<uint32_t>                   g_last_id_{0};
     std::map<uint32_t, bool>                g_header_sent_;
     std::map<const log_record *, uint32_t>  g_ptr_map_;
+    std::map<uint32_t, const log_record *>  g_header_map_;
     std::mutex                              g_mutex_;
   }
   
+  const log_record *
+  header_store::get(uint32_t id)
+  {
+    const log_record * ret = nullptr;
+    {
+      std::lock_guard<std::mutex> lock(g_mutex_);
+      auto it = g_header_map_.find(id);
+      if( it != g_header_map_.end() )
+        ret = it->second;
+    }
+    return ret;
+  }
+
   uint32_t
   header_store::get_new_id(const log_record * rec)
   {
@@ -23,6 +38,7 @@ namespace virtdb { namespace logger {
       std::lock_guard<std::mutex> lock(g_mutex_);
       g_header_sent_[ret]  = false;
       g_ptr_map_[rec]      = ret;
+      g_header_map_[ret]   = rec;
     }
     return ret;
   }

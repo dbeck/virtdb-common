@@ -34,6 +34,9 @@ namespace virtdb { namespace connector {
     cfg_rep_socket_.batch_tcp_bind(hosts);
     cfg_pub_socket_.batch_tcp_bind(hosts);
     
+    // start worker before we report the endpoint
+    worker_.start();
+    
     // setting up our own endpoints
     {
       pb::EndpointData ep_data;
@@ -62,8 +65,6 @@ namespace virtdb { namespace connector {
         cfg_client.get_endpoint_client().register_endpoint(ep_data);
       }
     }
-    
-    worker_.start();
   }
   
   config_server::~config_server()
@@ -95,7 +96,8 @@ namespace virtdb { namespace connector {
     {
       if( request.ParseFromArray(message.data(), message.size()) )
       {
-        std::cerr << "config request arrived: \n" << request.DebugString() << "\n";
+        std::string request_str{request.DebugString()};
+        LOG_INFO("config request arrived: " << V_(request_str));
         message_parsed = true;
       }
     }

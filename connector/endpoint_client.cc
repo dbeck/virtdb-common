@@ -48,11 +48,12 @@ namespace virtdb { namespace connector {
                   }
                   catch (const std::exception & e)
                   {
-                    std::cerr << "exception: " << e.what() << "\n";
+                    std::string text{e.what()};
+                    LOG_ERROR("exception caught" << V_(text));
                   }
                   catch (...)
                   {
-                    std::cerr << "exception\n";
+                    LOG_ERROR("unknown exception caught");
                     // ignore connection failure
                   }
                 }

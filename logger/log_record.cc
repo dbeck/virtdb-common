@@ -135,18 +135,6 @@ namespace virtdb { namespace logger {
     *this << end_msg();
   }
   
-  bool
-  log_record::enabled() const
-  {
-    return enabled_;
-  }
-  
-  uint32_t
-  log_record::id() const
-  {
-    return id_;
-  }
-  
   const interface::pb::LogHeader &
   log_record::get_pb_header() const
   {

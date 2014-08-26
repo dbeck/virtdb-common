@@ -32,7 +32,7 @@ namespace virtdb { namespace interface {
   };
   
   template <typename T> struct value_type {};
-
+  
   template <>
   struct value_type<std::string> : public value_type_base
   {
@@ -126,7 +126,7 @@ namespace virtdb { namespace interface {
         return pb_vt.stringvalue(index);
     }
   };
-  
+    
   template <>
   struct value_type<int32_t> : public value_type_base
   {

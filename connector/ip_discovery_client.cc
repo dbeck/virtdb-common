@@ -1,10 +1,16 @@
 #include "ip_discovery_client.hh"
+#include "endpoint_client.hh"
 #include <util.hh>
 #include <unistd.h>
 #include <functional>
+#include <future>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+using namespace virtdb;
+using namespace virtdb::interface;
+using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
@@ -168,5 +174,52 @@ namespace virtdb { namespace connector {
     }
     return ret;
   }
+  
+  std::string
+  ip_discovery_client::get_ip(endpoint_client & ep_clnt)
+  {
+    std::promise<endpoint_vector> ip_discovery_promise;
+    std::future<endpoint_vector>  ip_discovery_data{ip_discovery_promise.get_future()};
+    
+    ep_clnt.watch(pb::ServiceType::IP_DISCOVERY,
+                  [&ip_discovery_promise](const pb::EndpointData & ep) {
+                    //
+                    // iterate over connections
+                    //
+                    ip_discovery_client::endpoint_vector result;
+                    for( int i=0; i<ep.connections_size(); ++i )
+                    {
+                      auto conn = ep.connections(i);
+                      if( conn.type() == pb::ConnectionType::RAW_UDP )
+                      {
+                        for( int ii=0; ii<conn.address_size(); ++ii )
+                        {
+                          result.push_back(conn.address(ii));
+                        }
+                      }
+                    }
+                    if( result.size() > 0 )
+                    {
+                      // we don't need more IP_DISCOVERY endpoints
+                      ip_discovery_promise.set_value(result);
+                      return false;
+                    }
+                    else
+                    {
+                      // continue iterating over IP_DISCOVERY endpoints
+                      return true;
+                    }
+                  });
+    
+    // wait till we have a valid IP_DISCOVERY endpoint data
+    ip_discovery_data.wait();
+    
+    // stop listening on IP_DISCOVERY endpoint data
+    ep_clnt.remove_watches(pb::ServiceType::IP_DISCOVERY);
+    
+    // add up my ips and discovery ip
+    return get_ip(ip_discovery_data.get());
+  }
+
 }}
 

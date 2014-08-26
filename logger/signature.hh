@@ -20,7 +20,8 @@ namespace virtdb { namespace logger {
       signature * signature_;
       
       template <typename T>
-      void add_signature(const T & val, signature * sig)
+      void add_signature(const T & val,
+                         signature * sig)
       {
         auto pb_header = sig->get_pb_header();
         auto log_part = pb_header->add_parts();
@@ -28,9 +29,10 @@ namespace virtdb { namespace logger {
         log_part->set_hasdata(true);
         log_part->set_type(interface::value_type<T>::kind);
       }
-
+      
       template <typename T>
-      void add_signature(const variable<T> & val, signature * sig)
+      void add_signature(const variable<T> & val,
+                         signature * sig)
       {
         auto pb_header = sig->get_pb_header();
         auto log_part = pb_header->add_parts();
@@ -39,8 +41,9 @@ namespace virtdb { namespace logger {
         log_part->set_type(interface::value_type<T>::kind);
         log_part->set_partsymbol(symbol_store::get_symbol_id(val.name_));
       }
-      
-      void add_signature(const char * val, signature * sig);
+
+      void add_signature(const char * val,
+                         signature * sig);
       
     public:
       // the last item in the list
@@ -59,7 +62,8 @@ namespace virtdb { namespace logger {
       
       // n-th part
       template <typename T>
-      part(const T & val, part * parent)
+      part(const T & val,
+           part * parent)
       : signature_(parent->signature_)
       {
         add_signature(val, signature_);

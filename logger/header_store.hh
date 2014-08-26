@@ -15,6 +15,7 @@ namespace virtdb { namespace logger {
     static bool header_sent(uint32_t id);
     static void header_sent(uint32_t id, bool yes_no);
     static void reset_all();
+    static const log_record * get(uint32_t id);
   };
   
 } }

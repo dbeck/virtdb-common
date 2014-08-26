@@ -2,7 +2,9 @@
 #include "logger.hh"
 #include "util/active_queue.hh"
 #include <iostream>
+#include <sstream>
 
+using namespace virtdb::interface;
 using namespace std::placeholders;
 
 namespace virtdb { namespace logger {
@@ -23,16 +25,154 @@ namespace virtdb { namespace logger {
   
   log_sink::log_sink_wptr log_sink::global_sink_;
   
+  namespace
+  {
+    const std::string &
+    level_string(pb::LogLevel level)
+    {
+      static std::map<pb::LogLevel, std::string> level_map{
+        { pb::LogLevel::INFO,          "INFO", },
+        { pb::LogLevel::ERROR,         "ERROR", },
+        { pb::LogLevel::SIMPLE_TRACE,  "TRACE", },
+        { pb::LogLevel::SCOPED_TRACE,  "SCOPED" },
+      };
+      
+      static std::string unknown("UNKNOWN");
+      auto it = level_map.find(level);
+      if( it == level_map.end() )
+        return unknown;
+      else
+        return it->second;
+    }
+    
+    void
+    print_variable(const pb::ValueType & var)
+    {
+      // locks held when this function enters (in this order)
+      // - header_mtx_;
+      // - symbol_mtx_;
+      
+      switch( var.type() )
+      {
+          // TODO : handle array parameters ...
+        case pb::Kind::BOOL:   std::cout << (var.boolvalue(0)?"true":"false"); break;
+        case pb::Kind::FLOAT:  std::cout << var.floatvalue(0); break;
+        case pb::Kind::DOUBLE: std::cout << var.doublevalue(0); break;
+        case pb::Kind::STRING: std::cout << var.stringvalue(0); break;
+        case pb::Kind::INT32:  std::cout << var.int32value(0); break;
+        case pb::Kind::UINT32: std::cout << var.uint32value(0); break;
+        case pb::Kind::INT64:  std::cout << var.int64value(0); break;
+        case pb::Kind::UINT64: std::cout << var.uint64value(0); break;
+        default:               std::cout << "'unhandled-type'"; break;
+      };
+    }
+    
+    void
+    print_data(const pb::ProcessInfo & proc_info,
+               const pb::LogData & data,
+               const log_record & head)
+    {
+      std::ostringstream host_and_name;
+      
+      if( proc_info.has_hostsymbol() )
+        host_and_name << " " << symbol_store::get(proc_info.hostsymbol());
+      
+      if( proc_info.has_namesymbol() )
+        host_and_name << "/" << symbol_store::get(proc_info.namesymbol());
+      
+      std::cout << '[' << proc_info.pid() << ':' << data.threadid() << "]"
+                << host_and_name.str()
+                << " (" << level_string(head.level())
+                << ") @" << symbol_store::get(head.file_symbol()) << ':'
+                << head.line() << " " << symbol_store::get(head.func_symbol())
+                << "() @" << data.elapsedmicrosec() << "us ";
+      
+      int var_idx = 0;
+      
+      if( head.level() == pb::LogLevel::SCOPED_TRACE &&
+         data.has_endscope() &&
+         data.endscope() )
+      {
+        std::cout << " [EXIT] ";
+      }
+      else
+      {
+        if( head.level() == pb::LogLevel::SCOPED_TRACE )
+          std::cout << " [ENTER] ";
+        
+        auto const & head_msg = head.get_pb_header();
+        
+        for( int i=0; i<head_msg.parts_size(); ++i )
+        {
+          auto part = head_msg.parts(i);
+          
+          if( part.isvariable() && part.hasdata() )
+          {
+            std::cout << " {";
+            if( part.has_partsymbol() )
+              std::cout << symbol_store::get(part.partsymbol()) << "=";
+            
+            if( var_idx < data.values_size() )
+              print_variable( data.values(var_idx) );
+            else
+              std::cout << "'?'";
+            
+            std::cout << '}';
+            
+            ++var_idx;
+          }
+          else if( part.hasdata() )
+          {
+            std::cout << " ";
+            if( var_idx < data.values_size() )
+              print_variable( data.values(var_idx) );
+            else
+              std::cout << "'?'";
+            
+            ++var_idx;
+          }
+          else if( part.has_partsymbol() )
+          {
+            std::cout << " " << symbol_store::get(part.partsymbol());
+          }
+        }
+      }
+      std::cout << "\n";
+    }
+
+        
+    void print_rec(log_sink::pb_logrec_sptr rec)
+    {
+      for( int i=0; i<rec->data_size(); ++i )
+      {
+        auto data = rec->data(i);
+        auto head = header_store::get(data.headerseqno());
+        if( !head )
+        {
+          std::cout << "empty header\n";
+          return;
+        }
+        print_data( rec->process(), data, *head );
+      }
+    }
+  }
+  
   void
   log_sink::print_record(log_sink::pb_logrec_sptr rec)
   {
     // TODO : make this nicer...
     try
     {
-      std::cout << "Printing log record because ZMQ log sink is not ready yet:\n"
-                << rec->DebugString() << "\n";
+      // if the message came here instead of the right 0MQ channel we don't
+      // treat stuff as cached
+      symbol_store::max_id_sent(0);
+      header_store::reset_all();
+      
+      /// print it
+      print_rec(rec);
     }
-    catch (...) {
+    catch (...)
+    {
     }
   }
   
