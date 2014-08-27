@@ -48,7 +48,7 @@ namespace virtdb { namespace logger {
                     interface::pb::LogData * pb_data)
       {
         auto pb_value = pb_data->add_values();
-        interface::value_type<T>::set(*pb_value, val);
+        util::value_type<T>::set(*pb_value, val);
       }
 
       template <typename T>
@@ -56,7 +56,7 @@ namespace virtdb { namespace logger {
                     interface::pb::LogData * pb_data)
       {
         auto pb_value = pb_data->add_values();
-        interface::value_type<T>::set(*pb_value, *val.val_);
+        util::value_type<T>::set(*pb_value, *val.val_);
       }
       
     public:

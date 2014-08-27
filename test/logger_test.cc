@@ -79,7 +79,7 @@ LoggerTest::shutdown_receiver()
 {
   if( control_sptr_ )
   {
-    control_sptr_->send("Q", 1);
+    control_sptr_->get().send("Q", 1);
   }
 }
 
@@ -94,9 +94,9 @@ bool
 LoggerTest::init_zmq_receiver()
 {
   using logger::log_sink;
-  receiver_sptr_.reset(new zmq::socket_t(*sink_ctx_, ZMQ_PULL));
+  receiver_sptr_.reset(new util::zmq_socket_wrapper(*sink_ctx_, ZMQ_PULL));
   receiver_sptr_->bind(inproc_endpoint());
-  control_sptr_.reset(new zmq::socket_t(*sink_ctx_, ZMQ_PUSH));
+  control_sptr_.reset(new util::zmq_socket_wrapper(*sink_ctx_, ZMQ_PUSH));
   control_sptr_->connect(inproc_endpoint());
   receiver_thread_ = std::move(std::thread(std::bind(&LoggerTest::receiver_entry,this)));
   return true;
@@ -111,7 +111,7 @@ LoggerTest::receiver_entry()
     while( true )
     {
       zmq::message_t message;
-      if( !receiver_sptr_->recv(&message) )
+      if( !receiver_sptr_->get().recv(&message) )
         break;
     
       rec.Clear();

@@ -2,6 +2,7 @@
 
 #include "endpoint_client.hh"
 #include <util/async_worker.hh>
+#include <util/zmq_utils.hh>
 #include <zmq.hpp>
 #include <memory>
 #include <logger.hh>
@@ -18,23 +19,14 @@ namespace virtdb { namespace connector {
                                interface::pb::LogRecord & rec)>  log_monitor;
     
   private:
-    log_record_client() = delete;
-    log_record_client(const log_record_client &) = delete;
-    log_record_client & operator=(const log_record_client &) = delete;
-    
-    
     typedef std::map<std::string, log_monitor>   monitor_map;
     typedef std::lock_guard<std::mutex>          lock;
     
     zmq::context_t                               zmqctx_;
-    std::shared_ptr<zmq::socket_t>               logger_push_socket_sptr_;
-    std::shared_ptr<zmq::socket_t>               logger_sub_socket_sptr_;
-    std::shared_ptr<zmq::socket_t>               logger_req_socket_sptr_;
+    std::shared_ptr<util::zmq_socket_wrapper>    logger_push_socket_;
+    util::zmq_socket_wrapper                     logger_sub_socket_;
+    util::zmq_socket_wrapper                     logger_req_socket_;
     std::shared_ptr<virtdb::logger::log_sink>    log_sink_sptr_;
-    // TODO : refactor this {ep,socket} binding into util::zmq_utils
-    std::string                                  push_logger_ep_;
-    std::string                                  sub_logger_ep_;
-    std::string                                  req_logger_ep_;
     util::async_worker                           worker_;
     monitor_map                                  monitors_;
     mutable std::mutex                           sockets_mtx_;
@@ -48,7 +40,7 @@ namespace virtdb { namespace connector {
     ~log_record_client();
     
     void get_logs(const interface::pb::GetLogs & req,
-                  std::function<bool(interface::pb::LogRecord & rec)> fun) const;
+                  std::function<bool(interface::pb::LogRecord & rec)> fun);
     void watch(const std::string & name, log_monitor);
     void remove_watches();
     void remove_watch(const std::string & name);
@@ -56,5 +48,10 @@ namespace virtdb { namespace connector {
     bool logger_ready() const;
     bool get_logs_ready() const;
     bool subscription_ready() const;
+    
+  private:
+    log_record_client() = delete;
+    log_record_client(const log_record_client &) = delete;
+    log_record_client & operator=(const log_record_client &) = delete;
   };
 }}

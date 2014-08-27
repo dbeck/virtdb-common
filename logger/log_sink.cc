@@ -210,7 +210,7 @@ namespace virtdb { namespace logger {
         if( serialized )
         {
           // sending out the message
-          socket_->send(work_buffer, message_size);
+          socket_->get().send(work_buffer, message_size);
         }
       }
     }
@@ -240,7 +240,7 @@ namespace virtdb { namespace logger {
   bool
   log_sink::socket_is_valid() const
   {
-    if( !socket_ || !socket_->connected() )
+    if( !socket_ || !socket_->valid() )
       return false;
     else
       return true;

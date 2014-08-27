@@ -12,24 +12,27 @@ namespace virtdb { namespace connector {
   bool log_record_client::logger_ready() const
   {
     lock l(sockets_mtx_);
-    return (!push_logger_ep_.empty() && logger_push_socket_sptr_);
+    return logger_push_socket_->valid();
   }
   
   bool log_record_client::get_logs_ready() const
   {
     lock l(sockets_mtx_);
-    return (!req_logger_ep_.empty() && logger_req_socket_sptr_);
+    return logger_req_socket_.valid();
   }
   
   bool log_record_client::subscription_ready() const
   {
     lock l(sockets_mtx_);
-    return (!sub_logger_ep_.empty() && logger_sub_socket_sptr_);
+    return logger_sub_socket_.valid();
   }
 
   log_record_client::log_record_client(endpoint_client & ep_client)
   : zmqctx_(1),
-    log_sink_sptr_(new log_sink(logger_push_socket_sptr_)),
+    logger_push_socket_(new util::zmq_socket_wrapper(zmqctx_,ZMQ_PUSH)),
+    logger_sub_socket_(zmqctx_, ZMQ_SUB),
+    logger_req_socket_(zmqctx_, ZMQ_REQ),
+    log_sink_sptr_(new log_sink(logger_push_socket_)),
     worker_(std::bind(&log_record_client::worker_function,this))
   {
     process_info::set_app_name(ep_client.name());
@@ -52,7 +55,7 @@ namespace virtdb { namespace connector {
     bool no_socket = false;
     {
       lock l(sockets_mtx_);
-      if( !logger_sub_socket_sptr_ ) no_socket = true;
+      if( !logger_sub_socket_.valid() ) no_socket = true;
     }
     
     if( no_socket )
@@ -62,10 +65,10 @@ namespace virtdb { namespace connector {
     }
     else
     {
-      zmq::socket_t * sock = logger_sub_socket_sptr_.get();
+      zmq::socket_t & sock = logger_sub_socket_.get();
       try
       {
-        zmq::pollitem_t poll_item{ *sock, 0, ZMQ_POLLIN, 0 };
+        zmq::pollitem_t poll_item{ sock, 0, ZMQ_POLLIN, 0 };
         if( zmq::poll(&poll_item, 1, 3000) == -1 ||
            !(poll_item.revents & ZMQ_POLLIN) )
         {
@@ -78,8 +81,7 @@ namespace virtdb { namespace connector {
         std::string text{e.what()};
         LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
         lock l(sockets_mtx_);
-        logger_sub_socket_sptr_.reset();
-        sub_logger_ep_.clear();
+        logger_sub_socket_.disconnect_all();
         // give a chance to resubscribe when new endpoints arrive
         std::this_thread::sleep_for(std::chrono::seconds(5));
         return true;
@@ -92,7 +94,7 @@ namespace virtdb { namespace connector {
         has_monitors = !monitors_.empty();
       }
       
-      if( logger_sub_socket_sptr_->recv(&msg) )
+      if( logger_sub_socket_.get().recv(&msg) )
       {
         if( !msg.data() || !msg.size() )
           return true;
@@ -103,7 +105,7 @@ namespace virtdb { namespace connector {
         while( msg.more() )
         {
           msg.rebuild();
-          logger_sub_socket_sptr_->recv(&msg);
+          logger_sub_socket_.get().recv(&msg);
           if( msg.data() && msg.size() && has_monitors )
           {
             try
@@ -140,11 +142,11 @@ namespace virtdb { namespace connector {
   
   void
   log_record_client::get_logs(const interface::pb::GetLogs & req,
-                              std::function<bool(interface::pb::LogRecord & rec)> fun) const
+                              std::function<bool(interface::pb::LogRecord & rec)> fun)
   {
     {
       lock l(sockets_mtx_);
-      if( !logger_req_socket_sptr_ ) return;
+      if( !logger_req_socket_.valid() ) return;
     }
     
     zmq::message_t msg;
@@ -157,10 +159,10 @@ namespace virtdb { namespace connector {
       bool serialized = req.SerializeToArray(buffer.get(), req_size);
       if( !serialized )
       {
-        THROW_("Couldn't serialize endpoint data");
+        THROW_("Couldn't serialize GetLogs data");
       }
       
-      logger_req_socket_sptr_->send( buffer.get(), req_size );
+      logger_req_socket_.get().send( buffer.get(), req_size );
       
       bool call_fun = true;
       zmq::message_t msg;
@@ -195,7 +197,7 @@ namespace virtdb { namespace connector {
       
       while( true )
       {
-        if( !logger_req_socket_sptr_->recv(&msg) )
+        if( !logger_req_socket_.get().recv(&msg) )
           break;
         
         if( !process_logs(msg) )
@@ -221,12 +223,12 @@ namespace virtdb { namespace connector {
       
       {
         lock l(sockets_mtx_);
-        if( logger_sub_socket_sptr_ )
+        if( logger_sub_socket_.valid() )
         {
           if( !orig_size )
           {
             // we only subscribe if there is a watch and this is the first watch
-            logger_sub_socket_sptr_->setsockopt(ZMQ_SUBSCRIBE, "*", 0);
+            logger_sub_socket_.get().setsockopt(ZMQ_SUBSCRIBE, "*", 0);
           }
         }
       }
@@ -243,10 +245,10 @@ namespace virtdb { namespace connector {
       
       {
         lock l(sockets_mtx_);
-        if( logger_sub_socket_sptr_ )
+        if( logger_sub_socket_.valid() )
         {
           // we can unsubscribe
-          logger_sub_socket_sptr_->setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
+          logger_sub_socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
         }
       }
     }
@@ -263,12 +265,12 @@ namespace virtdb { namespace connector {
       
       {
         lock l(sockets_mtx_);
-        if( logger_sub_socket_sptr_ )
+        if( logger_sub_socket_.valid() )
         {
           if( monitors_.empty() )
           {
             // we can unsubscribe if noone cares about zmq messages
-            logger_sub_socket_sptr_->setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
+            logger_sub_socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
           }
         }
       }
@@ -280,36 +282,30 @@ namespace virtdb { namespace connector {
   {
     bool no_change = true;
     
-    std::function<bool(std::shared_ptr<zmq::socket_t>  & sock,
-                       std::string & sock_ep_name,
-                       int type,
-                       const std::string & addr)> connect_socket;
-    
-    connect_socket =
-    [this,&no_change](std::shared_ptr<zmq::socket_t>  & sock,
-                      std::string & sock_ep_name,
-                      int type,
-                      const std::string & addr)
+    std::function<bool(util::zmq_socket_wrapper & sock,
+                       const std::string & addr)> connect_socket =
     {
-      bool ret = false;
-      try
+      [this,&no_change](util::zmq_socket_wrapper & sock,
+                        const std::string & addr)
       {
-        lock l(sockets_mtx_);
-        sock.reset(new zmq::socket_t(zmqctx_,type));
-        sock->connect(addr.c_str());
-        sock_ep_name = addr;
-        ret = true;
+        bool ret = false;
+        try
+        {
+          lock l(sockets_mtx_);
+          sock.reconnect(addr.c_str());
+          ret = true;
+        }
+        catch( const std::exception & e )
+        {
+          std::string text{e.what()};
+          LOG_ERROR("exception in connect_socket lambda function" << V_(text));
+        }
+        catch( ... )
+        {
+          LOG_ERROR("unknown exception in connect_socket lambda function");
+        }
+        return ret;
       }
-      catch( const std::exception & e )
-      {
-        std::string text{e.what()};
-        LOG_ERROR("exception in connect_socket lambda function" << V_(text));
-      }
-      catch( ... )
-      {
-        LOG_ERROR("unknown exception in connect_socket lambda function");
-      }
-      return ret;
     };
     
     for( int i=0; i<ep.connections_size(); ++i )
@@ -318,28 +314,15 @@ namespace virtdb { namespace connector {
       if(conn.type() == pb::ConnectionType::PUSH_PULL &&
          ep.svctype() == pb::ServiceType::LOG_RECORD)
       {
-        bool valid = false;
         // check if the configured address is still valid
-        for( int ii=0; ii<conn.address_size(); ++ii )
-        {
-          if( conn.address(ii) == push_logger_ep_ )
-          {
-            valid = true;
-            break;
-          }
-        }
-        
-        if( !valid )
+        if( !logger_push_socket_->connected_to(conn.address().begin(), conn.address().end()) )
         {
           for( int ii=0; ii<conn.address_size(); ++ii )
           {
-            if( connect_socket(logger_push_socket_sptr_,
-                               push_logger_ep_,
-                               ZMQ_PUSH,
-                               conn.address(ii)) )
+            if( connect_socket(*logger_push_socket_, conn.address(ii)) )
             {
-              log_sink_sptr_.reset(new log_sink(logger_push_socket_sptr_));
-              LOG_TRACE("logger configured" << V_(push_logger_ep_));
+              log_sink_sptr_.reset(new log_sink(logger_push_socket_));
+              LOG_TRACE("logger configured" << V_(conn.address(ii)));
               no_change = false;
               break;
             }
@@ -350,27 +333,13 @@ namespace virtdb { namespace connector {
       if(conn.type() == pb::ConnectionType::PUB_SUB &&
          ep.svctype() == pb::ServiceType::LOG_RECORD)
       {
-        bool valid = false;
-        // check if the configured address is still valid
-        for( int ii=0; ii<conn.address_size(); ++ii )
-        {
-          if( conn.address(ii) == sub_logger_ep_ )
-          {
-            valid = true;
-            break;
-          }
-        }
-        
-        if( !valid )
+        if( !logger_sub_socket_.connected_to(conn.address().begin(), conn.address().end()) )
         {
           for( int ii=0; ii<conn.address_size(); ++ii )
           {
-            if( connect_socket(logger_sub_socket_sptr_,
-                               sub_logger_ep_,
-                               ZMQ_SUB,
-                               conn.address(ii)) )
+            if( connect_socket(logger_sub_socket_, conn.address(ii)) )
             {
-              LOG_TRACE("log subscription configured" << V_(sub_logger_ep_));
+              LOG_TRACE("log subscription configured" << V_(conn.address(ii)));
               no_change = false;
               break;
             }
@@ -381,27 +350,13 @@ namespace virtdb { namespace connector {
       if(conn.type() == pb::ConnectionType::REQ_REP &&
          ep.svctype() == pb::ServiceType::GET_LOGS)
       {
-        bool valid = false;
-        // check if the configured address is still valid
-        for( int ii=0; ii<conn.address_size(); ++ii )
-        {
-          if( conn.address(ii) == req_logger_ep_ )
-          {
-            valid = true;
-            break;
-          }
-        }
-        
-        if( !valid )
+        if( !logger_req_socket_.connected_to(conn.address().begin(), conn.address().end()) )
         {
           for( int ii=0; ii<conn.address_size(); ++ii )
           {
-            if( connect_socket(logger_req_socket_sptr_,
-                               req_logger_ep_,
-                               ZMQ_REQ,
-                               conn.address(ii)) )
+            if( connect_socket(logger_req_socket_, conn.address(ii)) )
             {
-              LOG_TRACE("log REQ socket configured" << V_(req_logger_ep_));
+              LOG_TRACE("log REQ socket configured" << V_(conn.address(ii)));
               no_change = false;
               break;
             }

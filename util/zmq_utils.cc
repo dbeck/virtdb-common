@@ -169,6 +169,30 @@ namespace virtdb { namespace util {
     endpoints_.insert(addr);
   }
   
+  void
+  zmq_socket_wrapper::reconnect (const char * addr)
+  {
+    if( !addr ) return;
+    if( endpoints_.count(addr) > 0 ) return;
+    disconnect_all();
+    connect(addr);
+  }
+  
+  void
+  zmq_socket_wrapper::disconnect_all()
+  {
+    // disconnect from all endpoints if any
+    for( auto & ep : endpoints_ )
+      socket_.disconnect(ep.c_str());
+    endpoints_.clear();
+  }
+  
+  bool
+  zmq_socket_wrapper::valid() const
+  {
+    return !endpoints_.empty();
+  }
+  
   const zmq_socket_wrapper::endpoint_set &
   zmq_socket_wrapper::endpoints() const
   {

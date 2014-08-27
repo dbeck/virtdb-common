@@ -12,7 +12,7 @@ namespace virtdb { namespace connector {
   config_server::config_server(config_client & cfg_client,
                                endpoint_server & ep_server)
   : zmqctx_(1),
-    cfg_rep_socket_(zmqctx_, ZMQ_PULL),
+    cfg_rep_socket_(zmqctx_, ZMQ_REP),
     cfg_pub_socket_(zmqctx_, ZMQ_PUB),
     worker_(std::bind(&config_server::worker_function,this))
   {
@@ -86,17 +86,20 @@ namespace virtdb { namespace connector {
     if( !cfg_rep_socket_.get().recv(&message) )
       return true;
 
-    // TODO : check shall we not send back something here???
     pb::Config request;
     if( !message.data() || !message.size())
+    {
+      cfg_rep_socket_.get().send(message);
       return true;
+    }
     
     bool message_parsed = false;
+    std::string request_str;
     try
     {
       if( request.ParseFromArray(message.data(), message.size()) )
       {
-        std::string request_str{request.DebugString()};
+        request_str = request.DebugString();
         LOG_TRACE("config request arrived: " << V_(request_str));
         message_parsed = true;
       }
@@ -116,7 +119,7 @@ namespace virtdb { namespace connector {
     // if any issue happened we send back the original message
     if( !message_parsed )
     {
-      LOG_ERROR("sendin back original config data because the message couldn't be parsed");
+      LOG_ERROR("sending back original config data because the message couldn't be parsed");
       cfg_rep_socket_.get().send( message.data(), message.size() );
       return true;
     }
@@ -160,10 +163,12 @@ namespace virtdb { namespace connector {
       {
         // save config data
         if( cfg_it != configs_.end() )
+        {
           configs_.erase(cfg_it);
+        }
         
         configs_[request.name()] = request;
-
+        
         // publish config data
         cfg_pub_socket_.get().send(request.name().c_str(), request.name().length(), ZMQ_SNDMORE);
         cfg_pub_socket_.get().send(message.data(), message.size());

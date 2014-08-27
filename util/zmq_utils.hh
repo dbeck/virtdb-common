@@ -17,16 +17,32 @@ namespace virtdb { namespace util {
   private:
     zmq::socket_t     socket_;
     endpoint_set      endpoints_;
+    int               type_;
     
   public:
     zmq_socket_wrapper(zmq::context_t &ctx, int type);
     ~zmq_socket_wrapper();
     
     zmq::socket_t & get();
-    void bind (const char *addr);
+    void bind(const char *addr);
     void batch_tcp_bind(const host_set & hosts);
-    void connect (const char * addr);
+    void connect(const char * addr);
+    void reconnect(const char * addr);
+    void disconnect_all();
+    bool valid() const;
     const endpoint_set & endpoints() const;
+    
+    template <typename ITER>
+    bool connected_to(const ITER & begin, const ITER & end) const
+    {
+      ITER it{begin};
+      for( ; it != end ; ++it )
+      {
+        if( endpoints_.count(*it) > 0 )
+          return true;
+      }
+      return false;
+    }
     
   private:
     zmq_socket_wrapper() = delete;

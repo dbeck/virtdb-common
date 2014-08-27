@@ -5,12 +5,12 @@
 
 // TODO : polymorphic getter
 
-namespace virtdb { namespace interface {
+namespace virtdb { namespace util {
 
   struct value_type_base
   {
     static bool
-    is_null(pb::ValueType & pb_vt,
+    is_null(interface::pb::ValueType & pb_vt,
             int index)
     {
       bool ret = false;
@@ -20,7 +20,7 @@ namespace virtdb { namespace interface {
     }
 
     static void
-    set_null(pb::ValueType & pb_vt,
+    set_null(interface::pb::ValueType & pb_vt,
              int index,
              bool val=true)
     {
@@ -36,15 +36,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<std::string> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::STRING;
+    static const interface::pb::Kind kind = interface::pb::Kind::STRING;
     typedef std::string stored_type;
 
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.stringvalue_size() )
@@ -54,22 +54,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         const stored_type & v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
 
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.stringvalue_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -83,15 +83,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<const char *> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::STRING;
+    static const interface::pb::Kind kind = interface::pb::Kind::STRING;
     typedef std::string stored_type;
     
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.stringvalue_size() )
@@ -101,22 +101,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         const char * v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const char ** val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
 
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.stringvalue_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -130,15 +130,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<int32_t> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::INT32;
+    static const interface::pb::Kind kind = interface::pb::Kind::INT32;
     typedef int32_t stored_type;
     
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.int32value_size() )
@@ -148,22 +148,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         stored_type v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
 
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.int32value_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -177,15 +177,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<int64_t> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::INT64;
+    static const interface::pb::Kind kind = interface::pb::Kind::INT64;
     typedef int64_t stored_type;
 
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.int64value_size() )
@@ -195,22 +195,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         stored_type v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
     
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.int64value_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -224,15 +224,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<uint32_t> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::UINT32;
+    static const interface::pb::Kind kind = interface::pb::Kind::UINT32;
     typedef uint32_t stored_type;
 
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.uint32value_size() )
@@ -242,22 +242,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         stored_type v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
     
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.uint32value_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -271,15 +271,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<uint64_t> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::UINT64;
+    static const interface::pb::Kind kind = interface::pb::Kind::UINT64;
     typedef uint64_t stored_type;
     
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.uint64value_size() )
@@ -289,22 +289,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         stored_type v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
     
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.uint64value_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -324,15 +324,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<double> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::DOUBLE;
+    static const interface::pb::Kind kind = interface::pb::Kind::DOUBLE;
     typedef double stored_type;
 
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.doublevalue_size() )
@@ -342,22 +342,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         stored_type v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
     
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.doublevalue_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -371,15 +371,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<float> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::FLOAT;
+    static const interface::pb::Kind kind = interface::pb::Kind::FLOAT;
     typedef float stored_type;
     
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.floatvalue_size() )
@@ -389,22 +389,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         stored_type v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
     
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.floatvalue_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -418,15 +418,15 @@ namespace virtdb { namespace interface {
   template <>
   struct value_type<bool> : public value_type_base
   {
-    static const pb::Kind kind = pb::Kind::BOOL;
+    static const interface::pb::Kind kind = interface::pb::Kind::BOOL;
     typedef bool stored_type;
     
     template <typename ITER>
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         ITER begin,
         ITER end,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       pb_vt.set_type(val_kind);
       if( pb_vt.boolvalue_size() )
@@ -436,22 +436,22 @@ namespace virtdb { namespace interface {
     }
     
     static void
-    set(pb::ValueType & pb_vt,
+    set(interface::pb::ValueType & pb_vt,
         bool v,
-        pb::Kind val_kind=kind)
+        interface::pb::Kind val_kind=kind)
     {
       const bool * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
 
     static int
-    size(pb::ValueType & pb_vt)
+    size(interface::pb::ValueType & pb_vt)
     {
       return pb_vt.boolvalue_size();
     }
     
     static stored_type
-    get(pb::ValueType & pb_vt,
+    get(interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {

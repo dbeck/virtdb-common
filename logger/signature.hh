@@ -27,7 +27,7 @@ namespace virtdb { namespace logger {
         auto log_part = pb_header->add_parts();
         log_part->set_isvariable(false);
         log_part->set_hasdata(true);
-        log_part->set_type(interface::value_type<T>::kind);
+        log_part->set_type(util::value_type<T>::kind);
       }
       
       template <typename T>
@@ -38,7 +38,7 @@ namespace virtdb { namespace logger {
         auto log_part = pb_header->add_parts();
         log_part->set_isvariable(true);
         log_part->set_hasdata(true);
-        log_part->set_type(interface::value_type<T>::kind);
+        log_part->set_type(util::value_type<T>::kind);
         log_part->set_partsymbol(symbol_store::get_symbol_id(val.name_));
       }
 
