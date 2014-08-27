@@ -97,7 +97,7 @@ namespace virtdb { namespace connector {
       if( request.ParseFromArray(message.data(), message.size()) )
       {
         std::string request_str{request.DebugString()};
-        LOG_INFO("config request arrived: " << V_(request_str));
+        LOG_TRACE("config request arrived: " << V_(request_str));
         message_parsed = true;
       }
     }

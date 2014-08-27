@@ -165,7 +165,9 @@ namespace virtdb { namespace connector {
     }
 
     typedef std::map<process_info, record_sptr, comparator> result_map;
-    result_map results;
+
+    result_map       results;
+    process_headers  headers;
     
     // go through the log data and dump them to the caller
     {
@@ -176,20 +178,52 @@ namespace virtdb { namespace connector {
         const auto & tuple_ref = *it;
         if( std::get<0>(tuple_ref) >= start_tm )
           break;
+        ++it;
       }
       
       for( ; it != logs_.end(); ++it )
       {
         auto const & tuple_ref = *it;
-        auto rit = results.find(std::get<1>(tuple_ref));
+        auto const & received_at = std::get<0>(tuple_ref);
+        auto const & proc = std::get<1>(tuple_ref);
+        //  make sure we have a process_info entry in the results map
+        auto rit = results.find(proc);
         if( rit == results.end() )
         {
-          auto ret = results.insert(std::make_pair(std::get<1>(tuple_ref),record_sptr(new log_record)));
+          auto ret = results.insert(std::make_pair(proc,record_sptr(new log_record)));
           rit = ret.first;
         }
         
-        auto data = rit->second->add_data();
-        data->MergeFrom(std::get<2>(tuple_ref));
+        // collect record header
+        {
+          lock head_lock(header_mtx_);
+          
+          // find the header container for the given process
+          auto proc_heads = headers_.find(proc);
+          if( proc_heads != headers_.end() )
+          {
+            auto const & log_rec = std::get<2>(tuple_ref);
+            auto head_it = proc_heads->second.find(log_rec.headerseqno());
+            if( head_it != proc_heads->second.end())
+            {
+              auto head = head_it->second;
+              // check if this level is the user wanted
+              if( levels_requested.count(head->level()) > 0 )
+              {
+                // data always go into the message
+                auto pb_data = rit->second->add_data();
+                pb_data->MergeFrom(log_rec);
+                
+                // headers only go once for the given process
+                if( add_header(headers, proc, head) )
+                {
+                  auto pb_head = rit->second->add_headers();
+                  pb_head->MergeFrom(*head);
+                }
+              }
+            }
+          }
+        }
       }
     }
     
@@ -230,10 +264,12 @@ namespace virtdb { namespace connector {
     
     auto const & proc = record->process();
     
-    for( auto const & d : record->data() )
+    for( int i = 0; i<record->data_size(); ++i )
     {
+      auto d = record->mutable_data(i);
+      d->set_receivedatmicrosec(usec_tm);
       lock log_lock(log_mtx_);
-      logs_.push_back(std::make_tuple(usec_tm,proc,d));
+      logs_.push_back(std::make_tuple(usec_tm,proc,*d));
     }
     
     enrich_record(record);
@@ -271,8 +307,11 @@ namespace virtdb { namespace connector {
       os << procname << " " << hostname;
       std::string subscription{os.str()};
       
-      diag_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
-      diag_pub_socket_.get().send(pub_buffer.get(), pub_size);
+      if( record->SerializeToArray(pub_buffer.get(), pub_size) )
+      {
+        diag_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
+        diag_pub_socket_.get().send(pub_buffer.get(), pub_size);
+      }
     }
   }
   
@@ -295,24 +334,31 @@ namespace virtdb { namespace connector {
     
     // store symbol ids
     std::set<uint32_t> rec_symbols;
+    std::set<uint32_t> need_symbols;
+    
     for( auto const & s : record->symbols() )
       rec_symbols.insert(s.seqno());
     
     // store header ids
     std::set<uint32_t> rec_heads;
+    std::set<uint32_t> need_heads;
     for( auto const & h : record->headers() )
+    {
       rec_heads.insert(h.seqno());
+      check_add_id(rec_symbols, need_symbols, h.filenamesymbol());
+      check_add_id(rec_symbols, need_symbols, h.functionnamesymbol());
+      check_add_id(rec_symbols, need_symbols, h.logstringsymbol());
+    }
 
     // collect missing headers
-    std::set<uint32_t> need_heads;
     for( auto const & d : record->data() )
       check_add_id(rec_heads, need_heads, d.headerseqno());
 
     // collect missing symbols
-    std::set<uint32_t> need_symbols;
     auto proc = record->process();
     if( proc.has_hostsymbol() )
       check_add_id(rec_symbols, need_symbols, proc.hostsymbol());
+    
     if( proc.has_namesymbol() )
       check_add_id(rec_symbols, need_symbols, proc.namesymbol());
     
@@ -332,9 +378,11 @@ namespace virtdb { namespace connector {
           {
             auto head_data = record->add_headers();
             head_data->MergeFrom(*(head_it->second));
+            
             check_add_id(rec_symbols, need_symbols, head_it->second->filenamesymbol());
             check_add_id(rec_symbols, need_symbols, head_it->second->functionnamesymbol());
             check_add_id(rec_symbols, need_symbols, head_it->second->logstringsymbol());
+            
             for( auto const & p : head_it->second->parts() )
             {
               if( p.has_partsymbol() )
@@ -420,6 +468,29 @@ namespace virtdb { namespace connector {
     return true;
   }
   
+  bool
+  log_record_server::add_header(process_headers & destination,
+                                const process_info & proc_info,
+                                header_sptr hdr)
+  {
+    bool ret = false;
+    uint32_t seqno = hdr->seqno();
+    auto proc_it = destination.find(proc_info);
+    if( proc_it == destination.end() )
+    {
+      auto success = destination.insert(std::make_pair(proc_info,header_map()));
+      proc_it = success.first;
+    }
+    
+    auto head_it = proc_it->second.find(seqno);
+    if( head_it == proc_it->second.end() )
+    {
+      ret = true;
+      (proc_it->second)[seqno] = std::move(hdr);
+    }
+    return ret;
+  }
+
   void
   log_record_server::add_header(const process_info & proc_info,
                                 const log_header & hdr)

@@ -316,6 +316,12 @@ namespace virtdb { namespace interface {
   };
   
   template <>
+  struct value_type<unsigned long> : public value_type<uint64_t>
+  {
+  };
+
+  
+  template <>
   struct value_type<double> : public value_type_base
   {
     static const pb::Kind kind = pb::Kind::DOUBLE;

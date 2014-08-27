@@ -55,6 +55,10 @@ namespace virtdb { namespace connector {
 
     static const std::string & resolve(const symbol_map & smap,
                                        uint32_t id);
+
+    static bool add_header(process_headers & destination,
+                           const process_info & proc_info,
+                           header_sptr hdr);
     
     void add_header(const process_info & proc_info,
                     const log_header & hdr);
