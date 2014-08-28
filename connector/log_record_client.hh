@@ -3,7 +3,6 @@
 #include "endpoint_client.hh"
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
-#include <zmq.hpp>
 #include <memory>
 #include <logger.hh>
 #include <map>
