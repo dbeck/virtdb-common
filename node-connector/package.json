@@ -2,7 +2,7 @@
   "name": "virtdb-connector",
   "version": "0.0.0",
   "description": "node.js package for connecting a Data Provider to the VirtDB system",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
