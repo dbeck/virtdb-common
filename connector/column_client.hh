@@ -1,6 +1,7 @@
 #pragma once
 
 #include "endpoint_client.hh"
+#include "column_location.hh"
 #include <data.pb.h>
 #include <util/zmq_utils.hh>
 #include <functional>
@@ -11,17 +12,7 @@ namespace virtdb { namespace connector {
   
   class column_client final
   {
-  public:
-    struct column_location
-    {
-      std::string query_id_;
-      std::string schema_;
-      std::string table_;
-      std::string column_;
-      
-      bool operator<(const column_location & rhs);
-    };
-    
+  public:    
     typedef std::function<void(const std::string & provider_name,
                                const column_location & location,
                                interface::pb::Column & data)>  column_monitor;
