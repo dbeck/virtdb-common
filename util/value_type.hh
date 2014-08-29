@@ -315,10 +315,15 @@ namespace virtdb { namespace util {
     }
   };
   
+#ifdef COMMON_MAC_BUILD
+#ifndef COMMON_LINUX_BUILD
   template <>
   struct value_type<unsigned long> : public value_type<uint64_t>
   {
   };
+#endif
+#endif
+
 
   
   template <>
