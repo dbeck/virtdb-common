@@ -45,7 +45,7 @@ namespace virtdb { namespace connector {
         ep_data.set_svctype(pb::ServiceType::CONFIG);
         
         {
-          // PULL socket
+          // REP socket
           auto conn = ep_data.add_connections();
           conn->set_type(pb::ConnectionType::REQ_REP);
           

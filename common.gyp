@@ -91,6 +91,13 @@
                              'logger/end_msg.hh',       'logger/variable.hh',
                              # connector helpers
                              'connector.hh',
+                             'connector/sub_client.cc',           'connector/sub_client.hh',
+                             'connector/req_client.cc',           'connector/req_client.hh',
+                             'connector/push_client.cc',          'connector/push_client.hh',
+                             'connector/pub_server.cc',           'connector/pub_server.hh',
+                             'connector/pull_server.cc',          'connector/pull_server.hh',
+                             'connector/rep_server.cc',           'connector/rep_server.hh',
+                             'connector/message_filter.cc',       'connector/message_filter.hh',
                              'connector/column_location.cc',      'connector/column_location.hh',
                              'connector/column_client.cc',        'connector/column_client.hh',
                              'connector/column_server.cc',        'connector/column_server.hh',
