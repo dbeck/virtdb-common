@@ -370,7 +370,6 @@ namespace virtdb { namespace connector {
   
   log_record_client::~log_record_client()
   {
-    remove_watches();
     worker_.stop();
   }
   

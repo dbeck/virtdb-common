@@ -158,7 +158,6 @@ namespace virtdb { namespace connector {
   
   query_server::~query_server()
   {
-    remove_watches();
   }
   
 }}
