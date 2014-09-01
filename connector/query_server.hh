@@ -13,16 +13,13 @@ namespace virtdb { namespace connector {
     typedef base_type::item_sptr                   query_sptr;
     
     typedef std::function<void(const std::string & provider_name,
-                               const column_location & location,
                                query_sptr data)> query_monitor;
   private:
-   
-    typedef std::map<column_location, query_monitor>   monitor_map;
-    typedef std::lock_guard<std::mutex>                lock;
+    typedef std::map<std::string, query_monitor>           monitor_map;
+    typedef std::lock_guard<std::mutex>                    lock;
     
-    monitor_map            qualified_monitors_;
-    monitor_map            wildcard_monitors_;
-    mutable std::mutex     sockets_mtx_;
+    monitor_map            query_monitors_;
+    monitor_map            table_monitors_;
     mutable std::mutex     monitors_mtx_;
     
     void handler_function(query_sptr);
@@ -31,8 +28,20 @@ namespace virtdb { namespace connector {
     query_server(config_client & cfg_client);
     virtual ~query_server();
     
-    void watch(const column_location & location, query_monitor);
+    void watch(const std::string & query_id,
+               query_monitor);
+    
+    void watch(const std::string & query_id,
+               const std::string & schema,
+               const std::string & table,
+               query_monitor);
+    
     void remove_watches();
-    void remove_watch(const column_location & location);
+    
+    void remove_watch(const std::string & query_id);
+    
+    void remove_watch(const std::string & query_id,
+                      const std::string & schema,
+                      const std::string & table);
   };
 }}

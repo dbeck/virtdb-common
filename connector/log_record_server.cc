@@ -42,9 +42,8 @@ namespace virtdb { namespace connector {
     diag_rep_socket_.batch_tcp_bind(hosts);
     diag_pub_socket_.batch_tcp_bind(hosts);
 
-    // XXX start workers before we report endpoints
+    // start workers before we report endpoints
     rep_worker_.start();
-    // XXX pull_worker_.start();
     
     // setting up LogRecord endpoints
     {

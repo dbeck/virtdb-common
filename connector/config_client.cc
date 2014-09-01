@@ -299,6 +299,7 @@ namespace virtdb { namespace connector {
   
   config_client::~config_client()
   {
+    remove_watches();
     worker_.stop();
   }
   

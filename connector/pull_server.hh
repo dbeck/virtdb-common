@@ -69,7 +69,7 @@ namespace virtdb { namespace connector {
         LOG_ERROR("unknown exception");
       }
       
-      return false;
+      return true;
     }
     
     void process_function(item_sptr it)
