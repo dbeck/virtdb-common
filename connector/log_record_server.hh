@@ -78,11 +78,6 @@ namespace virtdb { namespace connector {
     static void print_variable(const val_type & var);
 
     log_record_server(config_client & cfg_client);
-    ~log_record_server();
-    
-  private:
-    log_record_server() = delete;
-    log_record_server(const log_record_server &) = delete;
-    log_record_server & operator=(const log_record_server &) = delete;
+    virtual ~log_record_server();    
   };
 }}

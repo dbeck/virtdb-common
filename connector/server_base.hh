@@ -14,7 +14,16 @@ namespace virtdb { namespace connector {
   public:
     server_base(config_client & cfg_client);
     virtual const util::zmq_socket_wrapper::host_set & hosts() const;
+    virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
     virtual const std::string & name() const;
     virtual ~server_base() {}
+    
+    static bool poll_socket(util::zmq_socket_wrapper & s,
+                            unsigned long timeout_ms);
+    
+  private:
+    server_base() = delete;
+    server_base(const server_base &) = delete;
+    server_base & operator=(const server_base &) = delete;
   };
 }}
