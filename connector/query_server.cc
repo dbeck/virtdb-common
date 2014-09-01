@@ -1,6 +1,8 @@
 #include "query_server.hh"
 #include <functional>
 
+using namespace virtdb::interface;
+
 namespace virtdb { namespace connector {
   
   query_server::query_server(config_client & cfg_client)
@@ -9,7 +11,13 @@ namespace virtdb { namespace connector {
                         this,
                         std::placeholders::_1))
   {
-    // TODO : register endpoints
+    pb::EndpointData ep_data;
+    {
+      ep_data.set_name(cfg_client.get_endpoint_client().name());
+      auto conn = ep_data.add_connections();
+      conn->MergeFrom(base_type::bound_to());
+    }
+    cfg_client.get_endpoint_client().register_endpoint(ep_data);
   }
   
   void

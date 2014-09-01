@@ -13,13 +13,18 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
   
   log_record_server::log_record_server(config_client & cfg_client)
-  : zmqctx_(1),
-    diag_pull_socket_(zmqctx_, ZMQ_PULL),
+  : base_type(cfg_client,
+              std::bind(&log_record_server::pull_handler,
+                        this,
+                        std::placeholders::_1)),
+    zmqctx_(1),
     diag_rep_socket_(zmqctx_, ZMQ_REP),
     diag_pub_socket_(zmqctx_, ZMQ_PUB),
-    pull_worker_(std::bind(&log_record_server::pull_worker_function, this)),
     rep_worker_(std::bind(&log_record_server::rep_worker_function, this)),
-    log_process_queue_(1,std::bind(&log_record_server::process_function,this,std::placeholders::_1))
+    log_process_queue_(1,
+                       std::bind(&log_record_server::process_function,
+                                 this,
+                                 std::placeholders::_1))
   {
     // collect hosts to bind to
     zmq_socket_wrapper::host_set hosts;
@@ -33,13 +38,13 @@ namespace virtdb { namespace connector {
       hosts.insert("*");
     }
     
-    diag_pull_socket_.batch_tcp_bind(hosts);
+    // diag_pull_socket_.batch_tcp_bind(hosts);
     diag_rep_socket_.batch_tcp_bind(hosts);
     diag_pub_socket_.batch_tcp_bind(hosts);
 
-    // start workers before we report endpoints
+    // XXX start workers before we report endpoints
     rep_worker_.start();
-    pull_worker_.start();
+    // XXX pull_worker_.start();
     
     // setting up LogRecord endpoints
     {
@@ -51,10 +56,7 @@ namespace virtdb { namespace connector {
         {
           // PULL socket
           auto conn = ep_data.add_connections();
-          conn->set_type(pb::ConnectionType::PUSH_PULL);
-          
-          for( auto const & ep : diag_pull_socket_.endpoints() )
-            *(conn->add_address()) = ep;
+          conn->MergeFrom(base_type::bound_to());
         }
         
         {
@@ -416,56 +418,18 @@ namespace virtdb { namespace connector {
     }
   }
   
-  bool
-  log_record_server::pull_worker_function()
+  void
+  log_record_server::pull_handler(record_sptr rec)
   {
-    zmq::pollitem_t poll_item{ diag_pull_socket_.get(), 0, ZMQ_POLLIN, 0 };
-    if( zmq::poll(&poll_item, 1, 3000) == -1 ||
-       !(poll_item.revents & ZMQ_POLLIN) )
-    {
-      return true;
-    }
+    for( int i=0; i<rec->headers_size(); ++i )
+      add_header(rec->process(),rec->headers(i));
     
-    try
-    {
-      zmq::message_t message;
-      if( !diag_pull_socket_.get().recv(&message) )
-        return true;
-      
-      record_sptr rec(new pb::LogRecord);
-      if( !message.data() || !message.size())
-      {
-        LOG_ERROR("empty log message arrived");
-        return true;
-      }
-      
-      bool parsed = rec->ParseFromArray(message.data(), message.size());
-      if( !parsed )
-      {
-        LOG_ERROR("cannot parse LogRecord message");
-        return true;
-      }
-      
-      for( int i=0; i<rec->headers_size(); ++i )
-        add_header(rec->process(),rec->headers(i));
-      
-      for( int i=0; i<rec->symbols_size(); ++i )
-        add_symbol(rec->process(), rec->symbols(i));
-      
-      print_record(*rec);
-      
-      log_process_queue_.push(std::move(rec));
-    }
-    catch (const std::exception & e)
-    {
-      std::string text{e.what()};
-      LOG_ERROR("exception caught" << V_(text));
-    }
-    catch (...)
-    {
-      LOG_ERROR("unknown excpetion caught");
-    }
-    return true;
+    for( int i=0; i<rec->symbols_size(); ++i )
+      add_symbol(rec->process(), rec->symbols(i));
+    
+    print_record(*rec);
+    
+    log_process_queue_.push(std::move(rec));
   }
   
   bool
@@ -656,7 +620,6 @@ namespace virtdb { namespace connector {
   log_record_server::~log_record_server()
   {
     rep_worker_.stop();
-    pull_worker_.stop();
   }
   
   // static helpers:

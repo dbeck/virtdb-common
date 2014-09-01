@@ -10,9 +10,6 @@ namespace virtdb { namespace connector {
   {
     util::zmq_socket_wrapper::host_set hosts_;
     
-  protected:
-    util::zmq_socket_wrapper::host_set & hosts();
-    
   public:
     server_base(config_client & cfg_client);
     virtual const util::zmq_socket_wrapper::host_set & hosts() const;
