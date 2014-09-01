@@ -18,4 +18,34 @@ namespace virtdb { namespace connector {
     else return false;
   }
   
+  bool
+  column_location::is_wildcard() const
+  {
+    return (query_id_.empty() ||
+            schema_.empty() ||
+            table_.empty() ||
+            column_.empty() );
+  }
+
+  bool
+  column_location::is_wildcard_table() const
+  {
+    return (query_id_.empty() ||
+            schema_.empty() ||
+            table_.empty());
+  }
+  
+  void
+  column_location::init_table(const interface::pb::Query & q)
+  {
+    if( q.has_queryid() )
+      query_id_ = q.queryid();
+    
+    if( q.has_schema() )
+      schema_ = q.schema();
+    
+    if( q.has_table() )
+      table_ = q.table();
+  }
+  
 }}

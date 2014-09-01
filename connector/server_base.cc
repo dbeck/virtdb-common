@@ -9,6 +9,7 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
   
   server_base::server_base(config_client & cfg_client)
+  : name_(cfg_client.get_endpoint_client().name())
   {
     // collect hosts to bind to
     zmq_socket_wrapper::host_set hosts;
@@ -29,4 +30,9 @@ namespace virtdb { namespace connector {
     return hosts_;
   }
   
+  const std::string &
+  server_base::name() const
+  {
+    return name_;
+  }
 }}

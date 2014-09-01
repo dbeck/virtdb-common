@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_client.hh"
+#include "pull_server.hh"
 #include <util/zmq_utils.hh>
 #include <util/active_queue.hh>
 #include <util/compare_messages.hh>
@@ -12,8 +13,9 @@
 
 namespace virtdb { namespace connector {
   
-  class log_record_server final
+  class log_record_server final : public pull_server<interface::pb::LogRecord>
   {
+    typedef pull_server<interface::pb::LogRecord>              base_type;
     typedef interface::pb::ProcessInfo                         process_info;
     typedef interface::pb::Symbol                              symbol;
     typedef interface::pb::LogData                             log_data;
@@ -38,10 +40,8 @@ namespace virtdb { namespace connector {
     log_queue                               logs_;
 
     zmq::context_t                          zmqctx_;
-    util::zmq_socket_wrapper                diag_pull_socket_;
     util::zmq_socket_wrapper                diag_rep_socket_;
     util::zmq_socket_wrapper                diag_pub_socket_;
-    util::async_worker                      pull_worker_;
     util::async_worker                      rep_worker_;
     util::active_queue<record_sptr,15000>   log_process_queue_;
     std::mutex                              header_mtx_;
@@ -49,9 +49,9 @@ namespace virtdb { namespace connector {
     std::mutex                              log_mtx_;
 
     bool rep_worker_function();
-    bool pull_worker_function();
-    void process_function(record_sptr record);
-    void enrich_record(record_sptr record);
+    void pull_handler(record_sptr);
+    void process_function(record_sptr);
+    void enrich_record(record_sptr);
 
     static const std::string & resolve(const symbol_map & smap,
                                        uint32_t id);

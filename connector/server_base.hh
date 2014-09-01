@@ -8,11 +8,13 @@ namespace virtdb { namespace connector {
 
   class server_base
   {
-    util::zmq_socket_wrapper::host_set hosts_;
+    std::string                          name_;
+    util::zmq_socket_wrapper::host_set   hosts_;
     
   public:
     server_base(config_client & cfg_client);
     virtual const util::zmq_socket_wrapper::host_set & hosts() const;
+    virtual const std::string & name() const;
     virtual ~server_base() {}
   };
 }}
