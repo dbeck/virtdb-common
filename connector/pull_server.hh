@@ -23,7 +23,6 @@ namespace virtdb { namespace connector {
     util::async_worker                           worker_;
     util::active_queue<pull_item_sptr,15000>     queue_;
     pull_handler                                 h_;
-    interface::pb::Connection                    conn_;
     
     bool worker_function()
     {
@@ -98,9 +97,9 @@ namespace virtdb { namespace connector {
       worker_.start();
       
       // saving endpoint where we are bound to
-      conn_.set_type(interface::pb::ConnectionType::PUSH_PULL);
+      conn().set_type(interface::pb::ConnectionType::PUSH_PULL);
       for( auto const & ep : socket_.endpoints() )
-        *(conn_.add_address()) = ep;
+        *(conn().add_address()) = ep;
     }
 
     virtual ~pull_server()
@@ -109,12 +108,6 @@ namespace virtdb { namespace connector {
       queue_.stop();
     }
     
-    virtual const interface::pb::Connection &
-    bound_to() const
-    {
-      return conn_;
-    }
-
     pull_item_sptr allocate_pull_item()
     {
       return allocate_pull_item_impl();

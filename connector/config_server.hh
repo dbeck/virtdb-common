@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rep_server.hh"
+#include "pub_server.hh"
 #include <svc_config.pb.h>
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
@@ -12,16 +13,16 @@ namespace virtdb { namespace connector {
   
   class config_server final :
       public rep_server<interface::pb::Config,
-                        interface::pb::Config>
+                        interface::pb::Config>,
+      public pub_server<interface::pb::Config>
   {
     typedef rep_server<interface::pb::Config,
                        interface::pb::Config>               rep_base_type;
+    typedef pub_server<interface::pb::Config>               pub_base_type;
     typedef std::map<std::string, interface::pb::Config>    config_map;
     typedef std::lock_guard<std::mutex>                     lock;
     
     util::zmq_socket_wrapper::host_set   additional_hosts_;
-    zmq::context_t                       zmqctx_;
-    util::zmq_socket_wrapper             cfg_pub_socket_;
     config_map                           configs_;
     std::mutex                           mtx_;
 

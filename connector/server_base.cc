@@ -28,6 +28,18 @@ namespace virtdb { namespace connector {
     }
   }
   
+  interface::pb::Connection &
+  server_base::conn()
+  {
+    return conn_;
+  }
+  
+  const interface::pb::Connection &
+  server_base::conn() const
+  {
+    return conn_;
+  }
+  
   const util::zmq_socket_wrapper::host_set &
   server_base::hosts() const
   {

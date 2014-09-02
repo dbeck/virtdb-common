@@ -27,7 +27,6 @@ namespace virtdb { namespace connector {
                                endpoint_server & ep_server)
   :
     additional_hosts_(endpoint_hosts(ep_server)),
-    zmqctx_(1),
     rep_base_type(cfg_client,
                   std::bind(&config_server::generate_reply,
                             this,
@@ -35,61 +34,28 @@ namespace virtdb { namespace connector {
                   std::bind(&config_server::publish_config,
                             this,
                             std::placeholders::_1)),
-    cfg_pub_socket_(zmqctx_, ZMQ_PUB)
+    pub_base_type(cfg_client)
   {
-    cfg_pub_socket_.batch_tcp_bind(hosts());
-    
     // setting up our own endpoints
+    pb::EndpointData ep_data;
     {
-      pb::EndpointData ep_data;
-      {
-        ep_data.set_name(ep_server.name());
-        ep_data.set_svctype(pb::ServiceType::CONFIG);
-        
-        {
-          // REP socket
-          auto conn = ep_data.add_connections();
-          conn->MergeFrom(rep_base_type::bound_to());
-        }
-     
-        {
-          // PUB socket
-          auto conn = ep_data.add_connections();
-          conn->set_type(pb::ConnectionType::PUB_SUB);
-          
-          for( auto const & ep : cfg_pub_socket_.endpoints() )
-            *(conn->add_address()) = ep;
-        }
-        
-        cfg_client.get_endpoint_client().register_endpoint(ep_data);
-      }
+      ep_data.set_name(ep_server.name());
+      ep_data.set_svctype(pb::ServiceType::CONFIG);
+      
+      // REP socket
+      ep_data.add_connections()->MergeFrom(rep_base_type::conn());
+      
+      // PUB socket
+      ep_data.add_connections()->MergeFrom(pub_base_type::conn());
+      
+      cfg_client.get_endpoint_client().register_endpoint(ep_data);
     }
   }
   
   void
   config_server::publish_config(rep_base_type::rep_item_sptr rep)
   {
-    try
-    {
-      int reply_size = rep->ByteSize();
-      util::flex_alloc<unsigned char, 1024> reply_buffer(reply_size);
-      
-      if( rep->SerializeToArray(reply_buffer.get(), reply_size) )
-      {
-        cfg_pub_socket_.get().send(rep->name().c_str(),
-                                   rep->name().length(), ZMQ_SNDMORE);
-        cfg_pub_socket_.get().send(reply_buffer.get(), reply_size);
-      }
-    }
-    catch (const std::exception & e)
-    {
-      std::string exception_text{e.what()};
-      LOG_ERROR("couldn't serialize message" << exception_text);
-    }
-    catch( ... )
-    {
-      LOG_ERROR("unknown exception");
-    }
+    publish(rep->name(),std::move(rep));
   }
   
   config_server::rep_base_type::rep_item_sptr
@@ -102,7 +68,7 @@ namespace virtdb { namespace connector {
     
     if( cfg_it != configs_.end() && !request.has_configdata() )
     {
-      ret.reset(new rep_item{cfg_it->second});
+      ret = allocate_pub_item(cfg_it->second);
     }
     
     if( request.has_configdata() )
@@ -116,7 +82,8 @@ namespace virtdb { namespace connector {
     
     if( !ret )
     {
-      ret.reset(new rep_item{request});
+      // send back the original request
+      ret = allocate_pub_item(request);
     }
     
     return ret;

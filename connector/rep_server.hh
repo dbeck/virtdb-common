@@ -28,7 +28,6 @@ namespace virtdb { namespace connector {
     util::async_worker               worker_;
     req_handler                      h_;
     on_reply                         on_reply_;
-    interface::pb::Connection        conn_;
     
     bool worker_function()
     {
@@ -63,7 +62,7 @@ namespace virtdb { namespace connector {
             if( rep->SerializeToArray(buffer.get(), rep_size) )
             {
               socket_.get().send(buffer.get(), rep_size);
-              on_reply_(rep);
+              on_reply_(std::move(rep));
             }
           }
         }
@@ -97,9 +96,9 @@ namespace virtdb { namespace connector {
       worker_.start();
       
       // saving endpoint where we are bound to
-      conn_.set_type(interface::pb::ConnectionType::REQ_REP);
+      conn().set_type(interface::pb::ConnectionType::REQ_REP);
       for( auto const & ep : socket_.endpoints() )
-        *(conn_.add_address()) = ep;
+        *(conn().add_address()) = ep;
     }
     
     virtual ~rep_server()
@@ -107,12 +106,6 @@ namespace virtdb { namespace connector {
       worker_.stop();
     }
     
-    virtual const interface::pb::Connection &
-    bound_to() const
-    {
-      return conn_;
-    }
-
   private:
     rep_server() = delete;
     rep_server(const rep_server &) = delete;
