@@ -3,7 +3,6 @@
 #include <util.hh>
 #include <logger.hh>
 
-using namespace virtdb;
 using namespace virtdb::interface;
 using namespace virtdb::util;
 using namespace virtdb::logger;

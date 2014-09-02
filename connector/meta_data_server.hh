@@ -1,34 +1,41 @@
 #pragma once
 
-#include "config_client.hh"
+#include "rep_server.hh"
+#include "pub_server.hh"
+#include <meta_data.pb.h>
+#include <map>
+#include <mutex>
 
 namespace virtdb { namespace connector {
   
-  class meta_data_server final
+  class meta_data_server final :
+      public rep_server<interface::pb::MetaDataRequest,
+                        interface::pb::MetaData>,
+      public pub_server<interface::pb::MetaData>
   {
-    // rep, pub
+  public:
+    typedef std::shared_ptr<interface::pb::TableMeta>          table_sptr;
     
-    /* TODO
+  private:
+    typedef rep_server<interface::pb::MetaDataRequest,
+                       interface::pb::MetaData>                rep_base_type;
+    typedef pub_server<interface::pb::MetaData>                pub_base_type;
+    typedef std::pair<std::string,std::string>                 schema_table;
+    typedef std::map<schema_table, table_sptr>                 table_map;
+    typedef std::lock_guard<std::mutex>                        lock;
     
-    zmq::context_t                zmqctx_;
-    util::zmq_socket_wrapper      diag_rep_socket_;
-    util::zmq_socket_wrapper      diag_pub_socket_;
-    util::async_worker            worker_;
-    mutable std::mutex            mtx_;
-
+    // TODO: replace map<> with a better structure, more optimal for regex search
     
-    bool worker_function();
-    bool on_endpoint_data(const interface::pb::EndpointData & ep);
-     */
+    table_map   tables_;
+    std::mutex  mtx_;
+    
+    void publish_meta(rep_base_type::rep_item_sptr);
+    rep_base_type::rep_item_sptr generate_reply(const rep_base_type::req_item &);
     
   public:
     meta_data_server(config_client & cfg_client);
-    ~meta_data_server();
-    
-  private:
-    meta_data_server() = delete;
-    meta_data_server(const meta_data_server &) = delete;
-    meta_data_server & operator=(const meta_data_server &) = delete;
+    virtual ~meta_data_server();
+    void add_table(table_sptr table);
   };
   
 }}

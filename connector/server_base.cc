@@ -3,7 +3,6 @@
 #include "ip_discovery_client.hh"
 #include <util/net.hh>
 
-using namespace virtdb;
 using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
