@@ -14,33 +14,21 @@ namespace virtdb { namespace connector {
   class pull_server : public server_base
   {
   public:
-    typedef std::shared_ptr<ITEM>           item_sptr;
-    typedef std::function<void(item_sptr)>  handler;
+    typedef std::shared_ptr<ITEM>                pull_item_sptr;
+    typedef std::function<void(pull_item_sptr)>  pull_handler;
     
   private:
-    zmq::context_t                          zmqctx_;
-    util::zmq_socket_wrapper                socket_;
-    util::async_worker                      worker_;
-    util::active_queue<item_sptr,15000>     queue_;
-    handler                                 h_;
-    interface::pb::Connection               conn_;
+    zmq::context_t                               zmqctx_;
+    util::zmq_socket_wrapper                     socket_;
+    util::async_worker                           worker_;
+    util::active_queue<pull_item_sptr,15000>     queue_;
+    pull_handler                                 h_;
+    interface::pb::Connection                    conn_;
     
     bool worker_function()
     {
-      // interested in incoming messages
-      zmq::pollitem_t poll_item{
-        socket_.get(),
-        0,
-        ZMQ_POLLIN,
-        0
-      };
-      
-      // willing to wait for 3s for new messages
-      if( zmq::poll(&poll_item, 1, 3000) == -1 ||
-         !(poll_item.revents & ZMQ_POLLIN) )
-      {
+      if( !poll_socket(socket_, 3000) )
         return true;
-      }
       
       // poll said we have data ...
       zmq::message_t message;
@@ -72,7 +60,7 @@ namespace virtdb { namespace connector {
       return true;
     }
     
-    void process_function(item_sptr it)
+    void process_function(pull_item_sptr it)
     {
       try
       {
@@ -95,7 +83,7 @@ namespace virtdb { namespace connector {
     
   public:
     pull_server(config_client & cfg_client,
-                handler h)
+                pull_handler h)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PULL),
@@ -127,25 +115,25 @@ namespace virtdb { namespace connector {
       return conn_;
     }
 
-    item_sptr allocate_pull_item()
+    pull_item_sptr allocate_pull_item()
     {
       return allocate_pull_item_impl();
     }
     
-    void release_pull_item(item_sptr && i)
+    void release_pull_item(pull_item_sptr && i)
     {
       release_pull_item_impl(std::move(i));
     }
     
   protected:
-    virtual item_sptr allocate_pull_item_impl()
+    virtual pull_item_sptr allocate_pull_item_impl()
     {
       // this is the place to recycle pointers if really wanted
-      item_sptr ret{new ITEM};
+      pull_item_sptr ret{new ITEM};
       return ret;
     }
     
-    virtual void release_pull_item_impl(item_sptr && i)
+    virtual void release_pull_item_impl(pull_item_sptr && i)
     {
       // make sure, refcount is 0 if recycled ...
     }

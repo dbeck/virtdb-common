@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rep_server.hh"
 #include <svc_config.pb.h>
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
@@ -9,28 +10,28 @@
 
 namespace virtdb { namespace connector {
   
-  class config_server final
+  class config_server final :
+      public rep_server<interface::pb::Config,
+                        interface::pb::Config>
   {
-    typedef std::map<std::string, interface::pb::Config> config_map;
-    typedef std::lock_guard<std::mutex> lock;
+    typedef rep_server<interface::pb::Config,
+                       interface::pb::Config>               rep_base_type;
+    typedef std::map<std::string, interface::pb::Config>    config_map;
+    typedef std::lock_guard<std::mutex>                     lock;
     
-    zmq::context_t               zmqctx_;
-    util::zmq_socket_wrapper     cfg_rep_socket_;
-    util::zmq_socket_wrapper     cfg_pub_socket_;
-    util::async_worker           worker_;
-    config_map                   configs_;
-    std::mutex                   mtx_;
+    util::zmq_socket_wrapper::host_set   additional_hosts_;
+    zmq::context_t                       zmqctx_;
+    util::zmq_socket_wrapper             cfg_pub_socket_;
+    config_map                           configs_;
+    std::mutex                           mtx_;
 
-    bool worker_function();
+    void publish_config(rep_base_type::rep_item_sptr);
+    rep_base_type::rep_item_sptr generate_reply(const rep_base_type::req_item &);
+    virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
     
   public:
     config_server(config_client & cfg_client,
                   endpoint_server & ep_server);
-    ~config_server();
-    
-  private:
-    config_server() = delete;
-    config_server(const config_server &) = delete;
-    config_server & operator=(const config_server &) = delete;
+    virtual ~config_server();
   };
 }}
