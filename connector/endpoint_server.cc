@@ -195,7 +195,7 @@ namespace virtdb { namespace connector {
             {
               // generate channel key for subscribers
               std::ostringstream os;
-              os << ep.svctype() << '.' << ep.name();
+              os << ep.svctype() << ' ' << ep.name();
               std::string subscription{os.str()};
               ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
               ep_pub_socket_.get().send(pub_buffer.get(), pub_size);

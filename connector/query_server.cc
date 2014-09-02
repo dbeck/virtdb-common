@@ -15,7 +15,7 @@ namespace virtdb { namespace connector {
     {
       ep_data.set_name(cfg_client.get_endpoint_client().name());
       auto conn = ep_data.add_connections();
-      conn->MergeFrom(base_type::bound_to());
+      conn->MergeFrom(base_type::conn());
     }
     cfg_client.get_endpoint_client().register_endpoint(ep_data);
   }

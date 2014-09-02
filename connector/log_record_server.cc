@@ -13,13 +13,13 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
   
   log_record_server::log_record_server(config_client & cfg_client)
-  : base_type(cfg_client,
-              std::bind(&log_record_server::pull_handler,
-                        this,
-                        std::placeholders::_1)),
+  : pull_base_type(cfg_client,
+                   std::bind(&log_record_server::pull_handler,
+                             this,
+                             std::placeholders::_1)),
+    pub_base_type(cfg_client),
     zmqctx_(1),
     diag_rep_socket_(zmqctx_, ZMQ_REP),
-    diag_pub_socket_(zmqctx_, ZMQ_PUB),
     rep_worker_(std::bind(&log_record_server::rep_worker_function, this)),
     log_process_queue_(1,
                        std::bind(&log_record_server::process_function,
@@ -40,7 +40,6 @@ namespace virtdb { namespace connector {
     
     // diag_pull_socket_.batch_tcp_bind(hosts);
     diag_rep_socket_.batch_tcp_bind(hosts);
-    diag_pub_socket_.batch_tcp_bind(hosts);
 
     // start workers before we report endpoints
     rep_worker_.start();
@@ -51,21 +50,12 @@ namespace virtdb { namespace connector {
       {
         ep_data.set_name(cfg_client.get_endpoint_client().name());
         ep_data.set_svctype(pb::ServiceType::LOG_RECORD);
+
+        // PULL socket
+        ep_data.add_connections()->MergeFrom(pull_base_type::conn());
         
-        {
-          // PULL socket
-          auto conn = ep_data.add_connections();
-          conn->MergeFrom(base_type::bound_to());
-        }
-        
-        {
-          // PUB socket
-          auto conn = ep_data.add_connections();
-          conn->set_type(pb::ConnectionType::PUB_SUB);
-          
-          for( auto const & ep : diag_pub_socket_.endpoints() )
-            *(conn->add_address()) = ep;
-        }
+        // PUB socket
+        ep_data.add_connections()->MergeFrom(pub_base_type::conn());
         
         cfg_client.get_endpoint_client().register_endpoint(ep_data);
       }
@@ -278,8 +268,6 @@ namespace virtdb { namespace connector {
     int pub_size = record->ByteSize();
     if( pub_size > 0 )
     {
-      flex_alloc<unsigned char, 2048> pub_buffer(pub_size);
-    
       // generate channel key for subscribers
       std::string hostname;
       std::string procname;
@@ -305,14 +293,8 @@ namespace virtdb { namespace connector {
       }
       
       std::ostringstream os;
-      os << procname << " " << hostname;
-      std::string subscription{os.str()};
-      
-      if( record->SerializeToArray(pub_buffer.get(), pub_size) )
-      {
-        diag_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
-        diag_pub_socket_.get().send(pub_buffer.get(), pub_size);
-      }
+      os << procname << ' ' << hostname;
+      pub_base_type::publish(os.str(), std::move(record));
     }
   }
   
