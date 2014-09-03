@@ -5,7 +5,7 @@
       'Debug': { 'defines': ['DEBUG', '_DEBUG', ], },
       'Release': { 'defines': ['NDEBUG', 'RELEASE', ], },
     },
-    'include_dirs': [ 
+    'include_dirs': [
       '<!(pwd)',
       './',
       './cppzmq/',
@@ -16,8 +16,9 @@
     ],
     'cflags': [
       '-std=c++11',
+      '-g3'
     ],
-    'defines': [ 
+    'defines': [
       'PIC',
       'STD_CXX_11',
       '_THREAD_SAFE',
@@ -28,18 +29,18 @@
       ['_type=="executable"',     {'cflags': ['-fPIC']}],
     ],
     'conditions': [
-      ['OS=="mac"', { 
-        'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', '-std=c++11', '-I<!(pwd)/', ],
-        'xcode_settings':  { 
+      ['OS=="mac"', {
+        'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', '-I<!(pwd)/'],
+        'xcode_settings':  {
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
-          'OTHER_LDFLAGS':               [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
+          'OTHER_LDFLAGS':               [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', '-g3' ],
           'OTHER_CFLAGS':                [ '-std=c++11', '-I<!(pwd)/', '-I<!(pwd)/cppzmq/' ],
         },
       },],
-      ['OS=="linux"', { 
+      ['OS=="linux"', {
         'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)' ],
         'link_settings': {
-          'ldflags':                     [ '-Wl,--no-as-needed', ],
+          'ldflags':                     [ '-Wl,--no-as-needed', '-g3' ],
           'libraries':                   [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
         },
       },],
@@ -48,7 +49,7 @@
   'targets' : [
     {
       'conditions': [
-        ['OS=="mac"', { 
+        ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
             'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', ],
@@ -58,7 +59,7 @@
             },
           },
         },],
-        ['OS=="linux"', { 
+        ['OS=="linux"', {
           'direct_dependent_settings': {
             'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', ],
             'include_dirs':       [ '.', ],
@@ -74,12 +75,12 @@
                              'util/active_queue.hh',     'util/flex_alloc.hh',
                              'util/barrier.cc',          'util/barrier.hh',
                              'util/relative_time.cc',    'util/relative_time.hh',
-                             'util/exception.hh',        'util/value_type.hh', 
+                             'util/exception.hh',        'util/value_type.hh',
                              'util/net.cc',              'util/net.hh',
                              'util/zmq_utils.cc',        'util/zmq_utils.hh',
                              'util/async_worker.cc',     'util/async_worker.hh',
                              'util/compare_messages.hh',
-                             # logger support 
+                             # logger support
                              'logger.hh',
                              'logger/macros.hh',        'logger/on_return.hh',
                              'logger/log_record.cc',    'logger/log_record.hh',
@@ -87,10 +88,10 @@
                              'logger/symbol_store.cc',  'logger/symbol_store.hh',
                              'logger/header_store.cc',  'logger/header_store.hh',
                              'logger/log_sink.cc',      'logger/log_sink.hh',
-                             'logger/signature.cc',     'logger/signature.hh',     
+                             'logger/signature.cc',     'logger/signature.hh',
                              'logger/end_msg.hh',       'logger/variable.hh',
                              # connector helpers
-                             'connector.hh',                      
+                             'connector.hh',
                              'connector/message_filter.hh',
                              'connector/server_base.cc',          'connector/server_base.hh',
                              'connector/sub_client.hh',           'connector/req_client.hh',
@@ -105,7 +106,7 @@
                              'connector/db_config_server.cc',     'connector/db_config_server.hh',
                              'connector/endpoint_client.cc',      'connector/endpoint_client.hh',
                              'connector/endpoint_server.cc',      'connector/endpoint_server.hh',
-                             'connector/ip_discovery_client.cc',  'connector/ip_discovery_client.hh', 
+                             'connector/ip_discovery_client.cc',  'connector/ip_discovery_client.hh',
                              'connector/ip_discovery_server.cc',  'connector/ip_discovery_server.hh',
                              'connector/log_record_client.cc',    'connector/log_record_client.hh',
                              'connector/log_record_server.cc',    'connector/log_record_server.hh',
@@ -139,4 +140,3 @@
     },
   ],
 }
-
