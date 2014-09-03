@@ -2,8 +2,22 @@
   'target_defaults': {
     'default_configuration': 'Debug',
     'configurations': {
-      'Debug': { 'defines': ['DEBUG', '_DEBUG', ], },
-      'Release': { 'defines': ['NDEBUG', 'RELEASE', ], },
+      'Debug': {
+        'defines':  ['DEBUG', '_DEBUG', ],
+        'cflags':   ['-O0', '-g3', ],
+        'ldflags':  ['-g3', ],
+        'xcode_settings': {
+          'OTHER_CFLAGS':  [ '-O0', '-g3', ],
+          'OTHER_LDFLAGS': [ '-g3', ],
+        },
+      },
+      'Release': {
+        'defines': ['NDEBUG', 'RELEASE', ],
+        'cflags': ['-O3', ],
+        'xcode_settings': {
+          'OTHER_LDFLAGS': [ '-O3', ],
+        },
+      },
     },
     'include_dirs': [
       '<!(pwd)',
@@ -16,7 +30,6 @@
     ],
     'cflags': [
       '-std=c++11',
-      '-g3'
     ],
     'defines': [
       'PIC',
@@ -33,14 +46,14 @@
         'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', '-I<!(pwd)/'],
         'xcode_settings':  {
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
-          'OTHER_LDFLAGS':               [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', '-g3' ],
-          'OTHER_CFLAGS':                [ '-std=c++11', '-I<!(pwd)/', '-I<!(pwd)/cppzmq/' ],
+          'OTHER_LDFLAGS':               [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
+          'OTHER_CFLAGS':                [ '-std=c++11', '-I<!(pwd)/', '-I<!(pwd)/cppzmq/', ],
         },
       },],
       ['OS=="linux"', {
-        'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)' ],
+        'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', ],
         'link_settings': {
-          'ldflags':                     [ '-Wl,--no-as-needed', '-g3' ],
+          'ldflags':                     [ '-Wl,--no-as-needed', ],
           'libraries':                   [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
         },
       },],

@@ -83,6 +83,16 @@ gtest-pkg-clean:
 	@echo "cleaning finished in gtest package"
 
 clean: gtest-pkg-clean
-	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) *.a *.o *.pb.cc *.pb.h *.pb.desc
+	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS)
+	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main test/netinfo
 	cd ./proto; make -f proto.mk clean
+	@echo "checking for suspicious files"
+	@find . -type f -name "*.so"
+	@find . -type f -name "*.a"
+	@find . -type f -name "*.o"
+	@find . -type f -name "*.desc"
+	@find . -type f -name "*.pb.desc"
+	@find . -type f -name "*.pb.h"
+	@find . -type f -name "*.pb.cc"
+	@find . -type f -name "*.pb.h"
 
