@@ -3,6 +3,7 @@
 #include <zmq.hpp>
 #include <string>
 #include <set>
+#include <future>
 
 namespace virtdb { namespace util {
   
@@ -15,9 +16,14 @@ namespace virtdb { namespace util {
     typedef std::set<std::string> host_set;
     
   private:
-    zmq::socket_t     socket_;
-    endpoint_set      endpoints_;
-    int               type_;
+    zmq::socket_t      socket_;
+    endpoint_set       endpoints_;
+    int                type_;
+    std::atomic<bool>  valid_;
+    std::future<void>  valid_future_;
+    std::promise<void> valid_promise_;
+    void set_valid();
+    void set_invalid();
     
   public:
     zmq_socket_wrapper(zmq::context_t &ctx, int type);
@@ -43,6 +49,8 @@ namespace virtdb { namespace util {
       }
       return false;
     }
+    
+    bool wait_valid(unsigned long ms);
     
   private:
     zmq_socket_wrapper() = delete;
