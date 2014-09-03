@@ -101,10 +101,10 @@ namespace virtdb { namespace connector {
     std::map<pb::LogLevel,bool> levels_requested;
     
     // default level request
-    levels_requested[pb::LogLevel::INFO]          = false;
-    levels_requested[pb::LogLevel::ERROR]         = false;
-    levels_requested[pb::LogLevel::SCOPED_TRACE]  = false;
-    levels_requested[pb::LogLevel::SIMPLE_TRACE]  = false;
+    levels_requested[pb::LogLevel::VIRTDB_INFO]          = false;
+    levels_requested[pb::LogLevel::VIRTDB_ERROR]         = false;
+    levels_requested[pb::LogLevel::VIRTDB_SCOPED_TRACE]  = false;
+    levels_requested[pb::LogLevel::VIRTDB_SIMPLE_TRACE]  = false;
   
     pb::GetLogs request;
     if( !message.data() || !message.size())
@@ -148,10 +148,10 @@ namespace virtdb { namespace connector {
     if( set_all_levels )
     {
       // user interested in all levels
-      levels_requested[pb::LogLevel::INFO]          = true;
-      levels_requested[pb::LogLevel::ERROR]         = true;
-      levels_requested[pb::LogLevel::SCOPED_TRACE]  = true;
-      levels_requested[pb::LogLevel::SIMPLE_TRACE]  = true;
+      levels_requested[pb::LogLevel::VIRTDB_INFO]          = true;
+      levels_requested[pb::LogLevel::VIRTDB_ERROR]         = true;
+      levels_requested[pb::LogLevel::VIRTDB_SCOPED_TRACE]  = true;
+      levels_requested[pb::LogLevel::VIRTDB_SIMPLE_TRACE]  = true;
     }
 
     typedef std::map<process_info, record_sptr, comparator> result_map;
@@ -500,7 +500,7 @@ namespace virtdb { namespace connector {
     
     int var_idx = 0;
     
-    if( head.level() == pb::LogLevel::SCOPED_TRACE &&
+    if( head.level() == pb::LogLevel::VIRTDB_SCOPED_TRACE &&
        data.has_endscope() &&
        data.endscope() )
     {
@@ -508,7 +508,7 @@ namespace virtdb { namespace connector {
     }
     else
     {
-      if( head.level() == pb::LogLevel::SCOPED_TRACE )
+      if( head.level() == pb::LogLevel::VIRTDB_SCOPED_TRACE )
         std::cout << " [ENTER] ";
       
       for( int i=0; i<head.parts_size(); ++i )
@@ -619,10 +619,10 @@ namespace virtdb { namespace connector {
   log_record_server::level_string(log_level level)
   {
     static std::map<pb::LogLevel, std::string> level_map{
-      { pb::LogLevel::INFO,          "INFO", },
-      { pb::LogLevel::ERROR,         "ERROR", },
-      { pb::LogLevel::SIMPLE_TRACE,  "TRACE", },
-      { pb::LogLevel::SCOPED_TRACE,  "SCOPED" },
+      { pb::LogLevel::VIRTDB_INFO,          "INFO", },
+      { pb::LogLevel::VIRTDB_ERROR,         "ERROR", },
+      { pb::LogLevel::VIRTDB_SIMPLE_TRACE,  "TRACE", },
+      { pb::LogLevel::VIRTDB_SCOPED_TRACE,  "SCOPED" },
     };
     static std::string unknown("UNKNOWN");
     auto it = level_map.find(level);
