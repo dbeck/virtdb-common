@@ -197,6 +197,13 @@ namespace virtdb { namespace connector {
   }
 
   void
+  endpoint_client::remove_watches()
+  {
+    std::lock_guard<std::mutex> lock(mtx_);
+    monitors_.clear();
+  }
+  
+  void
   endpoint_client::watch(interface::pb::ServiceType st,
                          monitor m)
   {
