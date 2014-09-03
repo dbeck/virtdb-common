@@ -31,10 +31,10 @@ namespace virtdb { namespace logger {
     level_string(pb::LogLevel level)
     {
       static std::map<pb::LogLevel, std::string> level_map{
-        { pb::LogLevel::INFO,          "INFO", },
-        { pb::LogLevel::ERROR,         "ERROR", },
-        { pb::LogLevel::SIMPLE_TRACE,  "TRACE", },
-        { pb::LogLevel::SCOPED_TRACE,  "SCOPED" },
+        { pb::LogLevel::VIRTDB_INFO,          "INFO", },
+        { pb::LogLevel::VIRTDB_ERROR,         "ERROR", },
+        { pb::LogLevel::VIRTDB_SIMPLE_TRACE,  "TRACE", },
+        { pb::LogLevel::VIRTDB_SCOPED_TRACE,  "SCOPED" },
       };
       
       static std::string unknown("UNKNOWN");
@@ -89,7 +89,7 @@ namespace virtdb { namespace logger {
       
       int var_idx = 0;
       
-      if( head.level() == pb::LogLevel::SCOPED_TRACE &&
+      if( head.level() == pb::LogLevel::VIRTDB_SCOPED_TRACE &&
          data.has_endscope() &&
          data.endscope() )
       {
@@ -97,7 +97,7 @@ namespace virtdb { namespace logger {
       }
       else
       {
-        if( head.level() == pb::LogLevel::SCOPED_TRACE )
+        if( head.level() == pb::LogLevel::VIRTDB_SCOPED_TRACE )
           std::cout << " [ENTER] ";
         
         auto const & head_msg = head.get_pb_header();
