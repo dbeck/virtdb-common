@@ -3,7 +3,6 @@
 #include <util.hh>
 #include <logger.hh>
 
-using namespace virtdb;
 using namespace virtdb::interface;
 using namespace virtdb::util;
 using namespace virtdb::logger;
@@ -197,6 +196,13 @@ namespace virtdb { namespace connector {
       monitors_.erase(it);
   }
 
+  void
+  endpoint_client::remove_watches()
+  {
+    std::lock_guard<std::mutex> lock(mtx_);
+    monitors_.clear();
+  }
+  
   void
   endpoint_client::watch(interface::pb::ServiceType st,
                          monitor m)

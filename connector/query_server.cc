@@ -6,18 +6,21 @@ using namespace virtdb::interface;
 namespace virtdb { namespace connector {
   
   query_server::query_server(config_client & cfg_client)
-  : base_type(cfg_client,
-              std::bind(&query_server::handler_function,
-                        this,
-                        std::placeholders::_1))
+  : pull_base_type(cfg_client,
+                   std::bind(&query_server::handler_function,
+                             this,
+                             std::placeholders::_1))
   {
     pb::EndpointData ep_data;
-    {
-      ep_data.set_name(cfg_client.get_endpoint_client().name());
-      auto conn = ep_data.add_connections();
-      conn->MergeFrom(base_type::conn());
-    }
+    
+    ep_data.set_name(cfg_client.get_endpoint_client().name());
+    ep_data.set_svctype(pb::ServiceType::QUERY);
+    
+    // PULL
+    ep_data.add_connections()->MergeFrom(pull_base_type::conn());
+    
     cfg_client.get_endpoint_client().register_endpoint(ep_data);
+
   }
   
   namespace

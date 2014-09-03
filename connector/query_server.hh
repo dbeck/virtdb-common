@@ -9,8 +9,8 @@ namespace virtdb { namespace connector {
   class query_server final : public pull_server<interface::pb::Query>
   {
   public:
-    typedef pull_server<interface::pb::Query>      base_type;
-    typedef base_type::pull_item_sptr              query_sptr;
+    typedef pull_server<interface::pb::Query>      pull_base_type;
+    typedef pull_base_type::pull_item_sptr          query_sptr;
     
     typedef std::function<void(const std::string & provider_name,
                                query_sptr data)> query_monitor;

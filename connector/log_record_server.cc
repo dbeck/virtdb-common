@@ -6,7 +6,6 @@
 #include <logger.hh>
 #include <sstream>
 
-using namespace virtdb;
 using namespace virtdb::interface;
 using namespace virtdb::util;
 

@@ -3,7 +3,6 @@
 #include <util/flex_alloc.hh>
 #include <util/exception.hh>
 
-using namespace virtdb;
 using namespace virtdb::interface;
 using namespace virtdb::util;
 
