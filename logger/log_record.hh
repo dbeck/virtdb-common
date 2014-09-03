@@ -83,8 +83,7 @@ namespace virtdb { namespace logger {
           assert( record_ != nullptr );
           if( record_ )
           {
-            auto data_array = pb_record_->mutable_data();
-            pb_data_ptr_ = data_array->Add();
+            pb_data_ptr_ = pb_record_->add_data();
             pb_data_ptr_->set_headerseqno(record_->id());
             pb_data_ptr_->set_elapsedmicrosec(util::relative_time::instance().get_usec());
             std::hash<std::thread::id> hash_fn;

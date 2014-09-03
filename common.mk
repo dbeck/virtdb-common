@@ -22,8 +22,13 @@ FIX_CXX_11_BUG  = -Wl,--no-as-needed
 LINUX_LDFLAGS   = -pthread
 endif
 
-CXXFLAGS += -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
-LDFLAGS += $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(GTEST_LDFLAGS)
+CXXFLAGS += -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
+LDFLAGS += -g3 $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(GTEST_LDFLAGS)
+CFLAGS += -g3
+
+$(info $$CFLAGS is [${CFLAGS}])
+$(info $$CXXFLAGS is [${CXXFLAGS}])
+$(info $$LDFLAGS is [${LDFLAGS}])
 
 UTIL_SRCS            := $(wildcard util/*.cc)
 LOGGER_SRCS          := $(wildcard logger/*.cc)
@@ -47,7 +52,7 @@ gtest-test: gtest-pkg-build-all test/gtest_main.o test/netinfo.o $(UTIL_OBJECTS)
 	g++ -o test/netinfo test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 
 common-static-lib: $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
-	ar rcs $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
+	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
 
 $(PROTO_LIB):
 	@echo "building proto project in ./proto" 
@@ -74,9 +79,20 @@ $(GTEST_LIBDIR):
 gtest-pkg-clean:
 	@echo "cleaning the gtest package"
 	@make -C $(GTEST_PATH) clean
+	@rm -Rf $(GTEST_LIBDIR)
 	@echo "cleaning finished in gtest package"
 
 clean: gtest-pkg-clean
-	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) *.a *.o *.pb.cc *.pb.h *.pb.desc
+	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS)
+	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main test/netinfo
 	cd ./proto; make -f proto.mk clean
+	@echo "checking for suspicious files"
+	@find . -type f -name "*.so"
+	@find . -type f -name "*.a"
+	@find . -type f -name "*.o"
+	@find . -type f -name "*.desc"
+	@find . -type f -name "*.pb.desc"
+	@find . -type f -name "*.pb.h"
+	@find . -type f -name "*.pb.cc"
+	@find . -type f -name "*.pb.h"
 
