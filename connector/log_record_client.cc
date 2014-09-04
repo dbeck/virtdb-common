@@ -65,16 +65,10 @@ namespace virtdb { namespace connector {
     }
     else
     {
-      zmq::socket_t & sock = logger_sub_socket_.get();
       try
       {
-        zmq::pollitem_t poll_item{ sock, 0, ZMQ_POLLIN, 0 };
-        if( zmq::poll(&poll_item, 1, 3000) == -1 ||
-           !(poll_item.revents & ZMQ_POLLIN) )
-        {
-          // no data published
+        if( !logger_sub_socket_.poll_in(3000) )
           return true;
-        }
       }
       catch (const zmq::error_t & e)
       {
@@ -165,7 +159,7 @@ namespace virtdb { namespace connector {
       logger_req_socket_.get().send( buffer.get(), req_size );
       
       bool call_fun = true;
-      zmq::message_t msg;
+      msg.rebuild();
       
       std::function<bool(zmq::message_t & msg)> process_logs{
         [&](zmq::message_t & msg) {

@@ -231,11 +231,44 @@ namespace virtdb { namespace util {
       return false;
   }
 
+  void
+  zmq_socket_wrapper::wait_valid()
+  {
+    if( valid_ ) return;
+    valid_future_.wait();
+    return;
+  }
   
   const zmq_socket_wrapper::endpoint_set &
   zmq_socket_wrapper::endpoints() const
   {
     return endpoints_;
+  }
+  
+  bool
+  zmq_socket_wrapper::poll_in(unsigned long ms)
+  {
+    if( !valid_ )
+      return false;
+    
+    // interested in incoming messages
+    zmq::pollitem_t poll_item{
+      socket_,
+      0,
+      ZMQ_POLLIN,
+      0
+    };
+    
+    // willing to wait for 3s for new messages
+    if( zmq::poll(&poll_item, 1, ms) == -1 ||
+       !(poll_item.revents & ZMQ_POLLIN) )
+    {
+      return false;
+    }
+    else
+    {
+      return true;
+    }
   }
 
 }}

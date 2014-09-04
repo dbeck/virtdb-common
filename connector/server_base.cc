@@ -57,29 +57,4 @@ namespace virtdb { namespace connector {
   {
     return name_;
   }
-  
-  bool
-  server_base::poll_socket(util::zmq_socket_wrapper & s,
-                           unsigned long timeout_ms)
-  {
-    // interested in incoming messages
-    zmq::pollitem_t poll_item{
-      s.get(),
-      0,
-      ZMQ_POLLIN,
-      0
-    };
-    
-    // willing to wait for 3s for new messages
-    if( zmq::poll(&poll_item, 1, timeout_ms) == -1 ||
-       !(poll_item.revents & ZMQ_POLLIN) )
-    {
-      return false;
-    }
-    else
-    {
-      return true;
-    }
-  }
-
 }}

@@ -26,7 +26,7 @@ namespace virtdb { namespace connector {
     
     bool worker_function()
     {
-      if( !poll_socket(socket_, 3000) )
+      if( !socket_.poll_in(3000) )
         return true;
       
       // poll said we have data ...

@@ -24,9 +24,6 @@ namespace virtdb { namespace connector {
     virtual const std::string & name() const;
     virtual ~server_base() {}
     
-    static bool poll_socket(util::zmq_socket_wrapper & s,
-                            unsigned long timeout_ms);
-    
   private:
     server_base() = delete;
     server_base(const server_base &) = delete;

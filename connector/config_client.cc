@@ -39,16 +39,10 @@ namespace virtdb { namespace connector {
     }
     else
     {
-      zmq::socket_t & sock = cfg_sub_socket_.get();
       try
       {
-        zmq::pollitem_t poll_item{ sock, 0, ZMQ_POLLIN, 0 };
-        if( zmq::poll(&poll_item, 1, 3000) == -1 ||
-           !(poll_item.revents & ZMQ_POLLIN) )
-        {
-          // no data published
+        if( !cfg_sub_socket_.poll_in(3000) )
           return true;
-        }
       }
       catch (const zmq::error_t & e)
       {

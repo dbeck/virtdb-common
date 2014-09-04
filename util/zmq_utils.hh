@@ -51,6 +51,9 @@ namespace virtdb { namespace util {
     }
     
     bool wait_valid(unsigned long ms);
+    void wait_valid();
+    
+    bool poll_in(unsigned long ms);
     
   private:
     zmq_socket_wrapper() = delete;

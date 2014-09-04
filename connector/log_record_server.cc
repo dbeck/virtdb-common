@@ -84,12 +84,8 @@ namespace virtdb { namespace connector {
   bool
   log_record_server::rep_worker_function()
   {
-    zmq::pollitem_t poll_item{ diag_rep_socket_.get(), 0, ZMQ_POLLIN, 0 };
-    if( zmq::poll(&poll_item, 1, 3000) == -1 ||
-       !(poll_item.revents & ZMQ_POLLIN) )
-    {
+    if( !diag_rep_socket_.poll_in(3000) )
       return true;
-    }
     
     zmq::message_t message;
     if( !diag_rep_socket_.get().recv(&message) )

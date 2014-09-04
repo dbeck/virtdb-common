@@ -25,7 +25,6 @@ namespace virtdb { namespace connector {
   config_server::config_server(config_client & cfg_client,
                                endpoint_server & ep_server)
   :
-    additional_hosts_(endpoint_hosts(ep_server)),
     rep_base_type(cfg_client,
                   std::bind(&config_server::generate_reply,
                             this,
@@ -33,7 +32,8 @@ namespace virtdb { namespace connector {
                   std::bind(&config_server::publish_config,
                             this,
                             std::placeholders::_1)),
-    pub_base_type(cfg_client)
+    pub_base_type(cfg_client),
+    additional_hosts_(endpoint_hosts(ep_server))
   {
     // setting up our own endpoints
     pb::EndpointData ep_data;
