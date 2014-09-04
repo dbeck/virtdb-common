@@ -20,8 +20,8 @@ namespace virtdb { namespace util {
     endpoint_set       endpoints_;
     int                type_;
     std::atomic<bool>  valid_;
-    std::future<void>  valid_future_;
     std::promise<void> valid_promise_;
+    std::future<void>  valid_future_;
     void set_valid();
     void set_invalid();
     
