@@ -88,13 +88,94 @@ TEST_F(CompareMessagesTest, DummyTest)
   // TODO : CompareMessagesTest
 }
 
-TEST_F(ZmqTest, DummyTest)
+TEST_F(ZmqTest, TestValid)
 {
-  // TODO : ZmqTest
-  zmq::context_t ctx(1);
-  zmq_socket_wrapper sock(ctx,ZMQ_REP);
-  sock.bind("tcp://127.0.0.1:*");
   
+  zmq::context_t rep_ctx(1);
+  zmq_socket_wrapper srv(rep_ctx,ZMQ_REP);
+  EXPECT_FALSE(srv.valid());
+
+  {
+    std::promise<bool> prom;
+    std::future<bool> fut(prom.get_future());
+
+    std::thread valid_thread([&](){
+      prom.set_value(srv.wait_valid(100));
+    });
+    
+    srv.bind("tcp://127.0.0.1:*");
+    EXPECT_TRUE(srv.valid());
+    fut.wait();
+    bool is_valid = fut.get();
+    EXPECT_TRUE(is_valid);
+    EXPECT_TRUE(valid_thread.joinable());
+    valid_thread.join();
+  }
+  
+  { // test-connect
+    zmq::context_t req_ctx(1);
+    zmq_socket_wrapper clnt(req_ctx, ZMQ_REQ);
+    EXPECT_FALSE(clnt.valid());
+    
+    {
+      std::promise<bool> prom;
+      std::future<bool> fut(prom.get_future());
+      
+      std::thread valid_thread([&](){
+        prom.set_value(clnt.wait_valid(100));
+      });
+      
+      for( auto const & ep : srv.endpoints() )
+      {
+        try
+        {
+          clnt.connect(ep.c_str());
+          std::cerr << "connected to: " << ep << "\n";
+        } catch( ... ) { }
+      }
+      
+      EXPECT_TRUE(clnt.valid());
+      fut.wait();
+      bool is_valid = fut.get();
+      EXPECT_TRUE(is_valid);
+      EXPECT_TRUE(valid_thread.joinable());
+      valid_thread.join();
+    }
+  }
+
+  { // test-reconnect
+    zmq::context_t req_ctx(1);
+    zmq_socket_wrapper clnt(req_ctx, ZMQ_REQ);
+    EXPECT_FALSE(clnt.valid());
+    
+    {
+      std::promise<bool> prom;
+      std::future<bool> fut(prom.get_future());
+      
+      std::thread valid_thread([&](){
+        prom.set_value(clnt.wait_valid(100));
+      });
+      
+      for( auto const & ep : srv.endpoints() )
+      {
+        try
+        {
+          clnt.reconnect(ep.c_str());
+          std::cerr << "connected to: " << ep << "\n";
+        } catch( ... ) { }
+      }
+      
+      EXPECT_TRUE(clnt.valid());
+      fut.wait();
+      bool is_valid = fut.get();
+      EXPECT_TRUE(is_valid);
+      EXPECT_TRUE(valid_thread.joinable());
+      valid_thread.join();
+    }
+  }
+  
+  /*
   auto parsed = parse_zmq_tcp_endpoint("tcp://hello-world:1234");
+   */
 }
 
