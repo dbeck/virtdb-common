@@ -45,10 +45,11 @@ namespace virtdb { namespace util {
     
     return ret;
   }
-
   
   zmq_socket_wrapper::zmq_socket_wrapper(zmq::context_t &ctx, int type)
-  : socket_(ctx, type)
+  : socket_(ctx, type),
+    valid_(false),
+    valid_future_(valid_promise_.get_future())
   {
   }
   
@@ -95,6 +96,7 @@ namespace virtdb { namespace util {
     if( !addr ) return;
     
     socket_.bind(addr);
+    set_valid();
     
     if( strncmp(addr,"tcp://",6) == 0 )
     {
@@ -167,6 +169,7 @@ namespace virtdb { namespace util {
     if( !addr ) return;
     socket_.connect(addr);
     endpoints_.insert(addr);
+    set_valid();
   }
   
   void
@@ -176,6 +179,7 @@ namespace virtdb { namespace util {
     if( endpoints_.count(addr) > 0 ) return;
     disconnect_all();
     connect(addr);
+    set_valid();
   }
   
   void
@@ -185,13 +189,48 @@ namespace virtdb { namespace util {
     for( auto & ep : endpoints_ )
       socket_.disconnect(ep.c_str());
     endpoints_.clear();
+    set_invalid();
+  }
+  
+  void
+  zmq_socket_wrapper::set_valid()
+  {
+    if( !valid_ )
+      valid_promise_.set_value();
+    valid_ = true;
+  }
+  
+  void
+  zmq_socket_wrapper::set_invalid()
+  {
+    // reset future and promise
+    {
+      std::promise<void> new_promise;
+      valid_promise_.swap(new_promise);
+      valid_future_ = valid_promise_.get_future();
+    }
+    valid_ = false;
   }
   
   bool
   zmq_socket_wrapper::valid() const
   {
-    return !endpoints_.empty();
+    return valid_;
   }
+  
+  bool
+  zmq_socket_wrapper::wait_valid(unsigned long ms)
+  {
+    if( valid_ )
+      return true;
+    
+    std::future_status status = valid_future_.wait_for(std::chrono::milliseconds(ms));
+    if( status == std::future_status::ready )
+      return true;
+    else
+      return false;
+  }
+
   
   const zmq_socket_wrapper::endpoint_set &
   zmq_socket_wrapper::endpoints() const

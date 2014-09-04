@@ -107,6 +107,7 @@
                              'connector.hh',
                              'connector/message_filter.hh',
                              'connector/server_base.cc',          'connector/server_base.hh',
+                             'connector/client_base.cc',          'connector/client_base.hh',
                              'connector/sub_client.hh',           'connector/req_client.hh',
                              'connector/push_client.hh',          'connector/pub_server.hh',
                              'connector/pull_server.hh',          'connector/rep_server.hh',
