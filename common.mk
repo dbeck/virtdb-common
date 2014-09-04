@@ -22,9 +22,9 @@ FIX_CXX_11_BUG  = -Wl,--no-as-needed
 LINUX_LDFLAGS   = -pthread
 endif
 
-CXXFLAGS += -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
+CXXFLAGS += -Wall -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
 LDFLAGS += -g3 $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(GTEST_LDFLAGS)
-CFLAGS += -g3
+CFLAGS += -Wall -g3
 
 $(info $$CFLAGS is [${CFLAGS}])
 $(info $$CXXFLAGS is [${CXXFLAGS}])
@@ -45,13 +45,13 @@ TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
 PROTO_LIB := proto/libproto.a
 COMMON_LIB := libcommon.a
 
-all: common-static-lib gtest-test 
+all: $(COMMON_LIB) gtest-test 
 
 gtest-test: gtest-pkg-build-all test/gtest_main.o test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
 	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 	g++ -o test/netinfo test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 
-common-static-lib: $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
+$(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
 	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
 
 $(PROTO_LIB):
