@@ -4,6 +4,8 @@
 #include <string>
 #include <set>
 #include <future>
+#include <mutex>
+#include <condition_variable>
 
 namespace virtdb { namespace util {
   
@@ -12,16 +14,22 @@ namespace virtdb { namespace util {
   class zmq_socket_wrapper final
   {
   public:
-    typedef std::set<std::string> endpoint_set;
-    typedef std::set<std::string> host_set;
+    typedef std::set<std::string>   endpoint_set;
+    typedef std::set<std::string>   host_set;
     
   private:
-    zmq::socket_t      socket_;
-    endpoint_set       endpoints_;
-    int                type_;
-    std::atomic<bool>  valid_;
-    std::promise<void> valid_promise_;
-    std::future<void>  valid_future_;
+    typedef std::mutex              mtx;
+    typedef std::unique_lock<mtx>   lock;
+
+    zmq::socket_t                   socket_;
+    endpoint_set                    endpoints_;
+    int                             type_;
+    bool                            stop_;
+    size_t                          n_waiting_;
+    bool                            valid_;
+    std::condition_variable         cv_;
+    mutable mtx                     mtx_;
+    
     void set_valid();
     void set_invalid();
     

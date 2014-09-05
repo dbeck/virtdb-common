@@ -96,9 +96,10 @@ namespace virtdb { namespace connector {
 
         if( req_size )
         {
-          util::flex_alloc<unsigned char, 1024> buffer(req_size);
           try
           {
+            util::flex_alloc<unsigned char, 1024> buffer(req_size);
+            
             if( !req.SerializeToArray(buffer.get(), req_size) )
             {
               THROW_("couldn't serialize request data");

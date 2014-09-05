@@ -7,6 +7,7 @@ namespace virtdb { namespace util {
   async_worker::async_worker(std::function<bool(void)> worker)
   : worker_(worker),
     start_barrier_(2),
+    stop_barrier_(2),
     stop_(false),
     thread_(std::bind(&async_worker::entry,this))
   {
@@ -22,7 +23,11 @@ namespace virtdb { namespace util {
   async_worker::stop()
   {
     stop_ = true;
-    start_barrier_.wait();
+    if( !started_ )
+    {
+      start_barrier_.wait();
+    }
+    stop_barrier_.wait();
   }
   
   async_worker::~async_worker()
@@ -36,6 +41,7 @@ namespace virtdb { namespace util {
   async_worker::entry()
   {
     start_barrier_.wait();
+    started_ = true;
     while( stop_ != true )
     {
       try
@@ -58,5 +64,6 @@ namespace virtdb { namespace util {
         LOG_ERROR("unknown excpetion caught");
       }
     }
+    stop_barrier_.wait();
   }
 }}

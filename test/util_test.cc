@@ -161,7 +161,6 @@ TEST_F(ZmqTest, TestValid)
         try
         {
           clnt.reconnect(ep.c_str());
-          std::cerr << "connected to: " << ep << "\n";
         } catch( ... ) { }
       }
       
@@ -177,5 +176,51 @@ TEST_F(ZmqTest, TestValid)
   /*
   auto parsed = parse_zmq_tcp_endpoint("tcp://hello-world:1234");
    */
+}
+
+TEST_F(ZmqTest, DeleteWhileWaiting)
+{
+  zmq::context_t rep_ctx(1);
+  std::shared_ptr<zmq_socket_wrapper> srv(new zmq_socket_wrapper(rep_ctx,ZMQ_REP));
+  EXPECT_FALSE(srv->valid());
+  
+  {
+    std::promise<void> prom;
+    std::future<void> fut(prom.get_future());
+    
+    std::thread valid_thread([&](){
+      prom.set_value();
+      EXPECT_FALSE(srv->wait_valid(15000));
+    });
+    
+    fut.wait();
+    std::this_thread::sleep_for(std::chrono::microseconds(10));
+    std::this_thread::yield();
+    srv.reset();
+    valid_thread.join();
+  }
+}
+
+TEST_F(ZmqTest, DeleteWhileWaitingForEver)
+{
+  zmq::context_t rep_ctx(1);
+  std::shared_ptr<zmq_socket_wrapper> srv(new zmq_socket_wrapper(rep_ctx,ZMQ_REP));
+  EXPECT_FALSE(srv->valid());
+  
+  {
+    std::promise<void> prom;
+    std::future<void> fut(prom.get_future());
+    
+    std::thread valid_thread([&](){
+      prom.set_value();
+      srv->wait_valid();
+    });
+    
+    fut.wait();
+    std::this_thread::sleep_for(std::chrono::microseconds(10));
+    std::this_thread::yield();
+    srv.reset();
+    valid_thread.join();
+  }
 }
 

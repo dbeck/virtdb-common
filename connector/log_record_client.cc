@@ -52,81 +52,68 @@ namespace virtdb { namespace connector {
   bool
   log_record_client::worker_function()
   {
-    bool no_socket = false;
+    try
     {
-      lock l(sockets_mtx_);
-      if( !logger_sub_socket_.valid() ) no_socket = true;
+      if( !logger_sub_socket_.wait_valid(15000) )
+        return true;
+      
+      if( !logger_sub_socket_.poll_in(3000) )
+        return true;
     }
-    
-    if( no_socket )
+    catch (const zmq::error_t & e)
     {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::string text{e.what()};
+      LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
+      lock l(sockets_mtx_);
+      logger_sub_socket_.disconnect_all();
       return true;
     }
-    else
+    
+    zmq::message_t msg;
+    bool has_monitors;
     {
-      try
-      {
-        if( !logger_sub_socket_.poll_in(3000) )
-          return true;
-      }
-      catch (const zmq::error_t & e)
-      {
-        std::string text{e.what()};
-        LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
-        lock l(sockets_mtx_);
-        logger_sub_socket_.disconnect_all();
-        // give a chance to resubscribe when new endpoints arrive
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+      lock l(monitors_mtx_);
+      has_monitors = !monitors_.empty();
+    }
+    
+    if( logger_sub_socket_.get().recv(&msg) )
+    {
+      if( !msg.data() || !msg.size() )
         return true;
-      }
       
-      zmq::message_t msg;
-      bool has_monitors;
-      {
-        lock l(monitors_mtx_);
-        has_monitors = !monitors_.empty();
-      }
+      // assume this is a proper pub message
+      // so we don't need to care about the first part
       
-      if( logger_sub_socket_.get().recv(&msg) )
+      while( msg.more() )
       {
-        if( !msg.data() || !msg.size() )
-          return true;
-        
-        // assume this is a proper pub message
-        // so we don't need to care about the first part
-        
-        while( msg.more() )
+        msg.rebuild();
+        logger_sub_socket_.get().recv(&msg);
+        if( msg.data() && msg.size() && has_monitors )
         {
-          msg.rebuild();
-          logger_sub_socket_.get().recv(&msg);
-          if( msg.data() && msg.size() && has_monitors )
+          try
           {
-            try
+            pb::LogRecord logrec;
+            bool parsed = logrec.ParseFromArray(msg.data(), msg.size());
+            if( parsed )
             {
-              pb::LogRecord logrec;
-              bool parsed = logrec.ParseFromArray(msg.data(), msg.size());
-              if( parsed )
+              lock l(monitors_mtx_);
+              for( auto & m : monitors_ )
               {
-                lock l(monitors_mtx_);
-                for( auto & m : monitors_ )
+                try
                 {
-                  try
-                  {
-                    m.second(m.first,logrec);
-                  }
-                  catch (...)
-                  {
-                    // don't care about monitor exceptions to avoid
-                    // log message loops
-                  }
+                  m.second(m.first,logrec);
+                }
+                catch (...)
+                {
+                  // don't care about monitor exceptions to avoid
+                  // log message loops
                 }
               }
             }
-            catch (...)
-            {
-              // don't care about errors here
-            }
+          }
+          catch (...)
+          {
+            // don't care about errors here
           }
         }
       }

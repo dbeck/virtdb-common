@@ -6,6 +6,14 @@
 
 namespace virtdb { namespace util {
   
+  template <typename T>
+  struct decrease_on_return
+  {
+    T * val_;
+    decrease_on_return(T & t) : val_(&t) {}
+    ~decrease_on_return() { --(*val_); }
+  };
+  
   std::pair<std::string, unsigned short>
   parse_zmq_tcp_endpoint(const std::string & ep)
   {
@@ -48,13 +56,34 @@ namespace virtdb { namespace util {
   
   zmq_socket_wrapper::zmq_socket_wrapper(zmq::context_t &ctx, int type)
   : socket_(ctx, type),
-    valid_(false),
-    valid_future_(valid_promise_.get_future())
+    type_(type),
+    stop_(false),
+    n_waiting_(0),
+    valid_(false)
   {
   }
   
   zmq_socket_wrapper::~zmq_socket_wrapper()
   {
+    cv_.notify_all();
+    size_t nw = 1;
+    {
+      lock l(mtx_);
+      stop_ = true;
+      nw = n_waiting_;
+    }
+    cv_.notify_all();
+    
+    while ( nw > 0 )
+    {
+      {
+        lock l(mtx_);
+        nw = n_waiting_;
+      }
+      cv_.notify_all();
+      std::this_thread::yield();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
   }
   
   zmq::socket_t &
@@ -195,47 +224,74 @@ namespace virtdb { namespace util {
   void
   zmq_socket_wrapper::set_valid()
   {
-    if( !valid_ )
-      valid_promise_.set_value();
-    valid_ = true;
+    {
+      lock l(mtx_);
+      valid_ = true;
+    }
+    cv_.notify_all();
   }
   
   void
   zmq_socket_wrapper::set_invalid()
   {
-    // reset future and promise
     {
-      std::promise<void> new_promise;
-      valid_promise_.swap(new_promise);
-      valid_future_ = valid_promise_.get_future();
+      lock l(mtx_);
+      valid_ = false;
     }
-    valid_ = false;
+    cv_.notify_all();
   }
   
   bool
   zmq_socket_wrapper::valid() const
   {
+    lock l(mtx_);    
     return valid_;
   }
   
   bool
   zmq_socket_wrapper::wait_valid(unsigned long ms)
   {
-    if( valid_ )
-      return true;
+    {
+      lock l(mtx_);
+      if( stop_ ) return false;
+      ++n_waiting_;
+    }
+    decrease_on_return<size_t> dec_ret(n_waiting_);
     
-    std::future_status status = valid_future_.wait_for(std::chrono::milliseconds(ms));
-    if( status == std::future_status::ready )
-      return true;
-    else
-      return false;
+    auto const timeout = std::chrono::steady_clock::now() +
+                         std::chrono::milliseconds(ms);
+
+    while( !stop_ )
+    {
+      lock l(mtx_);
+      if( valid_ ) return true;
+      if( cv_.wait_until(l, timeout) == std::cv_status::timeout )
+      {
+        return valid_;
+      }
+    }
+    
+    return false;
   }
 
   void
   zmq_socket_wrapper::wait_valid()
   {
-    if( valid_ ) return;
-    valid_future_.wait();
+    {
+      lock l(mtx_);
+      if( stop_ ) return;
+      ++n_waiting_;
+    }
+    decrease_on_return<size_t> dec_ret(n_waiting_);
+
+    while( !stop_ )
+    {
+      lock l(mtx_);
+      if( valid_ ) return;
+      cv_.wait_for(l,
+                   std::chrono::milliseconds(1000),
+                   [this] { return (valid_ || stop_); });
+    }
     return;
   }
   

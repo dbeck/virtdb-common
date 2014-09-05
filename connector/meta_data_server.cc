@@ -41,6 +41,7 @@ namespace virtdb { namespace connector {
   meta_data_server::generate_reply(const rep_base_type::req_item & req)
   {
     lock l(mtx_);
+    LOG_SCOPED("perf");
     rep_base_type::rep_item_sptr rep{new rep_item};
     bool match_schema = (req.has_schema() && !req.schema().empty());
     

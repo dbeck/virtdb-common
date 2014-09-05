@@ -16,7 +16,9 @@ namespace virtdb { namespace util {
     
     std::function<bool(void)>  worker_;
     barrier                    start_barrier_;
+    barrier                    stop_barrier_;
     std::atomic<bool>          stop_;
+    std::atomic<bool>          started_;
     std::thread                thread_;
     
     void entry();

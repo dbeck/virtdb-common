@@ -26,100 +26,88 @@ namespace virtdb { namespace connector {
   bool
   config_client::worker_function()
   {
-    bool no_socket = false;
+    try
     {
-      lock l(sockets_mtx_);
-      if( !cfg_sub_socket_.valid() ) no_socket = true;
+      if( !cfg_sub_socket_.wait_valid(15000) )
+        return true;
+      
+      if( !cfg_sub_socket_.poll_in(3000) )
+        return true;
     }
-    
-    if( no_socket )
+    catch (const zmq::error_t & e)
     {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::string text{e.what()};
+      LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
+      lock l(sockets_mtx_);
+      cfg_sub_socket_.disconnect_all();
       return true;
     }
-    else
+    
+    zmq::message_t msg;
+    
+    if( cfg_sub_socket_.get().recv(&msg) )
     {
-      try
-      {
-        if( !cfg_sub_socket_.poll_in(3000) )
-          return true;
-      }
-      catch (const zmq::error_t & e)
-      {
-        std::string text{e.what()};
-        LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
-        lock l(sockets_mtx_);
-        cfg_sub_socket_.disconnect_all();
-        // give a chance to resubscribe when new endpoints arrive
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+      if( !msg.data() || !msg.size() )
         return true;
+      
+      // assume this is a proper pub message
+      // so we don't need to care about the first part
+      const char * msg_data = static_cast<const char *>(msg.data());
+      std::string subscription{msg_data,msg_data+msg.size()};
+      
+      bool has_monitors = false;
+      {
+        // TODO : handle wildcard subscription too...
+        lock l(monitors_mtx_);
+        auto it = monitors_.find(subscription);
+        if( it != monitors_.end() )
+          has_monitors = true;
       }
       
-      zmq::message_t msg;
+      LOG_TRACE("received message for" << V_(subscription) << V_(has_monitors));
       
-      if( cfg_sub_socket_.get().recv(&msg) )
+      while( msg.more() )
       {
-        if( !msg.data() || !msg.size() )
-          return true;
+        msg.rebuild();
+        cfg_sub_socket_.get().recv(&msg);
         
-        // assume this is a proper pub message
-        // so we don't need to care about the first part
-        const char * msg_data = static_cast<const char *>(msg.data());
-        std::string subscription{msg_data,msg_data+msg.size()};
-
-        bool has_monitors = false;
+        if( msg.data() && msg.size() && has_monitors )
         {
-          // TODO : handle wildcard subscription too...
-          lock l(monitors_mtx_);
-          auto it = monitors_.find(subscription);
-          if( it != monitors_.end() )
-            has_monitors = true;
-        }
-        
-        LOG_TRACE("received message for" << V_(subscription) << V_(has_monitors));
-        
-        while( msg.more() )
-        {
-          msg.rebuild();
-          cfg_sub_socket_.get().recv(&msg);
-          
-          if( msg.data() && msg.size() && has_monitors )
+          try
           {
-            try
+            pb::Config cfg;
+            bool parsed = cfg.ParseFromArray(msg.data(), msg.size());
+            if( parsed )
             {
-              pb::Config cfg;
-              bool parsed = cfg.ParseFromArray(msg.data(), msg.size());
-              if( parsed )
+              lock l(monitors_mtx_);
+              auto it = monitors_.find(subscription);
+              if( it != monitors_.end() )
               {
-                lock l(monitors_mtx_);
-                auto it = monitors_.find(subscription);
-                if( it != monitors_.end() )
+                for( auto & m : it->second )
                 {
-                  for( auto & m : it->second )
+                  try
                   {
-                    try
-                    {
-                      // call monitor
-                      if( !m(cfg) )
-                        break;
-                    }
-                    catch (...)
-                    {
-                      // don't care about monitor exceptions to avoid
-                      // log message loops
-                    }
+                    // call monitor
+                    if( !m(cfg) )
+                      break;
+                  }
+                  catch (...)
+                  {
+                    // don't care about monitor exceptions to avoid
+                    // log message loops
                   }
                 }
               }
             }
-            catch (...)
-            {
-              // don't care about errors here
-            }
+          }
+          catch (...)
+          {
+            // don't care about errors here
           }
         }
       }
     }
+    
     return true;
   }
   
