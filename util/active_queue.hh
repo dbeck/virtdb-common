@@ -11,11 +11,12 @@
 #include <algorithm>
 #include "barrier.hh"
 #include "exception.hh"
+#include "constants.hh"
 #include <logger.hh>
 
 namespace virtdb { namespace util {
 
-  template <typename ITEM, unsigned int WAKEUP_FREQ=500>
+  template <typename ITEM, unsigned long WAKEUP_FREQ=DEFAULT_TIMEOUT_MS>
   class active_queue final
   {
     typedef std::mutex                   mtx;

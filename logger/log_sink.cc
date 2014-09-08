@@ -1,6 +1,7 @@
 
 #include "logger.hh"
 #include "util/active_queue.hh"
+#include "util/constants.hh"
 #include <iostream>
 #include <sstream>
 
@@ -11,7 +12,8 @@ namespace virtdb { namespace logger {
 
   struct log_sink::queue_impl
   {
-    typedef util::active_queue<pb_logrec_sptr,1000>   queue;
+    typedef util::active_queue<pb_logrec_sptr,util::DEFAULT_TIMEOUT_MS>
+                                                      queue;
     typedef std::unique_ptr<queue>                    queue_uptr;
     queue_uptr                                        zmq_queue_;
     queue_uptr                                        print_queue_;
@@ -168,11 +170,13 @@ namespace virtdb { namespace logger {
       symbol_store::max_id_sent(0);
       header_store::reset_all();
       
-      /// print it
+      // print it
       print_rec(rec);
     }
     catch (...)
     {
+      // don't ever allow any kind of exception to leave this section
+      // otherwise we wouldn't be able to log in destructors
     }
   }
   

@@ -4,6 +4,7 @@
 #include <util/zmq_utils.hh>
 #include <util/active_queue.hh>
 #include <util/async_worker.hh>
+#include <util/constants.hh>
 #include <logger.hh>
 #include "config_client.hh"
 #include "server_base.hh"
@@ -18,15 +19,15 @@ namespace virtdb { namespace connector {
     typedef std::function<void(pull_item_sptr)>  pull_handler;
     
   private:
-    zmq::context_t                               zmqctx_;
-    util::zmq_socket_wrapper                     socket_;
-    util::async_worker                           worker_;
-    util::active_queue<pull_item_sptr,15000>     queue_;
-    pull_handler                                 h_;
+    zmq::context_t                                                zmqctx_;
+    util::zmq_socket_wrapper                                      socket_;
+    util::async_worker                                            worker_;
+    util::active_queue<pull_item_sptr,util::DEFAULT_TIMEOUT_MS>   queue_;
+    pull_handler                                                  h_;
     
     bool worker_function()
     {
-      if( !socket_.poll_in(3000) )
+      if( !socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
         return true;
       
       // poll said we have data ...

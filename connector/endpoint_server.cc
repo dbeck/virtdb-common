@@ -1,6 +1,7 @@
 #include "endpoint_server.hh"
 #include <util/net.hh>
 #include <util/flex_alloc.hh>
+#include <util/constants.hh>
 #include <logger.hh>
 #include <sstream>
 #include <iostream>
@@ -107,7 +108,7 @@ namespace virtdb { namespace connector {
   endpoint_server::worker_function()
   {
     zmq::pollitem_t poll_item{ ep_rep_socket_, 0, ZMQ_POLLIN, 0 };
-    if( zmq::poll(&poll_item, 1, 3000) == -1 ||
+    if( zmq::poll(&poll_item, 1, DEFAULT_TIMEOUT_MS) == -1 ||
         !(poll_item.revents & ZMQ_POLLIN) )
     {
       return true;

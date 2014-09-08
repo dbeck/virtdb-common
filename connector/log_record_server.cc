@@ -17,32 +17,19 @@ namespace virtdb { namespace connector {
                              this,
                              std::placeholders::_1)),
     pub_base_type(cfg_client),
-    zmqctx_(1),
-    diag_rep_socket_(zmqctx_, ZMQ_REP),
-    rep_worker_(std::bind(&log_record_server::rep_worker_function, this)),
+    rep_base_type(cfg_client,
+                  std::bind(&log_record_server::process_replies,
+                            this,
+                            std::placeholders::_1,
+                            std::placeholders::_2),
+                  std::bind(&log_record_server::publish_log,
+                            this,
+                            std::placeholders::_1)),
     log_process_queue_(1,
                        std::bind(&log_record_server::process_function,
                                  this,
                                  std::placeholders::_1))
   {
-    // collect hosts to bind to
-    zmq_socket_wrapper::host_set hosts;
-    {
-      // add my ips
-      net::string_vector my_ips{net::get_own_ips(true)};
-      hosts.insert(my_ips.begin(), my_ips.end());
-      
-      // add discovered endpoints too
-      hosts.insert(ip_discovery_client::get_ip(cfg_client.get_endpoint_client()));
-      hosts.insert("*");
-    }
-    
-    // diag_pull_socket_.batch_tcp_bind(hosts);
-    diag_rep_socket_.batch_tcp_bind(hosts);
-
-    // start workers before we report endpoints
-    rep_worker_.start();
-    
     // setting up LogRecord endpoints
     {
       pb::EndpointData ep_data;
@@ -66,31 +53,25 @@ namespace virtdb { namespace connector {
       {
         ep_data.set_name(cfg_client.get_endpoint_client().name());
         ep_data.set_svctype(pb::ServiceType::GET_LOGS);
+
+        // REP socket
+        ep_data.add_connections()->MergeFrom(rep_base_type::conn());
         
-        {
-          // REQ-REP socket
-          auto conn = ep_data.add_connections();
-          conn->set_type(pb::ConnectionType::REQ_REP);
-          
-          for( auto const & ep : diag_rep_socket_.endpoints() )
-            *(conn->add_address()) = ep;
-        }
-  
         cfg_client.get_endpoint_client().register_endpoint(ep_data);
       }
     }
   }
-  
-  bool
-  log_record_server::rep_worker_function()
+                  
+  void
+  log_record_server::publish_log(rep_base_type::rep_item_sptr rep_sptr)
   {
-    if( !diag_rep_socket_.poll_in(3000) )
-      return true;
-    
-    zmq::message_t message;
-    if( !diag_rep_socket_.get().recv(&message) )
-      return true;
-    
+    // Nothing to do here
+  }
+  
+  void
+  log_record_server::process_replies(const rep_base_type::req_item & request,
+                                     rep_base_type::send_rep_handler handler)
+  {
     auto const & rel_timer = util::relative_time::instance();
     uint64_t usec_tm = rel_timer.get_usec();
     uint64_t start_tm = 0;
@@ -102,43 +83,22 @@ namespace virtdb { namespace connector {
     levels_requested[pb::LogLevel::VIRTDB_SCOPED_TRACE]  = false;
     levels_requested[pb::LogLevel::VIRTDB_SIMPLE_TRACE]  = false;
   
-    pb::GetLogs request;
-    if( !message.data() || !message.size())
-      return true;
-    
     bool set_all_levels = true;
     
-    try
+    if( request.levels_size() > 0 )
     {
-      if( request.ParseFromArray(message.data(), message.size()) )
-      {
-        if( request.levels_size() > 0 )
-        {
-          for( const auto & l : request.levels() )
-            levels_requested[(pb::LogLevel)l] = true;
-          
-          // don't set all levels to true
-          set_all_levels = false;
-        }
-        
-        if( request.has_microsecrange() )
-        {
-          uint64_t range = request.microsecrange();
-          if( range < usec_tm )
-            start_tm = usec_tm-range;
-        }
-      }
+      for( const auto & l : request.levels() )
+        levels_requested[(pb::LogLevel)l] = true;
+      
+      // don't set all levels to true
+      set_all_levels = false;
     }
-    catch (const std::exception & e)
+    
+    if( request.has_microsecrange() )
     {
-      // ParseFromArray may throw exceptions here but we don't care
-      // of it does
-      std::string exception_text{e.what()};
-      LOG_ERROR("couldn't parse message" << exception_text);
-    }
-    catch( ... )
-    {
-      LOG_ERROR("unknown exception");
+      uint64_t range = request.microsecrange();
+      if( range < usec_tm )
+        start_tm = usec_tm-range;
     }
     
     if( set_all_levels )
@@ -214,30 +174,19 @@ namespace virtdb { namespace connector {
     }
     
     {
+      size_t pos=0;
+      size_t result_size=results.size();
+      
       for( auto & r : results )
       {
         auto proc = r.second->mutable_process();
         proc->MergeFrom(r.first);
         enrich_record(r.second);
         
-        int rep_size = r.second->ByteSize();
-        if( rep_size >  0 )
-        {
-          flex_alloc<unsigned char, 2048> rep_buffer(rep_size);
-          if( r.second->SerializeToArray(rep_buffer.get(), rep_size) )
-          {
-            diag_rep_socket_.get().send(rep_buffer.get(), rep_size, ZMQ_SNDMORE);
-          }
-        }
+        handler(r.second, pos<(result_size-1));
+        ++pos;
       }
     }
-    
-    {
-      zmq::message_t empty;
-      diag_rep_socket_.get().send(empty);
-    }
-    
-    return true;
   }
 
   void
@@ -595,7 +544,6 @@ namespace virtdb { namespace connector {
 
   log_record_server::~log_record_server()
   {
-    rep_worker_.stop();
   }
   
   // static helpers:

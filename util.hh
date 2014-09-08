@@ -10,4 +10,5 @@
 #include "util/async_worker.hh"
 #include "util/zmq_utils.hh"
 #include "util/value_type.hh"
+#include "util/constants.hh"
 

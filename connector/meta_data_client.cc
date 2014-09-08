@@ -1,5 +1,4 @@
 #include "meta_data_client.hh"
-#include "service_type_map.hh"
 
 namespace virtdb { namespace connector {
 

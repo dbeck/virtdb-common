@@ -1,4 +1,5 @@
 #include "barrier.hh"
+#include "constants.hh"
 #include <cassert>
 
 using namespace virtdb::util;
@@ -42,7 +43,7 @@ barrier::wait()
     
     // doing this in a timed loop, so we don't rely on notifications alone
     cond_.wait_for(l,
-                   std::chrono::milliseconds(500),
+                   std::chrono::milliseconds(SHORT_TIMEOUT_MS),
                    [this] { return (nwaiting_ >= nthreads_); }
                    );
   }

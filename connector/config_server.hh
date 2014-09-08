@@ -27,7 +27,8 @@ namespace virtdb { namespace connector {
     std::mutex                           mtx_;
 
     void publish_config(rep_base_type::rep_item_sptr);
-    rep_base_type::rep_item_sptr generate_reply(const rep_base_type::req_item &);
+    void process_replies(const rep_base_type::req_item & req,
+                         rep_base_type::send_rep_handler handler);
     virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
     
   public:

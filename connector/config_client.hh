@@ -3,14 +3,19 @@
 #include "endpoint_client.hh"
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
+#include "req_client.hh"
+#include "service_type_map.hh"
 #include <functional>
 #include <vector>
 #include <map>
 
 namespace virtdb { namespace connector {
   
-  class config_client final
+  class config_client final :
+      public req_client<interface::pb::Config, interface::pb::Config>
   {
+    typedef req_client<interface::pb::Config, interface::pb::Config> req_base_type;
+    
   public:
     typedef std::function<bool(const interface::pb::Config &)> cfg_monitor;
     
@@ -21,7 +26,6 @@ namespace virtdb { namespace connector {
 
     endpoint_client *             ep_client_;
     zmq::context_t                zmqctx_;
-    util::zmq_socket_wrapper      cfg_req_socket_;
     util::zmq_socket_wrapper      cfg_sub_socket_;
     util::async_worker            worker_;
     monitor_map                   monitors_;
@@ -32,12 +36,12 @@ namespace virtdb { namespace connector {
     bool on_endpoint_data(const interface::pb::EndpointData & ep);
 
   public:
-    config_client(endpoint_client & ep_client);
-    ~config_client();
+    config_client(endpoint_client & ep_client,
+                  const std::string & server_name);
+    virtual ~config_client();
     
     endpoint_client & get_endpoint_client();
     
-    void get_config(const interface::pb::Config & req, cfg_monitor);
     void watch(const std::string & name, cfg_monitor);
     void remove_watches();
     void remove_watches(const std::string & name);

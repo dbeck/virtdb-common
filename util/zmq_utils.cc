@@ -1,6 +1,7 @@
 #include "zmq_utils.hh"
 #include "net.hh"
 #include "exception.hh"
+#include "constants.hh"
 #include <logger.hh>
 #include <sstream>
 
@@ -289,7 +290,7 @@ namespace virtdb { namespace util {
       lock l(mtx_);
       if( valid_ ) return;
       cv_.wait_for(l,
-                   std::chrono::milliseconds(1000),
+                   std::chrono::milliseconds(DEFAULT_TIMEOUT_MS),
                    [this] { return (valid_ || stop_); });
     }
     return;

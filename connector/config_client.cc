@@ -2,16 +2,18 @@
 #include <logger.hh>
 #include <util/flex_alloc.hh>
 #include <util/exception.hh>
+#include <util/constants.hh>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  config_client::config_client(endpoint_client & ep_client)
-  : ep_client_(&ep_client),
+  config_client::config_client(endpoint_client & ep_client,
+                               const std::string & server_name)
+  : req_base_type(ep_client, server_name),
+    ep_client_(&ep_client),
     zmqctx_(1),
-    cfg_req_socket_(zmqctx_, ZMQ_REQ),
     cfg_sub_socket_(zmqctx_, ZMQ_SUB),
     worker_(std::bind(&config_client::worker_function,this))
   {
@@ -28,10 +30,10 @@ namespace virtdb { namespace connector {
   {
     try
     {
-      if( !cfg_sub_socket_.wait_valid(15000) )
+      if( !cfg_sub_socket_.wait_valid(DEFAULT_TIMEOUT_MS) )
         return true;
       
-      if( !cfg_sub_socket_.poll_in(3000) )
+      if( !cfg_sub_socket_.poll_in(DEFAULT_TIMEOUT_MS) )
         return true;
     }
     catch (const zmq::error_t & e)
@@ -94,7 +96,9 @@ namespace virtdb { namespace connector {
                   catch (...)
                   {
                     // don't care about monitor exceptions to avoid
-                    // log message loops
+                    // log message loops. should any exception happen in a
+                    // given monitor we still want other monitors to continue
+                    // execution
                   }
                 }
               }
@@ -102,65 +106,16 @@ namespace virtdb { namespace connector {
           }
           catch (...)
           {
-            // don't care about errors here
+            // don't care about errors here so we catch everything
+            // the most likely excpetion is std::exception in ParseFromArray
+            // I prefer to stay silent so malicious clients won't flood
+            // our logs
           }
         }
       }
     }
     
     return true;
-  }
-  
-  void
-  config_client::get_config(const interface::pb::Config & req,
-                            cfg_monitor mon)
-  {
-    {
-      lock l(sockets_mtx_);
-      if( !cfg_req_socket_.valid() ) return;
-    }
-    
-    zmq::message_t msg;
-    int req_size = req.ByteSize();
-    
-    if( req_size > 0 )
-    {
-      util::flex_alloc<unsigned char, 256> buffer(req_size);
-      
-      if( !req.SerializeToArray(buffer.get(), req_size) )
-      {
-        THROW_("Couldn't serialize GetLogs data");
-      }
-      
-      cfg_req_socket_.get().send( buffer.get(), req_size );
-      
-      bool call_fun = true;
-      zmq::message_t msg;
-
-      if( !cfg_req_socket_.get().recv(&msg) )
-        return;
-
-      if( msg.data() && msg.size() )
-      {
-        try
-        {
-          pb::Config cfg;
-          if( cfg.ParseFromArray(msg.data(), msg.size()) )
-          {
-            mon(cfg);
-          }
-        }
-        catch( const std::exception & e )
-        {
-          std::string text{e.what()};
-          LOG_ERROR("exception caught" << text);
-        }
-        catch( ... )
-        {
-          LOG_ERROR("unknown exception caught when parsing LogRecord");
-        }
-      }
-    }
   }
   
   void
@@ -340,23 +295,6 @@ namespace virtdb { namespace connector {
           }
         }
       } // end PUB_SUB
-      
-      if(conn.type() == pb::ConnectionType::REQ_REP &&
-         ep.svctype() == pb::ServiceType::CONFIG)
-      {
-        if( !cfg_req_socket_.connected_to(conn.address().begin(), conn.address().end()) )
-        {
-          for( int ii=0; ii<conn.address_size(); ++ii )
-          {
-            if( connect_socket(cfg_req_socket_, conn.address(ii)) )
-            {
-              LOG_TRACE("config REQ socket configured" << V_(conn.address(ii)));
-              no_change = false;
-              break;
-            }
-          }
-        }
-      } // end REQ_REP
     }
     return no_change;
   }

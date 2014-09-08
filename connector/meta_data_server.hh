@@ -30,7 +30,8 @@ namespace virtdb { namespace connector {
     std::mutex  mtx_;
     
     void publish_meta(rep_base_type::rep_item_sptr);
-    rep_base_type::rep_item_sptr generate_reply(const rep_base_type::req_item &);
+    void process_replies(const rep_base_type::req_item & req,
+                         rep_base_type::send_rep_handler handler);
     
   public:
     meta_data_server(config_client & cfg_client);

@@ -7,8 +7,6 @@
 #include "client_base.hh"
 #include "endpoint_client.hh"
 #include "service_type_map.hh"
-#include <future>
-#include <atomic>
 
 namespace virtdb { namespace connector {
       
@@ -144,6 +142,11 @@ namespace virtdb { namespace connector {
                 break;
             }
             return (n_replies>0);
+          }
+          catch (const zmq::error_t & e)
+          {
+            std::string text{e.what()};
+            LOG_ERROR("zeromq exception" << V_(text));
           }
           catch( const std::exception & e )
           {
