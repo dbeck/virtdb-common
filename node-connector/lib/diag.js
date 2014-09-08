@@ -311,7 +311,7 @@ Log = (function() {
     var args, _ref;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     if ((_ref = this.level) === 'trace') {
-      return Diag._log('SIMPLE_TRACE', args);
+      return Diag._log('VIRTDB_SIMPLE_TRACE', args);
     }
   };
 
@@ -319,7 +319,7 @@ Log = (function() {
     var args, _ref;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     if ((_ref = this.level) === 'trace' || _ref === 'debug') {
-      return Diag._log('SIMPLE_TRACE', args);
+      return Diag._log('VIRTDB_SIMPLE_TRACE', args);
     }
   };
 
@@ -327,7 +327,7 @@ Log = (function() {
     var args, _ref;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     if ((_ref = this.level) === 'trace' || _ref === 'debug' || _ref === 'info') {
-      return Diag._log('INFO', args);
+      return Diag._log('VIRTDB_INFO', args);
     }
   };
 
@@ -335,7 +335,7 @@ Log = (function() {
     var args, _ref;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     if ((_ref = this.level) === 'trace' || _ref === 'debug' || _ref === 'info' || _ref === 'warn') {
-      return Diag._log('INFO', args);
+      return Diag._log('VIRTDB_INFO', args);
     }
   };
 
@@ -343,7 +343,7 @@ Log = (function() {
     var args, _ref;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     if ((_ref = this.level) === 'trace' || _ref === 'debug' || _ref === 'info' || _ref === 'warn' || _ref === 'error') {
-      return Diag._log('ERROR', args);
+      return Diag._log('VIRTDB_ERROR', args);
     }
   };
 
