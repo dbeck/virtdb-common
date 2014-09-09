@@ -208,8 +208,15 @@ namespace virtdb { namespace connector {
         auto rit = monitors_.insert(std::make_pair(subscription,monitor_vector()));
         it = rit.first;
       }
-      it.second.push_back(m);
-      socket_.get().setsockopt(ZMQ_SUBSCRIBE, subscription.c_str(), subscription.length());
+      it->second.push_back(m);
+      if( subscription == "*" || subscription.empty() )
+      {
+        socket_.get().setsockopt(ZMQ_SUBSCRIBE, "*", 0);
+      }
+      else
+      {
+        socket_.get().setsockopt(ZMQ_SUBSCRIBE, subscription.c_str(), subscription.length());
+      }
     }
     
     void remove_watches()
@@ -234,13 +241,13 @@ namespace virtdb { namespace connector {
         {
           try
           {
-            if( it.first ==  "*" )
+            if( it->first ==  "*" || it->first.empty() )
             {
               socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
             }
             else
             {
-              socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, it.first.c_str(), it.first.length());
+              socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, it->first.c_str(), it->first.length());
             }
           }
           catch (const zmq::error_t & e)

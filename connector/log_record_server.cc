@@ -220,20 +220,29 @@ namespace virtdb { namespace connector {
       
       if( !proc.has_hostsymbol() )
         hostname = "?";
+      else
+        host_sym = proc.hostsymbol();
       
       if( !proc.has_namesymbol() )
         procname = "?";
+      else
+        proc_sym = proc.namesymbol();
       
-      for( const auto & s : record->symbols() )
+      if( host_sym != UINT32_MAX || proc_sym != UINT32_MAX )
       {
-        // go until we have filled both strings
-        if( !hostname.empty() && !procname.empty() )
-          break;
-        
-        if( s.seqno() == host_sym )
-          hostname = s.value();
-        else if( s.seqno() == proc_sym )
-          procname = s.value();
+        for( const auto & s : record->symbols() )
+        {
+          std::cerr << "checking symbol: s.seqno=" << s.seqno() << " s.value()=" << s.value()
+          << " host_sym=" << host_sym << " proc_sym=" << proc_sym << "\n";
+          // go until we have filled both strings
+          if( !hostname.empty() && !procname.empty() )
+            break;
+          
+          if( s.seqno() == host_sym )
+            hostname = s.value();
+          else if( s.seqno() == proc_sym )
+            procname = s.value();
+        }
       }
       
       std::ostringstream os;

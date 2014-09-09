@@ -3,6 +3,7 @@
 #include <svc_config.pb.h>
 #include <meta_data.pb.h>
 #include <data.pb.h>
+#include <diag.pb.h>
 
 namespace virtdb { namespace connector {
 
@@ -20,6 +21,14 @@ namespace virtdb { namespace connector {
   template <>
   struct service_type_map<interface::pb::Config,
                           interface::pb::ConnectionType::REQ_REP>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::CONFIG;
+  };
+
+  template <>
+  struct service_type_map<interface::pb::Config,
+                          interface::pb::ConnectionType::PUB_SUB>
   {
     static const interface::pb::ServiceType value =
       interface::pb::ServiceType::CONFIG;
@@ -48,5 +57,14 @@ namespace virtdb { namespace connector {
     static const interface::pb::ServiceType value =
       interface::pb::ServiceType::COLUMN;
   };
+
+  template <>
+  struct service_type_map<interface::pb::LogRecord,
+                          interface::pb::ConnectionType::PUB_SUB>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::LOG_RECORD;
+  };
+
   
 }}
