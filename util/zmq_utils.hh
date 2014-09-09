@@ -62,6 +62,13 @@ namespace virtdb { namespace util {
     void wait_valid();
     
     bool poll_in(unsigned long ms);
+
+    static void valid_subscription(const char * sub_data,
+                                   size_t sub_len,
+                                   std::string & result);
+
+    static void valid_subscription(const zmq::message_t & msg,
+                                   std::string & result);
     
   private:
     zmq_socket_wrapper() = delete;

@@ -114,7 +114,6 @@
                              'connector/sub_client.hh',           'connector/req_client.hh',
                              'connector/push_client.hh',          'connector/pub_server.hh',
                              'connector/pull_server.hh',          'connector/rep_server.hh',
-                             'connector/column_location.cc',      'connector/column_location.hh',
                              'connector/column_client.cc',        'connector/column_client.hh',
                              'connector/column_server.cc',        'connector/column_server.hh',
                              'connector/config_client.cc',        'connector/config_client.hh',

@@ -3,5 +3,6 @@
 namespace virtdb { namespace util {
   static const unsigned long DEFAULT_TIMEOUT_MS = 1000;
   static const unsigned long SHORT_TIMEOUT_MS = 100;
+  static const unsigned long MAX_SUBSCRIPTION_SIZE = 1024;
 }}
 

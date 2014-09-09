@@ -40,5 +40,13 @@ namespace virtdb { namespace connector {
     static const interface::pb::ServiceType value =
       interface::pb::ServiceType::QUERY;
   };
+
+  template <>
+  struct service_type_map<interface::pb::Column,
+                          interface::pb::ConnectionType::PUB_SUB>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::COLUMN;
+  };
   
 }}

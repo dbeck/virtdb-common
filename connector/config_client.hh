@@ -45,10 +45,5 @@ namespace virtdb { namespace connector {
     void watch(const std::string & name, cfg_monitor);
     void remove_watches();
     void remove_watches(const std::string & name);
-    
-  private:
-    config_client() = delete;
-    config_client(const config_client &) = delete;
-    config_client & operator=(const config_client &) = delete;
   };
 }}
