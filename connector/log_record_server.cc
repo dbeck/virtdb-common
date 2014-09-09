@@ -232,8 +232,6 @@ namespace virtdb { namespace connector {
       {
         for( const auto & s : record->symbols() )
         {
-          std::cerr << "checking symbol: s.seqno=" << s.seqno() << " s.value()=" << s.value()
-          << " host_sym=" << host_sym << " proc_sym=" << proc_sym << "\n";
           // go until we have filled both strings
           if( !hostname.empty() && !procname.empty() )
             break;
