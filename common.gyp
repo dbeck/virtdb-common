@@ -108,7 +108,6 @@
                              'logger/end_msg.hh',       'logger/variable.hh',
                              # connector helpers
                              'connector.hh',
-                             'connector/message_filter.hh',
                              'connector/server_base.cc',          'connector/server_base.hh',
                              'connector/client_base.cc',          'connector/client_base.hh',
                              'connector/sub_client.hh',           'connector/req_client.hh',
