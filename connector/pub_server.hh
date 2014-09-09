@@ -3,6 +3,7 @@
 #include <util/zmq_utils.hh>
 #include <util/active_queue.hh>
 #include <util/flex_alloc.hh>
+#include <util/constants.hh>
 #include <logger.hh>
 #include <memory>
 #include "config_client.hh"
@@ -14,15 +15,15 @@ namespace virtdb { namespace connector {
   class pub_server : public server_base
   {
   public:
-    typedef ITEM                                  pub_item;
-    typedef std::shared_ptr<pub_item>             pub_item_sptr;
+    typedef ITEM                                              pub_item;
+    typedef std::shared_ptr<pub_item>                         pub_item_sptr;
     
   private:
-    typedef std::pair<std::string,pub_item_sptr>  to_publish;
+    typedef std::pair<std::string,pub_item_sptr>              to_publish;
     
-    zmq::context_t                                zmqctx_;
-    util::zmq_socket_wrapper                      socket_;
-    util::active_queue<to_publish,15000>          queue_;
+    zmq::context_t                                            zmqctx_;
+    util::zmq_socket_wrapper                                  socket_;
+    util::active_queue<to_publish,util::DEFAULT_TIMEOUT_MS>   queue_;
     
     void process_function(to_publish tp)
     {
@@ -46,6 +47,11 @@ namespace virtdb { namespace connector {
             LOG_ERROR("failed to serialize message");
           }
         }
+      }
+      catch (const zmq::error_t & e)
+      {
+        std::string text{e.what()};
+        LOG_ERROR("zeromq exception" << V_(text));
       }
       catch(const std::exception & e)
       {

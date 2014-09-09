@@ -15,12 +15,8 @@ namespace virtdb { namespace connector {
     
     ep_data.set_name(cfg_client.get_endpoint_client().name());
     ep_data.set_svctype(pb::ServiceType::QUERY);
-    
-    // PULL
     ep_data.add_connections()->MergeFrom(pull_base_type::conn());
-    
     cfg_client.get_endpoint_client().register_endpoint(ep_data);
-
   }
   
   namespace
@@ -82,29 +78,27 @@ namespace virtdb { namespace connector {
   void
   query_server::handler_function(query_sptr qsptr)
   {
+    lock l(monitors_mtx_);
+    // query monitors
+    const std::string & n = name();
+    fire_monitors(query_monitors_, qsptr, qsptr->queryid(), n);
+    fire_monitors(query_monitors_, qsptr, "", n);
+    
+    std::string query_id = qsptr->queryid();
+    std::string schema   = qsptr->schema();
+    std::string table    = qsptr->table();
+    
+    // table monitors
+    if( !table_monitors_.empty() )
     {
-      lock l(monitors_mtx_);
-      // query monitors
-      const std::string & n = name();
-      fire_monitors(query_monitors_, qsptr, qsptr->queryid(), n);
-      fire_monitors(query_monitors_, qsptr, "", n);
-      
-      std::string query_id = qsptr->queryid();
-      std::string schema   = qsptr->schema();
-      std::string table    = qsptr->table();
-      
-      // table monitors
-      if( !table_monitors_.empty() )
-      {
-        fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,table), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,""), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",table), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,table), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",""), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,""), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key("","",table), n);
-        fire_monitors(table_monitors_, qsptr, gen_table_key("","",""), n);
-      }
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,table), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,""), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",table), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,table), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",""), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,""), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("","",table), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("","",""), n);
     }
   }
   

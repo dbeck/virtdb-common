@@ -44,6 +44,7 @@
     ],
     'conditions': [
       ['OS=="mac"', {
+        'defines':                       [ 'COMMON_MAC_BUILD', ],
         'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', '-I<!(pwd)/'],
         'xcode_settings':  {
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
@@ -52,6 +53,7 @@
         },
       },],
       ['OS=="linux"', {
+        'defines':                       [ 'COMMON_LINUX_BUILD', ],
         'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', ],
         'link_settings': {
           'ldflags':                     [ '-Wl,--no-as-needed', ],
@@ -85,7 +87,7 @@
       'dependencies':      [ 'proto/proto.gyp:*', ],
       'sources':           [
                              # generic utils
-                             'util.hh',
+                             'util.hh',                  'util/constants.hh',
                              'util/active_queue.hh',     'util/flex_alloc.hh',
                              'util/barrier.cc',          'util/barrier.hh',
                              'util/relative_time.cc',    'util/relative_time.hh',

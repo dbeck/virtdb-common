@@ -3,10 +3,12 @@
 #include "config_client.hh"
 #include "pull_server.hh"
 #include "pub_server.hh"
+#include "rep_server.hh"
 #include <util/zmq_utils.hh>
 #include <util/active_queue.hh>
 #include <util/compare_messages.hh>
 #include <util/relative_time.hh>
+#include <util/constants.hh>
 #include <diag.pb.h>
 #include <mutex>
 #include <memory>
@@ -17,10 +19,13 @@ namespace virtdb { namespace connector {
   // TODO : integrate rep_server too ... 
   class log_record_server final :
       public pull_server<interface::pb::LogRecord>,
-      public pub_server<interface::pb::LogRecord>
+      public pub_server<interface::pb::LogRecord>,
+      public rep_server<interface::pb::GetLogs, interface::pb::LogRecord>
   {
     typedef pull_server<interface::pb::LogRecord>              pull_base_type;
     typedef pub_server<interface::pb::LogRecord>               pub_base_type;
+    typedef rep_server<interface::pb::GetLogs,
+                       interface::pb::LogRecord>               rep_base_type;
     typedef interface::pb::ProcessInfo                         process_info;
     typedef interface::pb::Symbol                              symbol;
     typedef interface::pb::LogData                             log_data;
@@ -44,15 +49,18 @@ namespace virtdb { namespace connector {
     process_symbols                         symbols_;
     log_queue                               logs_;
 
-    zmq::context_t                          zmqctx_;
-    util::zmq_socket_wrapper                diag_rep_socket_;
-    // util::zmq_socket_wrapper                diag_pub_socket_;
-    util::async_worker                      rep_worker_;
-    util::active_queue<record_sptr,15000>   log_process_queue_;
+    util::active_queue<record_sptr,util::DEFAULT_TIMEOUT_MS>
+                                            log_process_queue_;
     std::mutex                              header_mtx_;
     std::mutex                              symbol_mtx_;
     std::mutex                              log_mtx_;
 
+    void
+    publish_log(rep_base_type::rep_item_sptr rep_sptr);
+    
+    void process_replies(const rep_base_type::req_item & req,
+                         rep_base_type::send_rep_handler handler);
+    
     bool rep_worker_function();
     void pull_handler(record_sptr);
     void process_function(record_sptr);

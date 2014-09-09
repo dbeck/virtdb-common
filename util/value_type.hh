@@ -384,8 +384,6 @@ namespace virtdb { namespace util {
 #endif
 #endif
 
-
-
   template <>
   struct value_type<double> : public value_type_base
   {

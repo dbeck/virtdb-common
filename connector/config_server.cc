@@ -26,9 +26,10 @@ namespace virtdb { namespace connector {
                                endpoint_server & ep_server)
   :
     rep_base_type(cfg_client,
-                  std::bind(&config_server::generate_reply,
+                  std::bind(&config_server::process_replies,
                             this,
-                            std::placeholders::_1),
+                            std::placeholders::_1,
+                            std::placeholders::_2),
                   std::bind(&config_server::publish_config,
                             this,
                             std::placeholders::_1)),
@@ -57,8 +58,9 @@ namespace virtdb { namespace connector {
     publish(rep->name(),std::move(rep));
   }
   
-  config_server::rep_base_type::rep_item_sptr
-  config_server::generate_reply(const rep_base_type::req_item & request)
+  void
+  config_server::process_replies(const rep_base_type::req_item & request,
+                                 rep_base_type::send_rep_handler handler)
   {
     rep_base_type::rep_item_sptr ret;
     
@@ -85,7 +87,7 @@ namespace virtdb { namespace connector {
       ret = allocate_pub_item(request);
     }
     
-    return ret;
+    handler(ret,false);
   }
     
   const util::zmq_socket_wrapper::host_set &

@@ -117,7 +117,7 @@ namespace virtdb { namespace connector {
     else
     {
       zmq::pollitem_t poll_item{ ep_sub_socket_, 0, ZMQ_POLLIN, 0 };
-      if( zmq::poll(&poll_item, 1, 3000) == -1 ||
+      if( zmq::poll(&poll_item, 1, DEFAULT_TIMEOUT_MS) == -1 ||
          !(poll_item.revents & ZMQ_POLLIN) )
       {
         return true;

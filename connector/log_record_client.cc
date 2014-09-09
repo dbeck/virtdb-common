@@ -2,6 +2,7 @@
 #include <logger.hh>
 #include <util/flex_alloc.hh>
 #include <util/exception.hh>
+#include <util/constants.hh>
 
 using namespace virtdb::interface;
 using namespace virtdb::logger;
@@ -14,24 +15,19 @@ namespace virtdb { namespace connector {
     lock l(sockets_mtx_);
     return logger_push_socket_->valid();
   }
-  
-  bool log_record_client::get_logs_ready() const
-  {
-    lock l(sockets_mtx_);
-    return logger_req_socket_.valid();
-  }
-  
+    
   bool log_record_client::subscription_ready() const
   {
     lock l(sockets_mtx_);
     return logger_sub_socket_.valid();
   }
 
-  log_record_client::log_record_client(endpoint_client & ep_client)
-  : zmqctx_(1),
+  log_record_client::log_record_client(endpoint_client & ep_client,
+                                       const std::string & server_name)
+  : req_base_type(ep_client, server_name),
+    zmqctx_(1),
     logger_push_socket_(new util::zmq_socket_wrapper(zmqctx_,ZMQ_PUSH)),
     logger_sub_socket_(zmqctx_, ZMQ_SUB),
-    logger_req_socket_(zmqctx_, ZMQ_REQ),
     log_sink_sptr_(new log_sink(logger_push_socket_)),
     worker_(std::bind(&log_record_client::worker_function,this))
   {
@@ -54,10 +50,10 @@ namespace virtdb { namespace connector {
   {
     try
     {
-      if( !logger_sub_socket_.wait_valid(15000) )
+      if( !logger_sub_socket_.wait_valid(DEFAULT_TIMEOUT_MS) )
         return true;
       
-      if( !logger_sub_socket_.poll_in(3000) )
+      if( !logger_sub_socket_.poll_in(DEFAULT_TIMEOUT_MS) )
         return true;
     }
     catch (const zmq::error_t & e)
@@ -119,74 +115,6 @@ namespace virtdb { namespace connector {
       }
     }
     return true;
-  }
-  
-  void
-  log_record_client::get_logs(const interface::pb::GetLogs & req,
-                              std::function<bool(interface::pb::LogRecord & rec)> fun)
-  {
-    {
-      lock l(sockets_mtx_);
-      if( !logger_req_socket_.valid() ) return;
-    }
-    
-    zmq::message_t msg;
-    int req_size = req.ByteSize();
-    
-    if( req_size > 0 )
-    {
-      util::flex_alloc<unsigned char, 256> buffer(req_size);
-      
-      bool serialized = req.SerializeToArray(buffer.get(), req_size);
-      if( !serialized )
-      {
-        THROW_("Couldn't serialize GetLogs data");
-      }
-      
-      logger_req_socket_.get().send( buffer.get(), req_size );
-      
-      bool call_fun = true;
-      msg.rebuild();
-      
-      std::function<bool(zmq::message_t & msg)> process_logs{
-        [&](zmq::message_t & msg) {
-
-          if( msg.data() && msg.size() )
-          {
-            try
-            {
-              pb::LogRecord rec;
-              serialized = rec.ParseFromArray(msg.data(), msg.size());
-              if( serialized && call_fun )
-              {
-                call_fun = fun(rec);
-              }
-            }
-            catch( const std::exception & e )
-            {
-              std::string text{e.what()};
-              LOG_ERROR("exception caught" << text);
-            }
-            catch( ... )
-            {
-              LOG_ERROR("unknown exception caught when parsing LogRecord");
-            }
-          }
-          return msg.more();
-        }
-      };
-      
-      while( true )
-      {
-        if( !logger_req_socket_.get().recv(&msg) )
-          break;
-        
-        if( !process_logs(msg) )
-          break;
-        
-        msg.rebuild();
-      }
-    }
   }
   
   void
@@ -327,24 +255,6 @@ namespace virtdb { namespace connector {
           }
         }
       } // end PUB_SUB
-      
-      if(conn.type() == pb::ConnectionType::REQ_REP &&
-         ep.svctype() == pb::ServiceType::GET_LOGS)
-      {
-        if( !logger_req_socket_.connected_to(conn.address().begin(), conn.address().end()) )
-        {
-          for( int ii=0; ii<conn.address_size(); ++ii )
-          {
-            if( connect_socket(logger_req_socket_, conn.address(ii)) )
-            {
-              LOG_TRACE("log REQ socket configured" << V_(conn.address(ii)));
-              no_change = false;
-              break;
-            }
-          }
-        }
-      } // end REQ_REP
-      
     }
     return no_change;
   }
