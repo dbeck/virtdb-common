@@ -202,7 +202,7 @@ namespace virtdb { namespace logger {
         std::unique_ptr<char []> tmp;
       
         int message_size = rec->ByteSize();
-        if( message_size > sizeof(buffer) )
+        if( message_size > (int)sizeof(buffer) )
         {
           tmp.reset(new char[message_size]);
           work_buffer = tmp.get();

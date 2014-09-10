@@ -147,11 +147,11 @@ namespace virtdb { namespace connector {
     : client_base(ep_clnt, server),
       ep_clnt_(&ep_clnt),
       zmqctx_(1),
+      socket_(zmqctx_, ZMQ_SUB),
       worker_(std::bind(&sub_client::worker_function, this)),
       queue_(1,std::bind(&sub_client::dispatch_function,
                          this,
-                         std::placeholders::_1)),
-      socket_(zmqctx_, ZMQ_SUB)
+                         std::placeholders::_1))
     {
       // this machinery makes sure we reconnect whenever the endpoint changes
       ep_clnt.watch(service_type, [this](const interface::pb::EndpointData & ep) {

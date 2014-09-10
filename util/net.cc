@@ -92,10 +92,7 @@ namespace virtdb { namespace util {
       
       if ( !getaddrinfo(name.c_str(), "65432", &hints, &servinfo) )
       {
-        struct addrinfo *p;
-        for(struct addrinfo *p = servinfo;
-            p != NULL;
-            p = p->ai_next)
+        for(struct addrinfo *p = servinfo; p != NULL; p = p->ai_next)
         {
           ret.push_back(convert(p->ai_addr).first);
         }
@@ -113,7 +110,6 @@ namespace virtdb { namespace util {
     
     socklen_t len;
     struct sockaddr_storage addr;
-    char ipstr[INET6_ADDRSTRLEN];
     
     len = sizeof (addr);
     if( !getpeername(fd, (struct sockaddr*)&addr, &len) )

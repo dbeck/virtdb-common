@@ -130,7 +130,6 @@ namespace virtdb { namespace connector {
       for( ; it != logs_.end(); ++it )
       {
         auto const & tuple_ref = *it;
-        auto const & received_at = std::get<0>(tuple_ref);
         auto const & proc = std::get<1>(tuple_ref);
         //  make sure we have a process_info entry in the results map
         auto rit = results.find(proc);

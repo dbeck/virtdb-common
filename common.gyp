@@ -84,7 +84,8 @@
       ],
       'target_name':       'common',
       'type':              'static_library',
-      'dependencies':      [ 'proto/proto.gyp:*', ],
+      'dependencies':      [ 'proto/proto.gyp:proto', ],
+      'export_dependent_settings': [ 'proto/proto.gyp:proto', ],
       'sources':           [
                              # generic utils
                              'util.hh',                  'util/constants.hh',
@@ -134,7 +135,7 @@
     {
       'target_name':       'gtest_main',
       'type':              'executable',
-      'dependencies':      [ 'proto/proto.gyp:proto', 'gtest/gyp/gtest.gyp:gtest_lib', 'common', ],
+      'dependencies':      [ 'proto/proto.gyp:*', 'gtest/gyp/gtest.gyp:gtest_lib', 'common', ],
       'include_dirs':      [ './gtest/include/', ],
       'sources':           [
                              'test/gtest_main.cc',
