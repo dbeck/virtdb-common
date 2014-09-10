@@ -19,7 +19,7 @@ namespace virtdb { namespace connector {
     std::string                 global_ep_;
     ep_data_set                 endpoints_;
     zmq::context_t              zmqctx_;
-    zmq::socket_t               ep_rep_socket_;
+    util::zmq_socket_wrapper    ep_rep_socket_;
     util::zmq_socket_wrapper    ep_pub_socket_;
     util::async_worker          worker_;
     ip_discovery_server         discovery_;
