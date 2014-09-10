@@ -14,10 +14,5 @@ namespace virtdb { namespace connector {
   public:
     column_server(config_client & cfg_client);
     virtual ~column_server();
-    
-  private:
-    column_server() = delete;
-    column_server(const column_server &) = delete;
-    column_server & operator=(const column_server &) = delete;
   };
 }}

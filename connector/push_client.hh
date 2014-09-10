@@ -136,5 +136,11 @@ namespace virtdb { namespace connector {
     {
       ep_clnt_->remove_watches(service_type);
     }
+    
+  private:
+    push_client() = delete;
+    push_client(const push_client & other)  = delete;
+    push_client & operator=(const push_client &) = delete;
+
   };
 }}

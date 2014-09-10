@@ -2,8 +2,10 @@
 #include "net.hh"
 #include "exception.hh"
 #include "constants.hh"
+#include "flex_alloc.hh"
 #include <logger.hh>
 #include <sstream>
+#include <mutex>
 
 namespace virtdb { namespace util {
   
@@ -326,6 +328,54 @@ namespace virtdb { namespace util {
     {
       return true;
     }
+  }
+  
+  void
+  zmq_socket_wrapper::valid_subscription(const char * sub_data,
+                                         size_t sub_len,
+                                         std::string & result)
+  {
+    if( !sub_data || !sub_len )
+    {
+      result.clear();
+      return;
+    }
+    size_t max_size = (sub_len > MAX_SUBSCRIPTION_SIZE ? MAX_SUBSCRIPTION_SIZE : sub_len);
+    flex_alloc<char, MAX_SUBSCRIPTION_SIZE+1> buffer(max_size+1);
+    
+    char * resp = buffer.get();
+    // const char * data = sub_data;
+    
+    resp[0] = 0;
+    resp[sub_len] = 0;
+    resp[MAX_SUBSCRIPTION_SIZE+1] = 0;
+    
+    static char valid_chars[256];
+    {
+      static std::once_flag flag;
+      std::call_once(flag, []() {
+        ::memset(valid_chars,' ',sizeof(valid_chars));
+        for( char c=32; c<=126; ++c )
+          valid_chars[c] = c;
+      });
+    }
+    
+    for( size_t i=0; i<max_size; ++i )
+    {
+      *resp = valid_chars[*sub_data];
+      ++resp;
+      ++sub_data;
+    }
+    *resp = 0;
+    result.assign(buffer.get(), resp);
+  }
+
+  
+  void
+  zmq_socket_wrapper::valid_subscription(const zmq::message_t & msg,
+                                         std::string & result)
+  {
+    valid_subscription((const char *)msg.data(), msg.size(), result);    
   }
 
 }}

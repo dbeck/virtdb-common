@@ -42,7 +42,7 @@ namespace virtdb { namespace connector {
       hosts.insert(ep_local.first);
       hosts.insert("*");
     }
-    ep_rep_socket_.bind( svc_endpoint.c_str() );
+    ep_rep_socket_.bind(svc_endpoint.c_str());
     ep_pub_socket_.batch_tcp_bind(hosts);
     
     // start worker before we report endpoints
@@ -82,10 +82,23 @@ namespace virtdb { namespace connector {
       {
         auto conn = self_endpoint.add_connections();
         conn->set_type(pb::ConnectionType::REQ_REP);
-        // add address parameter
-        auto address = conn->add_address();
-        *address = svc_endpoint;
-        ++svc_config_address_count;
+        
+        if( svc_endpoint.find("0.0.0.0") == std::string::npos )
+        {
+          // add address parameter
+          *(conn->add_address()) = svc_endpoint;
+          ++svc_config_address_count;
+        }
+        
+        for( const auto & bound_to : ep_rep_socket_.endpoints() )
+        {
+          if( bound_to != svc_endpoint )
+          {
+            // filter svc_endpoint since that is already in the list
+            *(conn->add_address()) = bound_to;
+            ++svc_config_address_count;
+          }
+        }
       }
       
       // pub sub sockets, one each on each IPs on a kernel chosen port
@@ -98,7 +111,7 @@ namespace virtdb { namespace connector {
           *(conn->add_address()) = bound_to;
           ++svc_config_address_count;
         }
-              }
+      }
       if( svc_config_address_count > 0 )
         endpoints_.insert(self_endpoint);
     }
@@ -107,15 +120,11 @@ namespace virtdb { namespace connector {
   bool
   endpoint_server::worker_function()
   {
-    zmq::pollitem_t poll_item{ ep_rep_socket_, 0, ZMQ_POLLIN, 0 };
-    if( zmq::poll(&poll_item, 1, DEFAULT_TIMEOUT_MS) == -1 ||
-        !(poll_item.revents & ZMQ_POLLIN) )
-    {
+    if( !ep_rep_socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
       return true;
-    }
     
     zmq::message_t message;
-    if( !ep_rep_socket_.recv(&message) )
+    if( !ep_rep_socket_.get().recv(&message) )
       return true;
     
     pb::Endpoint request;
@@ -174,7 +183,7 @@ namespace virtdb { namespace connector {
       if( serialzied )
       {
         // send reply
-        ep_rep_socket_.send(reply_msg.get(), reply_size);
+        ep_rep_socket_.get().send(reply_msg.get(), reply_size);
         std::string reply_data_str{reply_data.DebugString()};
         LOG_TRACE("sent reply" << V_(reply_data_str));
         

@@ -15,21 +15,14 @@ namespace virtdb { namespace connector {
     lock l(sockets_mtx_);
     return logger_push_socket_->valid();
   }
-    
-  bool log_record_client::subscription_ready() const
-  {
-    lock l(sockets_mtx_);
-    return logger_sub_socket_.valid();
-  }
-
+  
   log_record_client::log_record_client(endpoint_client & ep_client,
                                        const std::string & server_name)
   : req_base_type(ep_client, server_name),
+    sub_base_type(ep_client, server_name),
     zmqctx_(1),
     logger_push_socket_(new util::zmq_socket_wrapper(zmqctx_,ZMQ_PUSH)),
-    logger_sub_socket_(zmqctx_, ZMQ_SUB),
-    log_sink_sptr_(new log_sink(logger_push_socket_)),
-    worker_(std::bind(&log_record_client::worker_function,this))
+    log_sink_sptr_(new log_sink(logger_push_socket_))
   {
     process_info::set_app_name(ep_client.name());
     
@@ -37,155 +30,8 @@ namespace virtdb { namespace connector {
                     [this](const pb::EndpointData & ep) {
                       return this->on_endpoint_data(ep);
                     });
-    ep_client.watch(pb::ServiceType::GET_LOGS,
-                    [this](const pb::EndpointData & ep) {
-                      return this->on_endpoint_data(ep);
-                    });
-    worker_.start();
   }
   
-  
-  bool
-  log_record_client::worker_function()
-  {
-    try
-    {
-      if( !logger_sub_socket_.wait_valid(DEFAULT_TIMEOUT_MS) )
-        return true;
-      
-      if( !logger_sub_socket_.poll_in(DEFAULT_TIMEOUT_MS) )
-        return true;
-    }
-    catch (const zmq::error_t & e)
-    {
-      std::string text{e.what()};
-      LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
-      lock l(sockets_mtx_);
-      logger_sub_socket_.disconnect_all();
-      return true;
-    }
-    
-    zmq::message_t msg;
-    bool has_monitors;
-    {
-      lock l(monitors_mtx_);
-      has_monitors = !monitors_.empty();
-    }
-    
-    if( logger_sub_socket_.get().recv(&msg) )
-    {
-      if( !msg.data() || !msg.size() )
-        return true;
-      
-      // assume this is a proper pub message
-      // so we don't need to care about the first part
-      
-      while( msg.more() )
-      {
-        msg.rebuild();
-        logger_sub_socket_.get().recv(&msg);
-        if( msg.data() && msg.size() && has_monitors )
-        {
-          try
-          {
-            pb::LogRecord logrec;
-            bool parsed = logrec.ParseFromArray(msg.data(), msg.size());
-            if( parsed )
-            {
-              lock l(monitors_mtx_);
-              for( auto & m : monitors_ )
-              {
-                try
-                {
-                  m.second(m.first,logrec);
-                }
-                catch (...)
-                {
-                  // don't care about monitor exceptions to avoid
-                  // log message loops
-                }
-              }
-            }
-          }
-          catch (...)
-          {
-            // don't care about errors here
-          }
-        }
-      }
-    }
-    return true;
-  }
-  
-  void
-  log_record_client::watch(const std::string & name, log_monitor m)
-  {
-    size_t orig_size = 0;
-    {
-      lock l(monitors_mtx_);
-      orig_size = monitors_.size();
-      auto it = monitors_.find(name);
-      if( it != monitors_.end() )
-        monitors_.erase(it);
-    
-      monitors_[name] = m;
-      
-      {
-        lock l(sockets_mtx_);
-        if( logger_sub_socket_.valid() )
-        {
-          if( !orig_size )
-          {
-            // we only subscribe if there is a watch and this is the first watch
-            logger_sub_socket_.get().setsockopt(ZMQ_SUBSCRIBE, "*", 0);
-          }
-        }
-      }
-    }
-  }
-  
-  void
-  log_record_client::remove_watches()
-  {
-    {
-      lock l(monitors_mtx_);
-      if( !monitors_.empty() )
-        monitors_.clear();
-      
-      {
-        lock l(sockets_mtx_);
-        if( logger_sub_socket_.valid() )
-        {
-          // we can unsubscribe
-          logger_sub_socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
-        }
-      }
-    }
-  }
-  
-  void
-  log_record_client::remove_watch(const std::string & name)
-  {
-    {
-      lock l(monitors_mtx_);
-      auto it = monitors_.find(name);
-      if( it != monitors_.end() )
-        monitors_.erase(it);
-      
-      {
-        lock l(sockets_mtx_);
-        if( logger_sub_socket_.valid() )
-        {
-          if( monitors_.empty() )
-          {
-            // we can unsubscribe if noone cares about zmq messages
-            logger_sub_socket_.get().setsockopt(ZMQ_UNSUBSCRIBE, "*", 0);
-          }
-        }
-      }
-    }
-  }
-
   bool
   log_record_client::on_endpoint_data(const interface::pb::EndpointData & ep)
   {
@@ -238,30 +84,12 @@ namespace virtdb { namespace connector {
           }
         }
       } // end PUSH_PULL
-      
-      if(conn.type() == pb::ConnectionType::PUB_SUB &&
-         ep.svctype() == pb::ServiceType::LOG_RECORD)
-      {
-        if( !logger_sub_socket_.connected_to(conn.address().begin(), conn.address().end()) )
-        {
-          for( int ii=0; ii<conn.address_size(); ++ii )
-          {
-            if( connect_socket(logger_sub_socket_, conn.address(ii)) )
-            {
-              LOG_TRACE("log subscription configured" << V_(conn.address(ii)));
-              no_change = false;
-              break;
-            }
-          }
-        }
-      } // end PUB_SUB
     }
     return no_change;
   }
   
   log_record_client::~log_record_client()
   {
-    worker_.stop();
   }
   
 }}
