@@ -42,9 +42,29 @@ namespace virtdb { namespace connector {
   meta_data_server::process_replies(const rep_base_type::req_item & req,
                                     rep_base_type::send_rep_handler handler)
   {
+    {
+      lock l(watch_mtx_);
+      if( on_request_ )
+      {
+        try
+        {
+          on_request_(req);
+        }
+        catch(const std::exception & e)
+        {
+          std::string text{e.what()};
+          LOG_ERROR("exception" << V_(text));
+        }
+        catch( ... )
+        {
+          LOG_ERROR("unknown exception in on_request function");
+        }
+      }
+    }
+    
     rep_base_type::rep_item_sptr rep{new rep_item};
     {
-      lock l(mtx_);
+      lock l(tables_mtx_);
       bool match_schema = (req.has_schema() && !req.schema().empty());
       
       std::regex table_regex{req.name()};
@@ -97,10 +117,25 @@ namespace virtdb { namespace connector {
   }
   
   void
+  meta_data_server::watch_requests(on_request mon)
+  {
+    lock l(watch_mtx_);
+    on_request_ = mon;
+  }
+  
+  void
+  meta_data_server::remove_watch()
+  {
+    lock l(watch_mtx_);
+    on_request empty;
+    on_request_.swap(empty);
+  }
+  
+  void
   meta_data_server::add_table(table_sptr table)
   {
     // TODO: replace map<> with a better structure, more optimal for regex search
-    lock l(mtx_);
+    lock l(tables_mtx_);
     table_map::key_type key(table->schema(), table->name());
     auto it = tables_.find(key);
     if( it == tables_.end() )
@@ -111,6 +146,30 @@ namespace virtdb { namespace connector {
     {
       it->second = table;
     }
+  }
+  
+  bool
+  meta_data_server::has_table(const std::string & schema,
+                              const std::string & name)
+  {
+    lock l(tables_mtx_);
+    table_map::key_type key(schema, name);
+    return (tables_.count(key) > 0);
+  }
+  
+  bool
+  meta_data_server::has_fields(const std::string & schema,
+                               const std::string & name)
+  {
+    lock l(tables_mtx_);
+    table_map::key_type key(schema, name);
+    auto it = tables_.find(key);
+    if( it == tables_.end() )
+      return false;
+    else if( it->second->fields_size() > 0 )
+      return true;
+    else
+      return false;
   }
 
   meta_data_server::~meta_data_server() {}
