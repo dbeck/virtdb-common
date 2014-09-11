@@ -21,6 +21,9 @@ namespace virtdb { namespace connector {
                   const std::string & server_name);
     virtual ~config_client();
     
-    endpoint_client & get_endpoint_client();    
+    endpoint_client & get_endpoint_client();
+    
+    void wait_valid_sub();
+    void wait_valid_req();
   };
 }}

@@ -31,7 +31,6 @@ namespace virtdb { namespace connector {
     
     zmq::context_t                               zmqctx_;
     std::shared_ptr<util::zmq_socket_wrapper>    logger_push_socket_;
-    // util::zmq_socket_wrapper                     logger_sub_socket_;
     std::shared_ptr<virtdb::logger::log_sink>    log_sink_sptr_;
     mutable std::mutex                           sockets_mtx_;
 
@@ -43,6 +42,9 @@ namespace virtdb { namespace connector {
                       const std::string & server_name);
     ~log_record_client();
     
-    bool logger_ready() const;    
+    bool logger_ready() const;
+    void wait_valid_push();
+    void wait_valid_req();
+    void wait_valid_sub();
   };
 }}

@@ -16,6 +16,21 @@ namespace virtdb { namespace connector {
     return logger_push_socket_->valid();
   }
   
+  void log_record_client::wait_valid_push()
+  {
+    logger_push_socket_->wait_valid();
+  }
+  
+  void log_record_client::wait_valid_sub()
+  {
+    sub_base_type::wait_valid();
+  }
+  
+  void log_record_client::wait_valid_req()
+  {
+    req_base_type::wait_valid();
+  }
+  
   log_record_client::log_record_client(endpoint_client & ep_client,
                                        const std::string & server_name)
   : req_base_type(ep_client, server_name),

@@ -22,4 +22,16 @@ namespace virtdb { namespace connector {
   {
     return *ep_client_;
   }
+  
+  void
+  config_client::wait_valid_sub()
+  {
+    sub_base_type::wait_valid();    
+  }
+  
+  void
+  config_client::wait_valid_req()
+  {
+    req_base_type::wait_valid();
+  }
 }}
