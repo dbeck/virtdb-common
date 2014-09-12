@@ -56,7 +56,8 @@ namespace virtdb { namespace logger {
                     interface::pb::LogData * pb_data)
       {
         auto pb_value = pb_data->add_values();
-        util::value_type<T>::set(*pb_value, *val.val_);
+        typedef typename variable<T>::type var_type;
+        util::value_type<var_type>::set(*pb_value, *val.val_);
       }
       
     public:

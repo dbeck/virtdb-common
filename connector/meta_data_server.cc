@@ -107,9 +107,7 @@ namespace virtdb { namespace connector {
       }
       
       {
-        std::string req_str{req.DebugString()};
-        std::string rep_str{rep->DebugString()};
-        LOG_TRACE("processing" << V_(req_str) << V_(rep_str));
+        LOG_TRACE("processing" << M_(req) << M_(*rep));
       }
     }
     

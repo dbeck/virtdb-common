@@ -53,33 +53,42 @@ namespace virtdb { namespace connector {
         REQ_ITEM req;
         if( req.ParseFromArray(message.data(), message.size()) )
         {
-          rep_handler_(req,[this](const rep_item_sptr & rep,
-                                  bool has_more) {
-            
-            if( rep )
-            {
-              int rep_size = rep->ByteSize();
-              util::flex_alloc<unsigned char, 1024> buffer(rep_size);
-
-              if( rep->SerializeToArray(buffer.get(), rep_size) )
+          try
+          {
+            rep_handler_(req,[this](const rep_item_sptr & rep,
+                                    bool has_more) {
+              if( rep )
               {
-                if( has_more )
-                  socket_.get().send(buffer.get(), rep_size, ZMQ_SNDMORE);
+                int rep_size = rep->ByteSize();
+                util::flex_alloc<unsigned char, 1024> buffer(rep_size);
+  
+                if( rep->SerializeToArray(buffer.get(), rep_size) )
+                {
+                  if( has_more )
+                    socket_.get().send(buffer.get(), rep_size, ZMQ_SNDMORE);
+                  else
+                    socket_.get().send(buffer.get(), rep_size);
+                  
+                  on_reply_(std::move(rep));
+                }
                 else
-                  socket_.get().send(buffer.get(), rep_size);
-                
-                on_reply_(std::move(rep));
+                {
+                  LOG_ERROR("failed to serialize message");
+                }
               }
               else
               {
-                LOG_ERROR("failed to serialize message");
+                socket_.get().send("", 0);
               }
-            }
-            else
-            {
-              socket_.get().send("", 0);
-            }
-          });
+            });
+
+          }
+          catch( const std::exception & e )
+          {
+            std::string text{e.what()};
+            LOG_ERROR("exception during generating reply" << V_(text) << M_(req));
+            socket_.get().send("",0);
+          }
         }
       }
       catch (const zmq::error_t & e)

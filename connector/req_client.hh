@@ -132,8 +132,7 @@ namespace virtdb { namespace connector {
               {
                 if( !n_replies )
                 {
-                  std::string req_str{req.DebugString()};
-                  LOG_ERROR("time out during reading reply for request" << V_(req_str));
+                  LOG_ERROR("time out during reading reply for request" << M_(req));
                   return false;
                 }
                 break;

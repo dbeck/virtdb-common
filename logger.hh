@@ -30,3 +30,4 @@
                  ( LOG_INTERNAL_LOCAL_VAR(_log_record_)  )
 
 #define V_(VARIABLE) virtdb::logger::make_variable( #VARIABLE, VARIABLE )
+#define M_(VARIABLE) virtdb::logger::make_variable<::google::protobuf::Message>( #VARIABLE, VARIABLE )

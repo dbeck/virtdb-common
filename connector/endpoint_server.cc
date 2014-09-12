@@ -150,8 +150,7 @@ namespace virtdb { namespace connector {
             endpoints_.insert(request.endpoints(i));
           }
         }
-        std::string request_str{request.DebugString()};
-        LOG_TRACE("endpoint request arrived" << V_(request_str));
+        LOG_TRACE("endpoint request arrived" << M_(request));
       }
     }
     catch (const std::exception & e)
@@ -184,8 +183,7 @@ namespace virtdb { namespace connector {
       {
         // send reply
         ep_rep_socket_.get().send(reply_msg.get(), reply_size);
-        std::string reply_data_str{reply_data.DebugString()};
-        LOG_TRACE("sent reply" << V_(reply_data_str));
+        LOG_TRACE("sent reply" << M_(reply_data));
         
         // publish new messages one by one, so subscribers can choose what to
         // receive
