@@ -55,7 +55,11 @@ namespace virtdb { namespace connector {
   void
   config_server::publish_config(rep_base_type::rep_item_sptr rep)
   {
-    publish(rep->name(),std::move(rep));
+    if( rep && rep->has_name() )
+    {
+      std::string subscription{rep->name()};
+      publish(subscription,std::move(rep));
+    }
   }
   
   void
