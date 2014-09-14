@@ -10,3 +10,11 @@
 	path = proto
 	url = https://github.com/starschema/virtdb-proto.git
 	branch = master
+[submodule "lz4"]
+	path = lz4
+	url = https://github.com/starschema/lz4.git
+	branch = master
+[submodule "murmur3"]
+	path = murmur3
+	url = https://github.com/starschema/murmur3.git
+	branch = master
