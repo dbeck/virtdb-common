@@ -57,15 +57,15 @@ namespace virtdb { namespace logger {
       switch( var.type() )
       {
           // TODO : handle array parameters ...
-        case pb::Kind::BOOL:   std::cout << (var.boolvalue(0)?"true":"false"); break;
-        case pb::Kind::FLOAT:  std::cout << var.floatvalue(0); break;
-        case pb::Kind::DOUBLE: std::cout << var.doublevalue(0); break;
-        case pb::Kind::STRING: std::cout << var.stringvalue(0); break;
-        case pb::Kind::INT32:  std::cout << var.int32value(0); break;
-        case pb::Kind::UINT32: std::cout << var.uint32value(0); break;
-        case pb::Kind::INT64:  std::cout << var.int64value(0); break;
-        case pb::Kind::UINT64: std::cout << var.uint64value(0); break;
-        default:               std::cout << "'unhandled-type'"; break;
+        case pb::Kind::BOOL:   std::cerr << (var.boolvalue(0)?"true":"false"); break;
+        case pb::Kind::FLOAT:  std::cerr << var.floatvalue(0); break;
+        case pb::Kind::DOUBLE: std::cerr << var.doublevalue(0); break;
+        case pb::Kind::STRING: std::cerr << var.stringvalue(0); break;
+        case pb::Kind::INT32:  std::cerr << var.int32value(0); break;
+        case pb::Kind::UINT32: std::cerr << var.uint32value(0); break;
+        case pb::Kind::INT64:  std::cerr << var.int64value(0); break;
+        case pb::Kind::UINT64: std::cerr << var.uint64value(0); break;
+        default:               std::cerr << "'unhandled-type'"; break;
       };
     }
     
@@ -82,7 +82,7 @@ namespace virtdb { namespace logger {
       if( proc_info.has_namesymbol() )
         host_and_name << "/" << symbol_store::get(proc_info.namesymbol());
       
-      std::cout << '[' << proc_info.pid() << ':' << data.threadid() << "]"
+      std::cerr << '[' << proc_info.pid() << ':' << data.threadid() << "]"
                 << host_and_name.str()
                 << " (" << level_string(head.level())
                 << ") @" << symbol_store::get(head.file_symbol()) << ':'
@@ -95,12 +95,12 @@ namespace virtdb { namespace logger {
          data.has_endscope() &&
          data.endscope() )
       {
-        std::cout << " [EXIT] ";
+        std::cerr << " [EXIT] ";
       }
       else
       {
         if( head.level() == pb::LogLevel::VIRTDB_SCOPED_TRACE )
-          std::cout << " [ENTER] ";
+          std::cerr << " [ENTER] ";
         
         auto const & head_msg = head.get_pb_header();
         
@@ -110,36 +110,36 @@ namespace virtdb { namespace logger {
           
           if( part.isvariable() && part.hasdata() )
           {
-            std::cout << " {";
+            std::cerr << " {";
             if( part.has_partsymbol() )
-              std::cout << symbol_store::get(part.partsymbol()) << "=";
+              std::cerr << symbol_store::get(part.partsymbol()) << "=";
             
             if( var_idx < data.values_size() )
               print_variable( data.values(var_idx) );
             else
-              std::cout << "'?'";
+              std::cerr << "'?'";
             
-            std::cout << '}';
+            std::cerr << '}';
             
             ++var_idx;
           }
           else if( part.hasdata() )
           {
-            std::cout << " ";
+            std::cerr << " ";
             if( var_idx < data.values_size() )
               print_variable( data.values(var_idx) );
             else
-              std::cout << "'?'";
+              std::cerr << "'?'";
             
             ++var_idx;
           }
           else if( part.has_partsymbol() )
           {
-            std::cout << " " << symbol_store::get(part.partsymbol());
+            std::cerr << " " << symbol_store::get(part.partsymbol());
           }
         }
       }
-      std::cout << "\n";
+      std::cerr << "\n";
     }
 
         
@@ -151,7 +151,7 @@ namespace virtdb { namespace logger {
         auto head = header_store::get(data.headerseqno());
         if( !head )
         {
-          std::cout << "empty header\n";
+          std::cerr << "empty header\n";
           return;
         }
         print_data( rec->process(), data, *head );
