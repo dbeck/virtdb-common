@@ -34,7 +34,7 @@ UTIL_SRCS            := $(wildcard util/*.cc)
 LOGGER_SRCS          := $(wildcard logger/*.cc)
 CONNECTOR_SRCS       := $(wildcard connector/*.cc)
 TEST_SRCS_WILDCARD   := $(wildcard test/*.cc)
-TEST_EXCLUDES        := test/netinfo.cc test/gtest_main.cc
+TEST_EXCLUDES        := test/gtest_main.cc
 TEST_SRCS            := $(filter-out $(TEST_EXCLUDES),$(TEST_SRCS_WILDCARD))
 
 UTIL_OBJECTS       := $(patsubst %.cc,%.o,$(UTIL_SRCS))
@@ -47,9 +47,8 @@ COMMON_LIB := libcommon.a
 
 all: $(COMMON_LIB) gtest-test 
 
-gtest-test: gtest-pkg-build-all test/gtest_main.o test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
+gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
 	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
-	g++ -o test/netinfo test/netinfo.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 
 $(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
 	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
@@ -84,7 +83,7 @@ gtest-pkg-clean:
 
 clean: gtest-pkg-clean
 	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS)
-	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main test/netinfo
+	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main 
 	cd ./proto; make -f proto.mk clean
 	@echo "checking for suspicious files"
 	@find . -type f -name "*.so"
