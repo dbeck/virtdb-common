@@ -29,7 +29,6 @@
       '<!@(pkg-config --variable=includedir protobuf libzmq)',
     ],
     'cflags': [
-      '-std=c++11',
       '-Wall',
     ],
     'defines': [
@@ -49,7 +48,7 @@
         'xcode_settings':  {
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
           'OTHER_LDFLAGS':               [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
-          'OTHER_CFLAGS':                [ '-std=c++11', '-I<!(pwd)/', '-I<!(pwd)/cppzmq/', ],
+          'OTHER_CFLAGS':                [ '-I<!(pwd)/', '-I<!(pwd)/cppzmq/', ],
         },
       },],
       ['OS=="linux"', {
@@ -84,8 +83,12 @@
       ],
       'target_name':       'common',
       'type':              'static_library',
-      'dependencies':      [ 'proto/proto.gyp:proto', ],
-      'export_dependent_settings': [ 'proto/proto.gyp:proto', ],
+      'dependencies':      [ 'proto/proto.gyp:*', ],
+      'export_dependent_settings': [ 'proto/proto.gyp:*', ],
+      'cflags': [
+        '-std=c++11',
+        '-Wall',
+      ],
       'sources':           [
                              # generic utils
                              'util.hh',                  'util/constants.hh',
@@ -137,6 +140,10 @@
       'type':              'executable',
       'dependencies':      [ 'proto/proto.gyp:*', 'gtest/gyp/gtest.gyp:gtest_lib', 'common', ],
       'include_dirs':      [ './gtest/include/', ],
+      'cflags': [
+        '-std=c++11',
+        '-Wall',
+      ],
       'sources':           [
                              'test/gtest_main.cc',
                              'test/value_type_test.cc',   'test/value_type_test.hh',
@@ -146,12 +153,21 @@
                            ],
     },
     {
-      'target_name':       'netinfo',
-      'type':              'executable',
-      'dependencies':      [ 'common', 'proto/proto.gyp:proto', ],
-      'include_dirs':      [ './', ],
+      'target_name':       'lz4',
+      'type':              'static_library',
       'sources':           [
-                             'test/netinfo.cc',
+                             'lz4/lz4.c',
+                             'lz4/lz4.h',
+                             'lz4/lz4hc.c',
+                             'lz4/lz4hc.h',
+                           ],
+    },
+    {
+      'target_name':       'murmur3',
+      'type':              'static_library',
+      'sources':           [
+                             'murmur3/murmur3.c',
+                             'murmur3/murmur3.h',
                            ],
     },
   ],
