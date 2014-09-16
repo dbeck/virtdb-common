@@ -1,10 +1,12 @@
-var Connector, Protocol, async, udp;
+var Connector, Protocol, async, log, udp;
 
 udp = require('dgram');
 
 async = require("async");
 
 Protocol = require('./protocol');
+
+log = require('./diag');
 
 Connector = (function() {
   function Connector() {}
@@ -93,6 +95,7 @@ Connector = (function() {
 
   Connector.onIP = function(callback) {
     if (Connector.IP != null) {
+      console.log("Our IP:", Connector.IP);
       return callback();
     } else {
       return async.retry(5, function(retry_callback, results) {
@@ -106,7 +109,10 @@ Connector = (function() {
         }, 50);
       }, function() {
         if (Connector.IP != null) {
+          console.log("Our IP:", Connector.IP);
           return callback();
+        } else {
+          throw "Unable to detect own IP.";
         }
       });
     }
@@ -115,7 +121,7 @@ Connector = (function() {
   Connector.setupEndpoint = function(name, protocol_call, callback) {
     return protocol_call('tcp://' + Connector.IP + ':*', callback, function(err, svcType, zmqType, zmqAddress) {
       var endpoint;
-      console.log("Listening (" + svcType + ") on", zmqAddress);
+      log.info("Listening (" + svcType + ") on", zmqAddress);
       endpoint = {
         Endpoints: [
           {

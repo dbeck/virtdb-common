@@ -1,6 +1,7 @@
 udp         = require 'dgram'
 async       = require "async"
 Protocol    = require './protocol'
+log         = require './diag'
 
 class Connector
     @IP: null
@@ -54,6 +55,7 @@ class Connector
 
     @onIP: (callback) =>
         if @IP?
+            console.log "Our IP:", @IP
             callback()
         else
             async.retry 5, (retry_callback, results) =>
@@ -65,11 +67,14 @@ class Connector
                 , 50
             , =>
                 if @IP?
+                    console.log "Our IP:", @IP
                     callback()
+                else
+                    throw "Unable to detect own IP."
 
     @setupEndpoint: (name, protocol_call, callback) =>
         protocol_call 'tcp://' + @IP + ':*', callback, (err, svcType, zmqType, zmqAddress) =>
-            console.log "Listening (" + svcType + ") on", zmqAddress
+            log.info "Listening (" + svcType + ") on", zmqAddress
             endpoint =
                 Endpoints: [
                     Name: name

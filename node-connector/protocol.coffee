@@ -43,7 +43,6 @@ class Protocol
                 newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
                 onRequest newData
             catch ex
-                console.log ex
                 @metadata_socket.send 'err'
             return
         @metadata_socket.bind connectionString, @bindHandler(@metadata_socket, 'META_DATA', 'REQ_REP', onBound)
@@ -55,7 +54,6 @@ class Protocol
                 query = proto_data.parse(request, "virtdb.interface.pb.Query")
                 onQuery query
             catch ex
-                console.log ex
                 @query_socket.send 'err'
             return
         @query_socket.bind connectionString, @bindHandler(@query_socket, 'QUERY', 'PUSH_PULL', onBound)
@@ -70,7 +68,6 @@ class Protocol
     @sendColumn = (columnChunk) =>
         @column_socket.send columnChunk.QueryId, zmq.ZMQ_SNDMORE
         @column_socket.send proto_data.serialize columnChunk, "virtdb.interface.pb.Column"
-        console.log "Column data sent: ", columnChunk.Name, "(", columnChunk.Data.length() ,")"
 
     @onDiagSocket = (callback) =>
         if @diag_socket?
@@ -79,7 +76,7 @@ class Protocol
             async.retry 5, (retry_callback, results) =>
                 setTimeout =>
                     err = null
-                    # console.log @diag_socket
+                    # log.debug @diag_socket
                     if not @diag_socket?
                         err = "diag_socket is not set yet"
                     retry_callback err, @diag_socket
@@ -90,7 +87,7 @@ class Protocol
 
     @sendDiag = (logRecord) =>
         @onDiagSocket () =>
-            # console.log logRecord
+            # log.debug logRecord
             @diag_socket.send proto_diag.serialize logRecord, "virtdb.interface.pb.LogRecord"
 
     @connectToDiag = (addresses) =>
@@ -115,8 +112,7 @@ class Protocol
             catch e
                 callback e
         , (err) ->
-            if err
-                console.log err
+            return
         if connected
             ret
         else

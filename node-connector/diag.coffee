@@ -184,10 +184,10 @@ class Diag
                 ret =
                     Type: 'STRING'
                     StringValue: [
-                        argument.toString()
+                        argument?.toString()
                     ]
                     IsNull: [
-                        false
+                        not argument?
                     ]
 
     @_ellapsedMicrosec: () =>
@@ -197,7 +197,6 @@ class Diag
         return (ellapsed[0] * 1e9 + ellapsed[1]) / 1000
 
     @_log: (level, args) =>
-        console.time "log"
         record = {}
         record.Process = @_getProcessInfo()
         record.Data = [
@@ -216,8 +215,6 @@ class Diag
         record.Headers = @_getNewHeaders()
 
         Protocol.sendDiag record
-        console.timeEnd "log"
-
 
 class Log
     @levels =
