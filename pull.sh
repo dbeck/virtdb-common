@@ -1,4 +1,5 @@
 #!/bin/sh
+git submodule update --init --recursive
 git submodule update --init --remote --recursive
 git checkout master
 git pull --recurse-submodules 
