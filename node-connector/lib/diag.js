@@ -247,8 +247,8 @@ Diag = (function() {
       default:
         return ret = {
           Type: 'STRING',
-          StringValue: [argument.toString()],
-          IsNull: [false]
+          StringValue: [argument != null ? argument.toString() : void 0],
+          IsNull: [argument == null]
         };
     }
   };
@@ -264,7 +264,6 @@ Diag = (function() {
 
   Diag._log = function(level, args) {
     var argument, record, type, _i, _len;
-    console.time("log");
     record = {};
     record.Process = Diag._getProcessInfo();
     record.Data = [
@@ -285,8 +284,7 @@ Diag = (function() {
     }
     record.Symbols = Diag._getNewSymbols();
     record.Headers = Diag._getNewHeaders();
-    Protocol.sendDiag(record);
-    return console.timeEnd("log");
+    return Protocol.sendDiag(record);
   };
 
   return Diag;

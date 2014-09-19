@@ -69,7 +69,6 @@ Protocol = (function() {
         onRequest(newData);
       } catch (_error) {
         ex = _error;
-        console.log(ex);
         Protocol.metadata_socket.send('err');
       }
     });
@@ -85,7 +84,6 @@ Protocol = (function() {
         onQuery(query);
       } catch (_error) {
         ex = _error;
-        console.log(ex);
         Protocol.query_socket.send('err');
       }
     });
@@ -103,8 +101,7 @@ Protocol = (function() {
 
   Protocol.sendColumn = function(columnChunk) {
     Protocol.column_socket.send(columnChunk.QueryId, zmq.ZMQ_SNDMORE);
-    Protocol.column_socket.send(proto_data.serialize(columnChunk, "virtdb.interface.pb.Column"));
-    return console.log("Column data sent: ", columnChunk.Name, "(", columnChunk.Data.length(), ")");
+    return Protocol.column_socket.send(proto_data.serialize(columnChunk, "virtdb.interface.pb.Column"));
   };
 
   Protocol.onDiagSocket = function(callback) {
@@ -161,11 +158,7 @@ Protocol = (function() {
         e = _error;
         return callback(e);
       }
-    }, function(err) {
-      if (err) {
-        return console.log(err);
-      }
-    });
+    }, function(err) {});
     if (connected) {
       return ret;
     } else {
