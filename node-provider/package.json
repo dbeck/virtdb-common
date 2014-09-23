@@ -1,5 +1,5 @@
 {
-  "name": "virtdb-connector",
+  "name": "virtdb-provider",
   "version": "0.0.1",
   "description": "node.js package for connecting a Data Provider to the VirtDB system",
   "main": "lib/index.js",
