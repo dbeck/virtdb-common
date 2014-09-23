@@ -3,8 +3,24 @@ async       = require "async"
 Protocol    = require './protocol'
 log         = require './diag'
 
-class Connector
+class VirtDBConnector
     @IP: null
+    @log = log
+
+    constructor: (@name, @connectionString) ->
+
+    connect: () =>
+        Protocol.svcConfig @connectionString, @onEndpoint
+
+        endpoint =
+            Endpoints: [
+                Name: @name
+                SvcType: 'NONE'
+            ]
+        Protocol.sendEndpoint endpoint
+
+    close: =>
+        Protocol.close()
 
     @onEndpoint: (endpoint) =>
         switch endpoint.SvcType
@@ -88,4 +104,4 @@ class Connector
                 ]
             Protocol.sendEndpoint endpoint
 
-module.exports = Connector
+module.exports = VirtDBConnector
