@@ -10,15 +10,7 @@ class Protocol
     @metadata_socket = null
     @column_socket = null
 
-    @bindHandler = (socket, svcType, zmqType, onBound) ->
-        return (err) ->
-            zmqAddress = ""
-            if not err
-                zmqAddress = socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
-            onBound err, svcType, zmqType, zmqAddress
-
-
-    @metaDataServer = (connectionString, onRequest, onBound) =>
+    @metaDataServer = (name, connectionString, onRequest, onBound) =>
         @metadata_socket = zmq.socket "rep"
         @metadata_socket.on "message", (request) =>
             try
@@ -27,9 +19,9 @@ class Protocol
             catch ex
                 @metadata_socket.send 'err'
             return
-        @metadata_socket.bind connectionString, @bindHandler(@metadata_socket, 'META_DATA', 'REQ_REP', onBound)
+        @metadata_socket.bind connectionString, onBound name, @metadata_socket, 'META_DATA', 'REQ_REP'
 
-    @queryServer = (connectionString, onQuery, onBound) =>
+    @queryServer = (name, connectionString, onQuery, onBound) =>
         @query_socket = zmq.socket "pull"
         @query_socket.on "message", (request) =>
             try
@@ -38,11 +30,11 @@ class Protocol
             catch ex
                 @query_socket.send 'err'
             return
-        @query_socket.bind connectionString, @bindHandler(@query_socket, 'QUERY', 'PUSH_PULL', onBound)
+        @query_socket.bind connectionString, onBound name, @query_socket, 'QUERY', 'PUSH_PULL'
 
-    @columnServer = (connectionString, callback, onBound) =>
+    @columnServer = (name, connectionString, callback, onBound) =>
         @column_socket = zmq.socket "pub"
-        @column_socket.bind connectionString, @bindHandler(@column_socket, 'COLUMN', 'PUB_SUB', onBound)
+        @column_socket.bind connectionString, onBound name, @column_socket, 'COLUMN', 'PUB_SUB'
 
     @sendMetaData = (data) =>
         @metadata_socket.send proto_meta.serialize data, "virtdb.interface.pb.MetaData"

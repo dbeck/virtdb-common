@@ -2,24 +2,23 @@ udp         = require 'dgram'
 async       = require "async"
 Protocol    = require './protocol'
 log         = require './diag'
+zmq         = require 'zmq'
 
 class VirtDBConnector
     @IP: null
     @log = log
 
-    constructor: (@name, @connectionString) ->
-
-    connect: () =>
-        Protocol.svcConfig @connectionString, @onEndpoint
+    @connect: (name, connectionString) =>
+        Protocol.svcConfig connectionString, @onEndpoint
 
         endpoint =
             Endpoints: [
-                Name: @name
+                Name: name
                 SvcType: 'NONE'
             ]
         Protocol.sendEndpoint endpoint
 
-    close: =>
+    @close: =>
         Protocol.close()
 
     @onEndpoint: (endpoint) =>
@@ -89,7 +88,16 @@ class VirtDBConnector
                     throw "Unable to detect own IP."
 
     @setupEndpoint: (name, protocol_call, callback) =>
-        protocol_call 'tcp://' + @IP + ':*', callback, (err, svcType, zmqType, zmqAddress) =>
+        protocol_call name, 'tcp://' + @IP + ':*', callback, @OnBound
+        return
+
+    @OnBound = (name, socket, svcType, zmqType) ->
+        return (err) ->
+            if err
+                log.error "Error during binding socket: " + err
+                return
+            zmqAddress = socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
+            console.log "Listening (" + svcType + ") on", zmqAddress
             log.info "Listening (" + svcType + ") on", zmqAddress
             endpoint =
                 Endpoints: [

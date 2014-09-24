@@ -1,24 +1,21 @@
 # CONST = require('./config').Const
 Protocol    = require './protocol'
-VirtDBConnector   = require 'virtdb-connector'
+VirtDBConnector = require 'virtdb-connector'
 
 class VirtDBDataProvider
 
-    connector: null
-
     constructor: (@name, connectionString) ->
-        @connector = new VirtDBConnector(@name, connectionString)
-        @connector.connect()
+        VirtDBConnector.connect(@name, connectionString)
 
     onMetaDataRequest: (callback) =>
-        @connector.onIP =>
-            @connector.setupEndpoint @name, Protocol.metaDataServer, callback
+        VirtDBConnector.onIP =>
+            VirtDBConnector.setupEndpoint @name, Protocol.metaDataServer, callback
         return
 
     onQuery: (callback) =>
-        @connector.onIP =>
-            @connector.setupEndpoint @name, Protocol.queryServer, callback
-            @connector.setupEndpoint @name, Protocol.columnServer
+        VirtDBConnector.onIP =>
+            VirtDBConnector.setupEndpoint @name, Protocol.queryServer, callback
+            VirtDBConnector.setupEndpoint @name, Protocol.columnServer
 
     sendMetaData: (data) ->
         Protocol.sendMetaData data
@@ -29,6 +26,6 @@ class VirtDBDataProvider
     close: =>
         Protocol.close()
 
-    @log = VirtDBConnector.Log
+    @log = VirtDBConnector.log
 
 module.exports = VirtDBDataProvider
