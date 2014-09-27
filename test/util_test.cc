@@ -224,3 +224,9 @@ TEST_F(ZmqTest, DeleteWhileWaitingForEver)
   }
 }
 
+TEST_F(DataQueueTest, AddItems)
+{
+  data_queue<int> q(3);
+}
+
+
