@@ -29,5 +29,6 @@ namespace virtdb { namespace test {
   class AsyncWorkerTest : public ::testing::Test { };
   class CompareMessagesTest : public ::testing::Test { };
   class ZmqTest : public ::testing::Test { };
+  class TableCollectorTest : public ::testing::Test { };
 }}
 

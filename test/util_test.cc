@@ -224,3 +224,28 @@ TEST_F(ZmqTest, DeleteWhileWaitingForEver)
   }
 }
 
+TEST_F(TableCollectorTest, Basic)
+{
+  table_collector<int> q(3);
+  EXPECT_FALSE(q.stopped());
+  EXPECT_EQ(q.last_updated(0), 0);
+  EXPECT_EQ(q.last_updated(1000), 0);
+  EXPECT_EQ(q.get(0,200), nullptr);
+  std::shared_ptr<int> i(new int{1});
+  q.insert(0, 0, i);
+  EXPECT_NE(q.last_updated(0), 0);
+  q.insert(0, 1, i);
+  EXPECT_EQ(q.get(0,200), nullptr);
+  q.insert(0, 2, i);
+  auto * x = q.get(0,200);
+  EXPECT_NE(x, nullptr);
+  // test timeout too
+  relative_time rt;
+  x = q.get(0,2000000);
+  EXPECT_NE(x, nullptr);
+  // I expect to have results immediately. give a bit
+  // of time for table_collector anyway
+  EXPECT_LT(rt.get_msec(), 10);
+}
+
+
