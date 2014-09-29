@@ -145,45 +145,39 @@ namespace virtdb { namespace util {
       }
     }
     
-    block * get(uint64_t timeout_ms,
-                size_t block_id)
+    block * get(size_t block_id,
+                uint64_t timeout_ms=10000)
     {
-      auto now = std::chrono::system_clock::now();
-      auto wait_till = now + std::chrono::milliseconds(timeout_ms);
-      
-      block * ret = nullptr;
-      
-      while( stopped() == false )
       {
+        // initial check for block state
         lock l(mtx_);
-        cond_.wait_until(l,
-                         wait_till,
-                         [&]()
-        {
-          if( stopped() )
-          {
-            return true;
-          }
-          auto it = blocks_.find(block_id);
-          if( it == blocks_.end() )
-          {
-            return false;
-          }
-          else if( it->second.ok() )
-          {
-            return true;
-          }
-          else
-          {
-            return false;
-          }
-        });
         
         auto it = blocks_.find(block_id);
-        if(it != blocks_.end() &&
-           it->second.ok())
+        if( it != blocks_.end() && it->second.ok() )
         {
-          ret = it->second.get();
+            return &(it->second);
+        }
+      }
+      
+      auto wait_till = (std::chrono::system_clock::now() +
+                        std::chrono::milliseconds(timeout_ms));
+      block * ret = nullptr;
+      std::cv_status cvstat = std::cv_status::no_timeout;
+      
+      
+      while( stopped() == false && cvstat != std::cv_status::timeout )
+      {
+        lock l(mtx_);
+        cvstat = cond_.wait_until(l, wait_till);
+        
+        auto it = blocks_.find(block_id);
+        if( it == blocks_.end() )
+        {
+          continue;
+        }
+        else if( it->second.ok() )
+        {
+          ret = &(it->second);
           break;
         }
       }
