@@ -6,6 +6,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <chrono>
 #include "relative_time.hh"
 #include "exception.hh"
 #include "constants.hh"
@@ -26,13 +27,15 @@ namespace virtdb { namespace util {
       size_t     n_ok_;
       uint64_t   last_updated_ms_;
       row_data   data_;
+      size_t     n_columns_;
       
       block(size_t id,
             size_t n_columns)
       : id_{id},
         n_ok_{0},
         last_updated_ms_{0},
-        data_(n_columns, column_block_sptr())
+        data_(n_columns, column_block_sptr()),
+        n_columns_{n_columns}
       {
       }
       
@@ -42,6 +45,26 @@ namespace virtdb { namespace util {
         last_updated_ms_  = 0;
         for( auto & d : data_ )
           d.reset();
+      }
+      
+      bool ok()
+      {
+        return (n_ok_ == n_columns_);
+      }
+      
+      void set_col(size_t col_id,
+                   column_block_sptr b)
+      {
+        auto & dptr = data_[col_id];
+        if( !dptr && b )
+        {
+          // update counter of columns we have
+          ++n_ok_;
+        }
+        
+        // update pointer and timestamp
+        dptr = b;
+        last_updated_ms_ = relative_time::instance().get_msec();
       }
       
     private:
@@ -102,18 +125,10 @@ namespace virtdb { namespace util {
         it = iit.first;
       }
       
-      auto & dptr = it->second.data_[col_id];
-      if( !dptr && b )
-      {
-        // update counter of columns we have
-        ++(it->second.n_ok_);
-      }
+      // set column
+      it->second.set_col(col_id, b);
       
-      // update pointer and timestamp
-      dptr = b;
-      it->second.last_updated_ms_ = relative_time::instance().get_msec();
-      
-      if( it->second.n_ok_ == n_columns_ )
+      if( it->second.ok() )
       {
         // we have enough columns for this block, tell everyone waiting
         cond_.notify_all();
@@ -133,8 +148,46 @@ namespace virtdb { namespace util {
     block * get(uint64_t timeout_ms,
                 size_t block_id)
     {
-      // TODO :
-      return nullptr;
+      auto now = std::chrono::system_clock::now();
+      auto wait_till = now + std::chrono::milliseconds(timeout_ms);
+      
+      block * ret = nullptr;
+      
+      while( stopped() == false )
+      {
+        lock l(mtx_);
+        cond_.wait_until(l,
+                         wait_till,
+                         [&]()
+        {
+          if( stopped() )
+          {
+            return true;
+          }
+          auto it = blocks_.find(block_id);
+          if( it == blocks_.end() )
+          {
+            return false;
+          }
+          else if( it->second.ok() )
+          {
+            return true;
+          }
+          else
+          {
+            return false;
+          }
+        });
+        
+        auto it = blocks_.find(block_id);
+        if(it != blocks_.end() &&
+           it->second.ok())
+        {
+          ret = it->second.get();
+          break;
+        }
+      }
+      return ret;
     }
     
     uint64_t last_updated(size_t block_id)
