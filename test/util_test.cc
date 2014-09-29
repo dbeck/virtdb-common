@@ -224,9 +224,17 @@ TEST_F(ZmqTest, DeleteWhileWaitingForEver)
   }
 }
 
-TEST_F(DataQueueTest, AddItems)
+TEST_F(TableCollectorTest, Basic)
 {
-  data_queue<int> q(3);
+  table_collector<int> q(3);
+  EXPECT_FALSE(q.stopped());
+  EXPECT_EQ(q.last_updated(0), 0);
+  EXPECT_EQ(q.last_updated(1000), 0);
+  std::shared_ptr<int> i(new int{1});
+  q.insert(0, 0, i);
+  EXPECT_NE(q.last_updated(0), 0);
+  q.insert(0, 1, i);
+  q.insert(0, 2, i);
 }
 
 
