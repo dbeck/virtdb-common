@@ -69,7 +69,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -126,7 +126,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -183,7 +183,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -240,7 +240,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -297,7 +297,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -354,7 +354,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -420,7 +420,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -477,7 +477,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {
@@ -534,7 +534,7 @@ namespace virtdb { namespace util {
     }
 
     static stored_type
-    get(interface::pb::ValueType & pb_vt,
+    get(const interface::pb::ValueType & pb_vt,
         int index,
         const stored_type & default_value)
     {

@@ -36,3 +36,7 @@ gyp-mac-tool
 *.xcodeproj
 out/
 Debug/
+
+# xcode
+._*.hh
+._*.cc
