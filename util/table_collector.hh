@@ -16,18 +16,30 @@ namespace virtdb { namespace util {
   template <typename T>
   class table_collector final
   {
+    typedef std::unique_lock<std::mutex>   lock;
   public:
     typedef T                               column_block;
     typedef std::shared_ptr<column_block>   column_block_sptr;
     typedef std::vector<column_block_sptr>  row_data;
     
-    struct block
+    class block
     {
-      size_t     id_;
-      size_t     n_ok_;
-      uint64_t   last_updated_ms_;
-      row_data   data_;
-      size_t     n_columns_;
+      size_t               id_;
+      size_t               n_ok_;
+      uint64_t             last_updated_ms_;
+      row_data             data_;
+      size_t               n_columns_;
+      mutable std::mutex   mtx_;
+      
+    public:
+      block(const block & other)
+      : id_{other.id_},
+        n_ok_{other.n_ok_},
+        last_updated_ms_{other.last_updated_ms_},
+        data_{other.data_},
+        n_columns_{other.n_columns_}
+      {
+      }
       
       block(size_t id,
             size_t n_columns)
@@ -39,22 +51,78 @@ namespace virtdb { namespace util {
       {
       }
       
+      row_data & data()
+      {
+        return data_;
+      }
+      
+      size_t n_columns() const
+      {
+        return n_columns_;
+      }
+      
+      uint64_t last_updated_ms() const
+      {
+        uint64_t ret = 0;
+        {
+          lock l(mtx_);
+          ret = last_updated_ms_;
+        }
+        return ret;
+      }
+      
+      void last_updated_ms(uint64_t last_updated)
+      {
+        lock l(mtx_);
+        last_updated_ms_ = last_updated;
+      }
+
       void reset()
       {
+        std::unique_lock<std::mutex> l(mtx_);
         n_ok_             = 0;
         last_updated_ms_  = 0;
         for( auto & d : data_ )
           d.reset();
       }
       
-      bool ok()
+      bool ok() const
       {
-        return (n_ok_ == n_columns_);
+        bool ret = false;
+        {
+          lock l(mtx_);
+          ret = (n_ok_ == n_columns_);
+        }
+        return ret;
+      }
+      
+      size_t count_non_nil() const
+      {
+        size_t ret = 0;
+        {
+          lock l(mtx_);
+          for( auto const & r : data_ )
+            if( r.get() ) ++ret;
+        }
+        return ret;
+      }
+      
+      size_t count_nil() const
+      {
+        size_t ret = 0;
+        {
+          lock l(mtx_);
+          for( auto const & r : data_ )
+            if( !r.get() ) ++ret;
+        }
+        return ret;
       }
       
       void set_col(size_t col_id,
                    column_block_sptr b)
       {
+        lock l(mtx_);
+        
         auto & dptr = data_[col_id];
         if( !dptr && b )
         {
@@ -72,8 +140,6 @@ namespace virtdb { namespace util {
     };
     
   private:
-    typedef std::unique_lock<std::mutex>   lock;
-    
     size_t                         n_columns_;
     std::map<size_t, block>        blocks_;
     std::mutex                     mtx_;
@@ -145,9 +211,10 @@ namespace virtdb { namespace util {
       }
     }
     
-    block * get(size_t block_id,
-                uint64_t timeout_ms=10000)
+    row_data get(size_t block_id,
+                 uint64_t timeout_ms=10000)
     {
+      row_data empty;
       {
         // initial check for block state
         lock l(mtx_);
@@ -155,16 +222,15 @@ namespace virtdb { namespace util {
         auto it = blocks_.find(block_id);
         if( it != blocks_.end() && it->second.ok() )
         {
-            return &(it->second);
+          return it->second.data();
         }
       }
       
       auto wait_till = (std::chrono::system_clock::now() +
                         std::chrono::milliseconds(timeout_ms));
-      block * ret = nullptr;
+
       std::cv_status cvstat = std::cv_status::no_timeout;
-      
-      
+    
       while( stopped() == false && cvstat != std::cv_status::timeout )
       {
         lock l(mtx_);
@@ -177,11 +243,10 @@ namespace virtdb { namespace util {
         }
         else if( it->second.ok() )
         {
-          ret = &(it->second);
-          break;
+          return it->second.data();
         }
       }
-      return ret;
+      return empty;
     }
     
     uint64_t last_updated(size_t block_id)
@@ -194,7 +259,7 @@ namespace virtdb { namespace util {
       }
       else
       {
-        return it->second.last_updated_ms_;
+        return it->second.last_updated_ms();
       }
     }
     
@@ -208,10 +273,7 @@ namespace virtdb { namespace util {
       }
       else
       {
-        if( it->second.n_ok_ > n_columns_ )
-          return 0;
-        else
-          return (n_columns_ - it->second.n_ok_);
+        return it->second.count_nil();
       }
     }
     

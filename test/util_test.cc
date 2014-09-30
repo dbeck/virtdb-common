@@ -230,19 +230,22 @@ TEST_F(TableCollectorTest, Basic)
   EXPECT_FALSE(q.stopped());
   EXPECT_EQ(q.last_updated(0), 0);
   EXPECT_EQ(q.last_updated(1000), 0);
-  EXPECT_EQ(q.get(0,200), nullptr);
+  auto const & val0 = q.get(0,200);
+  EXPECT_EQ(val0.empty(), true);
   std::shared_ptr<int> i(new int{1});
   q.insert(0, 0, i);
   EXPECT_NE(q.last_updated(0), 0);
   q.insert(0, 1, i);
-  EXPECT_EQ(q.get(0,200), nullptr);
+  auto const & val1 = q.get(0,200);
+  EXPECT_EQ(val1.empty(), true);
   q.insert(0, 2, i);
-  auto * x = q.get(0,200);
-  EXPECT_NE(x, nullptr);
+  auto const & val2 = q.get(0,200);
+  EXPECT_NE(val2.empty(), false);
+  EXPECT_EQ(val2.size(), 3);
   // test timeout too
   relative_time rt;
-  x = q.get(0,2000000);
-  EXPECT_NE(x, nullptr);
+  auto const & val3 = q.get(0,2000000);
+  EXPECT_NE(val3.empty(), true);
   // I expect to have results immediately. give a bit
   // of time for table_collector anyway
   EXPECT_LT(rt.get_msec(), 10);
