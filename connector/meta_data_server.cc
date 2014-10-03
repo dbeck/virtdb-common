@@ -67,19 +67,26 @@ namespace virtdb { namespace connector {
       lock l(tables_mtx_);
       bool match_schema = (req.has_schema() && !req.schema().empty());
       
-      std::regex table_regex{req.name()};
+      std::regex table_regex{req.name(), std::regex::extended};
       std::regex schema_regex;
       
       if( match_schema )
-        schema_regex.assign(req.schema());
+        schema_regex.assign(req.schema(), std::regex::extended);
       
       bool with_fields = req.withfields();
       
       for( const auto & it : tables_ )
+        
       {
-        if( std::regex_search(it.second->name(),table_regex) )
+        if( std::regex_match(it.second->name(),
+                             table_regex,
+                             std::regex_constants::match_any |
+                             std::regex_constants::format_sed ) )
         {
-          if( !match_schema || std::regex_search(it.second->schema(), schema_regex ) )
+          if( !match_schema || std::regex_match(it.second->schema(),
+                                                schema_regex,
+                                                std::regex_constants::match_any |
+                                                std::regex_constants::format_sed ) )
           {
             auto tmp_tab = rep->add_tables();
             if( with_fields )
