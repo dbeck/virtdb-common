@@ -85,7 +85,8 @@ namespace virtdb { namespace connector {
       
        virtual bool send_request(const req_item & req,
                                  std::function<bool(const rep_item & rep)> cb,
-                                 unsigned long timeout_ms)
+                                 unsigned long timeout_ms,
+                                 std::function<void(void)> on_timeout=[]{})
       {
         if( !socket_.valid() ) return false;
         
@@ -133,6 +134,7 @@ namespace virtdb { namespace connector {
                 if( !n_replies )
                 {
                   LOG_ERROR("time out during reading reply for request" << M_(req));
+                  on_timeout();
                   return false;
                 }
                 break;

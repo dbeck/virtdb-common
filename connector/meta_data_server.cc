@@ -77,9 +77,9 @@ namespace virtdb { namespace connector {
       
       for( const auto & it : tables_ )
       {
-        if( std::regex_match(it.second->name(),table_regex) )
+        if( std::regex_search(it.second->name(),table_regex) )
         {
-          if( !match_schema || std::regex_match(it.second->schema(), schema_regex ) )
+          if( !match_schema || std::regex_search(it.second->schema(), schema_regex ) )
           {
             auto tmp_tab = rep->add_tables();
             if( with_fields )
