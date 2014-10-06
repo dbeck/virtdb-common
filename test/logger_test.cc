@@ -1,5 +1,6 @@
 #include "logger_test.hh"
 #include "util/relative_time.hh"
+#include "util/exception.hh"
 #include <iostream>
 #include <chrono>
 #include <set>
@@ -196,6 +197,24 @@ TEST_F(LoggerTest, LogScoped)
 TEST_F(LoggerTest, InitZmqReceiver)
 {
   EXPECT_TRUE(this->init_zmq_receiver());
+}
+
+TEST_F(LoggerTest, VoidPtr)
+{
+  void * p = nullptr;
+  LOG_INFO(" " << P_(p));
+}
+
+TEST_F(LoggerTest, LogExc)
+{
+  try
+  {
+    THROW_("test");
+  }
+  catch( const std::exception & e )
+  {
+    LOG_INFO(" " <<  E_(e));
+  }
 }
 
 TEST_F(HeaderStoreTest, NewIdUnique)
