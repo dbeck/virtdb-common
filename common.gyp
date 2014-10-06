@@ -54,9 +54,16 @@
       ['OS=="linux"', {
         'defines':                       [ 'COMMON_LINUX_BUILD', ],
         'cflags':                        [ '<!@(pkg-config --cflags protobuf libzmq)', ],
+        'variables': {
+          'proto_libdir' : '<!(pkg-config --libs-only-L protobuf)',
+          'zmq_libdir' :   '<!(pkg-config --libs-only-L libzmq)',
+        },
         'link_settings': {
           'ldflags':                     [ '-Wl,--no-as-needed', ],
-          'libraries':                   [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
+          'libraries':                   [
+                                           '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
+                                           '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)" )',
+                                         ],
         },
       },],
     ],
