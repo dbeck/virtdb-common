@@ -442,7 +442,7 @@ namespace virtdb { namespace connector {
     if( proc_info.has_namesymbol() )
       host_and_name << "/" << resolve(symbol_table, proc_info.namesymbol());
     
-    std::cout << '[' << proc_info.pid() << ':' << data.threadid() << "]"
+    std::cerr << '[' << proc_info.pid() << ':' << data.threadid() << "]"
               << host_and_name.str()
               << " (" << level_string(head.level())
               << ") @" << resolve(symbol_table,head.filenamesymbol()) << ':'
@@ -455,12 +455,12 @@ namespace virtdb { namespace connector {
        data.has_endscope() &&
        data.endscope() )
     {
-      std::cout << " [EXIT] ";
+      std::cerr << " [EXIT] ";
     }
     else
     {
       if( head.level() == pb::LogLevel::VIRTDB_SCOPED_TRACE )
-        std::cout << " [ENTER] ";
+        std::cerr << " [ENTER] ";
       
       for( int i=0; i<head.parts_size(); ++i )
       {
@@ -468,36 +468,36 @@ namespace virtdb { namespace connector {
         
         if( part.isvariable() && part.hasdata() )
         {
-          std::cout << " {";
+          std::cerr << " {";
           if( part.has_partsymbol() )
-            std::cout << resolve(symbol_table, part.partsymbol()) << "=";
+            std::cerr << resolve(symbol_table, part.partsymbol()) << "=";
           
           if( var_idx < data.values_size() )
             print_variable( data.values(var_idx) );
           else
-            std::cout << "'?'";
+            std::cerr << "'?'";
           
-          std::cout << '}';
+          std::cerr << '}';
           
           ++var_idx;
         }
         else if( part.hasdata() )
         {
-          std::cout << " ";
+          std::cerr << " ";
           if( var_idx < data.values_size() )
             print_variable( data.values(var_idx) );
           else
-            std::cout << "'?'";
+            std::cerr << "'?'";
           
           ++var_idx;
         }
         else if( part.has_partsymbol() )
         {
-          std::cout << " " << resolve(symbol_table, part.partsymbol());
+          std::cerr << " " << resolve(symbol_table, part.partsymbol());
         }
       }
     }
-    std::cout << "\n";
+    std::cerr << "\n";
   }
   
   void
@@ -516,20 +516,20 @@ namespace virtdb { namespace connector {
         auto proc_heads = headers_.find(rec.process());
         if( proc_heads == headers_.end() )
         {
-          std::cout << "missing proc-header\n";
+          std::cerr << "missing proc-header\n";
           return;
         }
         
         auto head = proc_heads->second.find(data.headerseqno());
         if( head == proc_heads->second.end())
         {
-          std::cout << "missing header-seqno\n";
+          std::cerr << "missing header-seqno\n";
           return;
         }
         
         if( !head->second )
         {
-          std::cout << "empty header\n";
+          std::cerr << "empty header\n";
           return;
         }
         
@@ -538,7 +538,7 @@ namespace virtdb { namespace connector {
           auto proc_syms = symbols_.find(rec.process());
           if( proc_syms == symbols_.end() )
           {
-            std::cout << "missing proc-symtable\n";
+            std::cerr << "missing proc-symtable\n";
             return;
           }
           
@@ -592,15 +592,15 @@ namespace virtdb { namespace connector {
     switch( var.type() )
     {
         // TODO : handle array parameters ...
-      case pb::Kind::BOOL:   std::cout << (var.boolvalue(0)?"true":"false"); break;
-      case pb::Kind::FLOAT:  std::cout << var.floatvalue(0); break;
-      case pb::Kind::DOUBLE: std::cout << var.doublevalue(0); break;
-      case pb::Kind::STRING: std::cout << var.stringvalue(0); break;
-      case pb::Kind::INT32:  std::cout << var.int32value(0); break;
-      case pb::Kind::UINT32: std::cout << var.uint32value(0); break;
-      case pb::Kind::INT64:  std::cout << var.int64value(0); break;
-      case pb::Kind::UINT64: std::cout << var.uint64value(0); break;
-      default:               std::cout << "'unhandled-type'"; break;
+      case pb::Kind::BOOL:   std::cerr << (var.boolvalue(0)?"true":"false"); break;
+      case pb::Kind::FLOAT:  std::cerr << var.floatvalue(0); break;
+      case pb::Kind::DOUBLE: std::cerr << var.doublevalue(0); break;
+      case pb::Kind::STRING: std::cerr << var.stringvalue(0); break;
+      case pb::Kind::INT32:  std::cerr << var.int32value(0); break;
+      case pb::Kind::UINT32: std::cerr << var.uint32value(0); break;
+      case pb::Kind::INT64:  std::cerr << var.int64value(0); break;
+      case pb::Kind::UINT64: std::cerr << var.uint64value(0); break;
+      default:               std::cerr << "'unhandled-type'"; break;
     };
   }
   
