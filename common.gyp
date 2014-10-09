@@ -107,6 +107,7 @@
                              'util/zmq_utils.cc',        'util/zmq_utils.hh',
                              'util/async_worker.cc',     'util/async_worker.hh',
                              'util/compare_messages.hh', 'util/table_collector.hh',
+                             'util/timer_service.cc',    'util/timer_service.hh',   
                              # logger support
                              'logger.hh',
                              'logger/macros.hh',        'logger/on_return.hh',
