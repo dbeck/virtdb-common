@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "meta_data_server.hh"
 #include <regex>
 
@@ -160,6 +165,19 @@ namespace virtdb { namespace connector {
     lock l(tables_mtx_);
     table_map::key_type key(schema, name);
     return (tables_.count(key) > 0);
+  }
+  
+  meta_data_server::table_sptr
+  meta_data_server::get_table(const std::string & schema,
+                              const std::string & name)
+  {
+    lock l(tables_mtx_);
+    table_map::key_type key(schema, name);
+    auto it = tables_.find(key);
+    if( it == tables_.end() )
+      return table_sptr();
+    else
+      return it->second;
   }
   
   bool
