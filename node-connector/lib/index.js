@@ -1,4 +1,4 @@
-var Protocol, VirtDBConnector, async, log, udp, zmq;
+var ConfigService, Constants, EndpointService, KeyValue, Protocol, VirtDBConnector, async, log, udp, zmq;
 
 udp = require('dgram');
 
@@ -10,12 +10,28 @@ log = require('./diag');
 
 zmq = require('zmq');
 
+ConfigService = require("./config_service");
+
+KeyValue = require("./key_value");
+
+EndpointService = require("./endpoint_service");
+
+Constants = require("./constants");
+
 VirtDBConnector = (function() {
   function VirtDBConnector() {}
 
   VirtDBConnector.IP = null;
 
   VirtDBConnector.log = log;
+
+  VirtDBConnector.KeyValue = KeyValue;
+
+  VirtDBConnector.ConfigService = ConfigService;
+
+  VirtDBConnector.EndpointService = EndpointService;
+
+  VirtDBConnector.Constants = Constants;
 
   VirtDBConnector.connect = function(name, connectionString) {
     var endpoint;

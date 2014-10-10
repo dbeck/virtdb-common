@@ -3,10 +3,18 @@ async       = require "async"
 Protocol    = require './protocol'
 log         = require './diag'
 zmq         = require 'zmq'
+ConfigService = require "./config_service"
+KeyValue = require "./key_value"
+EndpointService = require "./endpoint_service"
+Constants = require "./constants"
 
 class VirtDBConnector
     @IP: null
     @log = log
+    @KeyValue = KeyValue
+    @ConfigService = ConfigService
+    @EndpointService = EndpointService
+    @Constants = Constants
 
     @connect: (name, connectionString) =>
         Protocol.svcConfig connectionString, @onEndpoint
