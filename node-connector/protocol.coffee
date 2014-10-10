@@ -3,8 +3,8 @@ zmq         = require 'zmq'
 protobuf    = require 'node-protobuf'
 async       = require "async"
 
-proto_service_config = new protobuf(fs.readFileSync('../../src/common/proto/svc_config.pb.desc'))
-proto_diag           = new protobuf(fs.readFileSync('../../src/common/proto/diag.pb.desc'))
+proto_service_config = new protobuf(fs.readFileSync(__dirname + '/proto/svc_config.pb.desc'))
+proto_diag           = new protobuf(fs.readFileSync(__dirname + '/proto/diag.pb.desc'))
 
 
 class Protocol
