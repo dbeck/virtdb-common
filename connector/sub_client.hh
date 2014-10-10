@@ -237,7 +237,7 @@ namespace virtdb { namespace connector {
       auto it = monitors_.find(subscription);
       if( it != monitors_.end() )
       {
-        for( auto const & m : it->second )
+        for( size_t m=0; m<it->second.size(); ++m )
         {
           try
           {
