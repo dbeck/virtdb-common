@@ -141,10 +141,13 @@ namespace virtdb { namespace util {
         {
           lock l(mutex_);
           
-          cond_.wait_for(l,
-                         std::chrono::milliseconds(WAKEUP_FREQ),
-                         [this] { return !queue_.empty(); }
-                         );
+          if( queue_.empty() )
+          {
+            cond_.wait_for(l,
+                           std::chrono::milliseconds(WAKEUP_FREQ),
+                           [this] { return !queue_.empty(); }
+                           );
+          }
           
           if( !queue_.empty() )
           {
@@ -153,8 +156,7 @@ namespace virtdb { namespace util {
             has_item = true;
             tmp = std::move(queue_.front());
             queue_.pop();
-          }
-          
+          }          
         }
         
         // the thread now processes the item outside the lock
