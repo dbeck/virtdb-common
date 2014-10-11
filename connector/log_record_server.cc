@@ -547,6 +547,30 @@ namespace virtdb { namespace connector {
       }
     }
   }
+  
+  void
+  log_record_server::cleanup_older_than(uint64_t ms)
+  {
+    auto const & rel_timer = util::relative_time::instance();
+    uint64_t usec_tm = rel_timer.get_usec();
+    uint64_t start_tm = 0;
+    if( ms > usec_tm )
+      return;
+    else
+      start_tm = usec_tm - ms;
+
+    {
+      lock log_lock(log_mtx_);
+      while( !logs_.empty() )
+      {
+        const auto & tuple_ref = logs_.front();
+        if( std::get<0>(tuple_ref) < start_tm )
+          logs_.pop_front();
+        else
+          break;
+      }
+    }
+  }
 
   log_record_server::~log_record_server()
   {

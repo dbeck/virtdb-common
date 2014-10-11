@@ -90,6 +90,7 @@ namespace virtdb { namespace connector {
     static const std::string & level_string(log_level level);
     static void print_variable(const val_type & var);
 
+    void cleanup_older_than(uint64_t ms);
     log_record_server(config_client & cfg_client);
     virtual ~log_record_server();    
   };
