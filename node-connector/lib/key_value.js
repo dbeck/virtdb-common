@@ -5,21 +5,51 @@ log = require("loglevel");
 KeyValue = (function() {
   function KeyValue() {}
 
-  KeyValue.parseJSON = function(data) {};
+  KeyValue.parseJSON = function(data) {
+    return KeyValue._processJSON("", data);
+  };
+
+  KeyValue._processJSON = function(key, value) {
+    var key2, obj, value2;
+    obj = {};
+    if (obj.Key == null) {
+      obj.Key = key;
+    }
+    if (obj.Children == null) {
+      obj.Children = [];
+    }
+    if (Object.keys(value).length === 2 && (value.Type != null) && (value.Value != null)) {
+      if (obj.Value == null) {
+        obj.Value = {};
+      }
+      obj.Value["type"] = value.Type;
+      obj.Value[KeyValue._selectValue(value.Type)] = value.Value;
+    } else if (typeof value === "object" && value !== null) {
+      for (key2 in value) {
+        value2 = value[key2];
+        obj.Children.push(KeyValue._processJSON(key2, value2));
+      }
+    } else {
+      log.error("Not well formed json");
+    }
+    return obj;
+  };
 
   KeyValue.toJSON = function(data) {
-    log.debug(JSON.stringify(data));
     if (data.length === 0) {
       return {};
     }
-    return KeyValue._processData(data, {});
+    return KeyValue._processKeyValue(data, {});
   };
 
-  KeyValue._processData = function(data, result) {
-    var child, obj, _i, _len, _ref;
+  KeyValue._processKeyValue = function(data, result) {
+    var child, obj, valueType, _i, _len, _ref;
     if (data.Value != null) {
-      log.debug(data);
-      result[data.Key] = KeyValue._selectValue(data.Value);
+      valueType = KeyValue._selectValue(data.Value);
+      result[data.Key] = {
+        Type: data.Value.Type,
+        Value: data.Value[valueType]
+      };
       return result;
     } else {
       if (data.Children.length !== 0) {
@@ -27,7 +57,7 @@ KeyValue = (function() {
         _ref = data.Children;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           child = _ref[_i];
-          obj = KeyValue._processData(child, obj);
+          obj = KeyValue._processKeyValue(child, obj);
         }
         result[data.Key] = obj;
         return result;
@@ -36,60 +66,27 @@ KeyValue = (function() {
   };
 
   KeyValue._selectValue = function(value) {
-    var newValue;
-    log.debug(value);
-    newValue = {};
     switch (value.Type) {
       case "STRING":
-        return newValue = {
-          value: value.StringValue,
-          type: value.Type
-        };
+        return "StringValue";
       case "INT32":
-        return newValue = {
-          value: value.Int32Value,
-          type: value.Type
-        };
+        return "Int32Value";
       case "INT64":
-        return newValue = {
-          value: value.Int64Value,
-          type: value.Type
-        };
+        return "Int64Value";
       case "UINT32":
-        return newValue = {
-          value: value.UInt32Value,
-          type: value.Type
-        };
+        return "UInt32Value";
       case "UINT64":
-        return newValue = {
-          value: value.UInt64Value,
-          type: value.Type
-        };
+        return "UInt64Value";
       case "DOUBLE":
-        return newValue = {
-          value: value.DoubleValue,
-          type: value.Type
-        };
+        return "DoubleValue";
       case "FLOAT":
-        return newValue = {
-          value: value.FloatValue,
-          type: value.Type
-        };
+        return "FloatValue";
       case "BOOL":
-        return newValue = {
-          value: value.BoolValue,
-          type: value.Type
-        };
+        return "BoolValue";
       case "BYTES":
-        return newValue = {
-          value: value.BytesValue,
-          type: value.Type
-        };
+        return "BytesValue";
       default:
-        return newValue = {
-          value: value.StringValue,
-          type: value.Type
-        };
+        return "StringValue";
     }
   };
 
