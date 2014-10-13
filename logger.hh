@@ -31,3 +31,5 @@
 
 #define V_(VARIABLE) virtdb::logger::make_variable( #VARIABLE, VARIABLE )
 #define M_(VARIABLE) virtdb::logger::make_variable<::google::protobuf::Message>( #VARIABLE, VARIABLE )
+#define E_(VARIABLE) virtdb::logger::make_variable<::std::exception>( #VARIABLE, VARIABLE )
+#define P_(VARIABLE) virtdb::logger::make_variable<void *>( #VARIABLE, VARIABLE )

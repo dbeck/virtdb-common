@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "meta_data_server.hh"
 #include <regex>
 
@@ -67,19 +72,26 @@ namespace virtdb { namespace connector {
       lock l(tables_mtx_);
       bool match_schema = (req.has_schema() && !req.schema().empty());
       
-      std::regex table_regex{req.name()};
+      std::regex table_regex{req.name(), std::regex::extended};
       std::regex schema_regex;
       
       if( match_schema )
-        schema_regex.assign(req.schema());
+        schema_regex.assign(req.schema(), std::regex::extended);
       
       bool with_fields = req.withfields();
       
       for( const auto & it : tables_ )
+        
       {
-        if( std::regex_match(it.second->name(),table_regex) )
+        if( std::regex_match(it.second->name(),
+                             table_regex,
+                             std::regex_constants::match_any |
+                             std::regex_constants::format_sed ) )
         {
-          if( !match_schema || std::regex_match(it.second->schema(), schema_regex ) )
+          if( !match_schema || std::regex_match(it.second->schema(),
+                                                schema_regex,
+                                                std::regex_constants::match_any |
+                                                std::regex_constants::format_sed ) )
           {
             auto tmp_tab = rep->add_tables();
             if( with_fields )
@@ -153,6 +165,19 @@ namespace virtdb { namespace connector {
     lock l(tables_mtx_);
     table_map::key_type key(schema, name);
     return (tables_.count(key) > 0);
+  }
+  
+  meta_data_server::table_sptr
+  meta_data_server::get_table(const std::string & schema,
+                              const std::string & name)
+  {
+    lock l(tables_mtx_);
+    table_map::key_type key(schema, name);
+    auto it = tables_.find(key);
+    if( it == tables_.end() )
+      return table_sptr();
+    else
+      return it->second;
   }
   
   bool

@@ -71,12 +71,12 @@ namespace virtdb { namespace connector {
     lock l(mtx_);
     auto cfg_it = configs_.find(request.name());
     
-    if( cfg_it != configs_.end() && !request.has_configdata() )
+    if( cfg_it != configs_.end() && !request.configdata_size() )
     {
       ret = allocate_pub_item(cfg_it->second);
     }
     
-    if( request.has_configdata() )
+    if( request.configdata_size() )
     {
       // save config data
       if( cfg_it != configs_.end() )

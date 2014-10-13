@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "endpoint_server.hh"
 #include <util/net.hh>
 #include <util/flex_alloc.hh>

@@ -291,9 +291,7 @@ namespace virtdb { namespace util {
     {
       lock l(mtx_);
       if( valid_ ) return;
-      cv_.wait_for(l,
-                   std::chrono::milliseconds(DEFAULT_TIMEOUT_MS),
-                   [this] { return (valid_ || stop_); });
+      cv_.wait_for(l, std::chrono::milliseconds(DEFAULT_TIMEOUT_MS));
     }
     return;
   }
