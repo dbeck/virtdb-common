@@ -2,6 +2,8 @@ var gulp = require('gulp');
 var coffee = require('gulp-coffee');
 var spawn = require('child_process').spawn;
 var sourcemaps = require('gulp-sourcemaps');
+var mocha = require('gulp-mocha');
+require('coffee-script/register')
 var node;
 
 /**
@@ -16,9 +18,16 @@ gulp.task('coffee', function() {
         .pipe(gulp.dest('./lib'))
 });
 
-gulp.task('watch', ['coffee'], function()
+gulp.task('watch', ['coffee', 'test'], function()
 {
-    gulp.watch(['./*.coffee'], ['coffee']);
+    gulp.watch(['./*.coffee'], ['coffee', 'test']);
+    gulp.watch(['test/*.coffee'], ['test']);
+});
+
+gulp.task('test', ['coffee'], function ()
+{
+    return gulp.src('test/*.coffee', {read: false})
+            .pipe(mocha({reporter: 'min'}));
 });
 
 gulp.task('default', ['watch']);
