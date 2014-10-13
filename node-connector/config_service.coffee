@@ -8,7 +8,10 @@ EndpointService = require "./endpoint_service"
 require("source-map-support").install()
 log.setLevel "debug"
 
-serviceConfigProto = new protobuf(fs.readFileSync(__dirname + "/proto/svc_config.pb.desc"))
+own_filename = "constants.coffee"
+path = require.resolve("./#{own_filename}")
+path = path.substring(0, path.length - own_filename.length )
+serviceConfigProto = new protobuf(fs.readFileSync(path + "/lib/proto/svc_config.pb.desc"))
 
 class ConfigService
 

@@ -31,7 +31,7 @@ gulp.task("collect-proto", function() {
         .pipe(gulp.dest("./lib/proto"))
 });
 
-gulp.task('watch', ['coffee', 'collect-proto', 'test'], function()
+gulp.task('watch', ['coffee', 'collect-proto'], function()
 {
     gulp.watch(['./*.coffee'], ['coffee', 'test']);
     gulp.watch(['test/*.coffee'], ['test']);
