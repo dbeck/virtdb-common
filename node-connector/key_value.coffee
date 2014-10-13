@@ -3,70 +3,64 @@ log = require "loglevel"
 class KeyValue
 
     @parseJSON = (data) =>
+        return @_processJSON("", data)
+
+    @_processJSON = (key, value) =>
+        obj = {}
+        obj.Key ?= key
+        obj.Children ?= []
+        if Object.keys(value).length is 2 and value.Type? and value.Value?
+            obj.Value ?= {}
+            obj.Value["type"] = value.Type
+            obj.Value[@_selectValue value.Type] = value.Value
+        else if typeof value is "object" and value isnt null
+            for key2, value2 of value
+                obj.Children.push @_processJSON key2, value2
+        else
+            log.error "Not well formed json"
+        return obj
 
     @toJSON = (data) =>
-        log.debug JSON.stringify data
         if data.length is 0
             return {}
-        @_processData(data, {})
+        @_processKeyValue(data, {})
 
-    @_processData = (data, result) =>
+    @_processKeyValue = (data, result) =>
         if data.Value?
-            log.debug data
-            result[data.Key] = @_selectValue data.Value
+            valueType = @_selectValue data.Value
+            result[data.Key] =
+                Type: data.Value.Type
+                Value: data.Value[valueType]
             return result
         else
             if data.Children.length isnt 0
                 obj = {}
                 for child in data.Children
-                    obj = @_processData child, obj
+                    obj = @_processKeyValue child, obj
                 result[data.Key] = obj
                 return result
 
     @_selectValue = (value) =>
-        log.debug value
-        newValue = {}
         switch value.Type
             when "STRING"
-                return newValue =
-                    value: value.StringValue
-                    type: value.Type
+                return "StringValue"
             when "INT32"
-                return newValue =
-                    value: value.Int32Value
-                    type: value.Type
+                return "Int32Value"
             when "INT64"
-                return newValue =
-                    value: value.Int64Value
-                    type: value.Type
+                return "Int64Value"
             when "UINT32"
-                return newValue =
-                    value: value.UInt32Value
-                    type: value.Type
+                return "UInt32Value"
             when "UINT64"
-                return newValue =
-                    value: value.UInt64Value
-                    type: value.Type
+                return "UInt64Value"
             when "DOUBLE"
-                return newValue =
-                    value: value.DoubleValue
-                    type: value.Type
+                return "DoubleValue"
             when "FLOAT"
-                return newValue =
-                    value: value.FloatValue
-                    type: value.Type
+                return "FloatValue"
             when "BOOL"
-                return newValue =
-                    value: value.BoolValue
-                    type: value.Type
+                return "BoolValue"
             when "BYTES"
-                return newValue =
-                    value: value.BytesValue
-                    type: value.Type
+                return "BytesValue"
             else # "DATE", "TIME", "DATETIME", "NUMERIC", "INET4", "INET6", "MAC", "GEODATA"
-                return newValue =
-                    value: value.StringValue
-                    type: value.Type
-
+                return "StringValue"
 
 module.exports = KeyValue
