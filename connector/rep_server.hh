@@ -50,6 +50,7 @@ namespace virtdb { namespace connector {
       
       try
       {
+        LOG_TRACE("start parsing message" << V_(message.size()));
         REQ_ITEM req;
         if( req.ParseFromArray(message.data(), message.size()) )
         {
