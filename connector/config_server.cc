@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "config_server.hh"
 #include <logger.hh>
 #include <util/net.hh>
@@ -67,6 +72,7 @@ namespace virtdb { namespace connector {
                                  rep_base_type::send_rep_handler handler)
   {
     rep_base_type::rep_item_sptr ret;
+    LOG_TRACE("config request arrived" << M_(request));
     
     lock l(mtx_);
     auto cfg_it = configs_.find(request.name());
