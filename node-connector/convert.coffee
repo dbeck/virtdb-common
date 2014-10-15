@@ -77,7 +77,7 @@ class Convert
                 addNodeToOld object.Children, config.Children, config.Scope
             destination.push object
 
-    @ToOld: (source) =>
+    @TemplateToOld: (source) =>
         ret = {}
         ret.Name = source.AppName
         ret.ConfigData = {}
@@ -167,11 +167,39 @@ class Convert
         else
             return null
 
-    @ToNew: (source) =>
+    @TemplateToNew: (source) =>
         ret = {}
         ret.AppName = source.Name
         ret.Config = []
         addNodeToNew ret.Config, source.ConfigData.Children
+        return ret
+
+    @ToNew: (source) =>
+        ret = {}
+        ret.AppName = source.Name
+        ret.Data = []
+        for item in source.ConfigData
+            for child in item.Children
+                data = {}
+                data.Location = []
+                data.Location.push item.Key
+                data.Location.push child.Key
+                data.Data = {}
+                data.Data = child.Value
+                ret.Data.push data
+        return ret
+
+    addProperty = (to, list, index, value) ->
+        to[list[index]] ?= {}
+        if list.length - 1 == index
+            to[list[index]] = getValue value
+            return
+        addProperty to[list[index]], list, index + 1, value
+
+    @ToObject: (source) =>
+        ret = {}
+        for item in source.Data
+            addProperty ret, item.Location, 0, item.Data
         return ret
 
 module.exports = Convert

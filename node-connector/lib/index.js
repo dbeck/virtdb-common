@@ -33,6 +33,8 @@ VirtDBConnector = (function() {
 
   VirtDBConnector.Constants = Constants;
 
+  VirtDBConnector.Handlers = {};
+
   VirtDBConnector.connect = function(name, connectionString) {
     var endpoint;
     Protocol.svcConfig(connectionString, VirtDBConnector.onEndpoint);
@@ -51,8 +53,16 @@ VirtDBConnector = (function() {
     return Protocol.close();
   };
 
+  VirtDBConnector.onAddress = function(service_type, connection_type, callback) {
+    var _base;
+    if ((_base = VirtDBConnector.Handlers)[service_type] == null) {
+      _base[service_type] = {};
+    }
+    return VirtDBConnector.Handlers[service_type][connection_type] = callback;
+  };
+
   VirtDBConnector.onEndpoint = function(endpoint) {
-    var connection, newAddress, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
+    var address, connection, newAddress, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results, _results1, _results2;
     switch (endpoint.SvcType) {
       case 'IP_DISCOVERY':
         if (VirtDBConnector.IP == null) {
@@ -86,6 +96,26 @@ VirtDBConnector = (function() {
           }
         }
         return _results1;
+        break;
+      default:
+        if (endpoint.Connections != null) {
+          _ref2 = endpoint.Connections;
+          _results2 = [];
+          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+            connection = _ref2[_k];
+            _results2.push((function() {
+              var _l, _len3, _name, _ref3, _ref4, _ref5, _results3;
+              _ref3 = connection.Address;
+              _results3 = [];
+              for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+                address = _ref3[_l];
+                _results3.push((_ref4 = this.Handlers) != null ? (_ref5 = _ref4[endpoint.SvcType]) != null ? typeof _ref5[_name = connection.Type] === "function" ? _ref5[_name](address) : void 0 : void 0 : void 0);
+              }
+              return _results3;
+            }).call(VirtDBConnector));
+          }
+          return _results2;
+        }
     }
   };
 

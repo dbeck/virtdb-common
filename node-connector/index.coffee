@@ -15,6 +15,7 @@ class VirtDBConnector
     @ConfigService = ConfigService
     @EndpointService = EndpointService
     @Constants = Constants
+    @Handlers = {}
 
     @connect: (name, connectionString) =>
         Protocol.svcConfig connectionString, @onEndpoint
@@ -29,6 +30,10 @@ class VirtDBConnector
     @close: =>
         Protocol.close()
 
+    @onAddress: (service_type, connection_type, callback) =>
+        @Handlers[service_type] ?= {}
+        @Handlers[service_type][connection_type] = callback
+
     @onEndpoint: (endpoint) =>
         switch endpoint.SvcType
             when 'IP_DISCOVERY'
@@ -42,6 +47,12 @@ class VirtDBConnector
                         newAddress = Protocol.connectToDiag connection.Address
                         if newAddress?
                             console.log "Connected to logger: ", newAddress
+            else
+                if endpoint.Connections?
+                    for connection in endpoint.Connections
+                        for address in connection.Address
+                            @Handlers?[endpoint.SvcType]?[connection.Type]? address
+
 
     @_findMyIP: (discoveryAddress) =>
         if discoveryAddress.indexOf 'raw_udp://' == 0

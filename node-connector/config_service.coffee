@@ -4,14 +4,12 @@ protobuf = require "node-protobuf"
 log = require "loglevel"
 Const = require "./constants"
 EndpointService = require "./endpoint_service"
+Convert = require "./convert"
 
 require("source-map-support").install()
 log.setLevel "debug"
 
-own_filename = "constants.coffee"
-path = require.resolve("./#{own_filename}")
-path = path.substring(0, path.length - own_filename.length )
-serviceConfigProto = new protobuf(fs.readFileSync(path + "/lib/proto/svc_config.pb.desc"))
+serviceConfigProto = new protobuf(fs.readFileSync(__dirname + "/proto/svc_config.pb.desc"))
 
 class ConfigService
 
@@ -22,6 +20,18 @@ class ConfigService
 
     @reset: () ->
         @instance = null
+
+    @ConvertTemplateToOld: (source) ->
+        Convert.TemplateToOld source
+
+    @ConvertTemplateToNew: (source) ->
+        Convert.TemplateToNew source
+
+    @ConvertToOld: (source) ->
+        Convert.ToOld source
+
+    @ConvertToNew: (source) ->
+        Convert.ToNew source
 
     class ConfigServiceConnector
 
@@ -37,11 +47,11 @@ class ConfigService
 
         connect: =>
             try
-                addresses = EndpointService.getInstance().getOwnAddress()
+                addresses = EndpointService.getInstance().getConfigServiceAddresses()
                 @reqRepSocket.connect(addresses[Const.ENDPOINT_TYPE.CONFIG][Const.SOCKET_TYPE.REQ_REP][0])
                 log.debug "Connected to the config service!"
             catch ex
-                log.error "Error during connecting to config service!", ex
+                log.error "Error during connecting to config service!", ex, addresses
 
         getConfigs: () =>
             return @configs
@@ -72,7 +82,7 @@ class ConfigService
             @configs[configMessage.Name] = configMessage
 
         _subscribeConfigs: () =>
-            addresses = EndpointService.getInstance().getOwnAddress()
+            addresses = EndpointService.getInstance().getServiceConfigAddresses()
             @pubsubSocket = zmq.socket(Const.ZMQ_SUB)
             @pubsubSocket.on "message", @_onPublishedMessage
             for connection in addresses when connection.Type is Const.SOCKET_TYPE.PUB_SUB

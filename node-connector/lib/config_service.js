@@ -1,4 +1,4 @@
-var ConfigService, Const, EndpointService, fs, log, own_filename, path, protobuf, serviceConfigProto, zmq,
+var ConfigService, Const, Convert, EndpointService, fs, log, protobuf, serviceConfigProto, zmq,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 zmq = require("zmq");
@@ -13,17 +13,13 @@ Const = require("./constants");
 
 EndpointService = require("./endpoint_service");
 
+Convert = require("./convert");
+
 require("source-map-support").install();
 
 log.setLevel("debug");
 
-own_filename = "constants.coffee";
-
-path = require.resolve("./" + own_filename);
-
-path = path.substring(0, path.length - own_filename.length);
-
-serviceConfigProto = new protobuf(fs.readFileSync(path + "/lib/proto/svc_config.pb.desc"));
+serviceConfigProto = new protobuf(fs.readFileSync(__dirname + "/proto/svc_config.pb.desc"));
 
 ConfigService = (function() {
   var ConfigServiceConnector;
@@ -38,6 +34,18 @@ ConfigService = (function() {
 
   ConfigService.reset = function() {
     return this.instance = null;
+  };
+
+  ConfigService.ConvertTemplateToOld = function(source) {
+    return Convert.TemplateToOld(source);
+  };
+
+  ConfigService.ConvertTemplateToNew = function(source) {
+    return Convert.TemplateToNew(source);
+  };
+
+  ConfigService.ConvertToOld = function(source) {
+    return source;
   };
 
   ConfigServiceConnector = (function() {
@@ -63,12 +71,12 @@ ConfigService = (function() {
     ConfigServiceConnector.prototype.connect = function() {
       var addresses, ex;
       try {
-        addresses = EndpointService.getInstance().getOwnAddress();
+        addresses = EndpointService.getInstance().getConfigServiceAddresses();
         this.reqRepSocket.connect(addresses[Const.ENDPOINT_TYPE.CONFIG][Const.SOCKET_TYPE.REQ_REP][0]);
         return log.debug("Connected to the config service!");
       } catch (_error) {
         ex = _error;
-        return log.error("Error during connecting to config service!", ex);
+        return log.error("Error during connecting to config service!", ex, addresses);
       }
     };
 
@@ -116,7 +124,7 @@ ConfigService = (function() {
 
     ConfigServiceConnector.prototype._subscribeConfigs = function() {
       var address, addresses, connection, ex, _i, _len, _results;
-      addresses = EndpointService.getInstance().getOwnAddress();
+      addresses = EndpointService.getInstance().getServiceConfigAddresses();
       this.pubsubSocket = zmq.socket(Const.ZMQ_SUB);
       this.pubsubSocket.on("message", this._onPublishedMessage);
       _results = [];
