@@ -1,4 +1,4 @@
-var ConfigService, Const, EndpointService, fs, log, protobuf, serviceConfigProto, zmq,
+var ConfigService, Const, EndpointService, fs, log, own_filename, path, protobuf, serviceConfigProto, zmq,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 zmq = require("zmq");
@@ -17,7 +17,13 @@ require("source-map-support").install();
 
 log.setLevel("debug");
 
-serviceConfigProto = new protobuf(fs.readFileSync(__dirname + "/proto/svc_config.pb.desc"));
+own_filename = "constants.coffee";
+
+path = require.resolve("./" + own_filename);
+
+path = path.substring(0, path.length - own_filename.length);
+
+serviceConfigProto = new protobuf(fs.readFileSync(path + "/lib/proto/svc_config.pb.desc"));
 
 ConfigService = (function() {
   var ConfigServiceConnector;
