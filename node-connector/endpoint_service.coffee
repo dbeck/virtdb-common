@@ -7,10 +7,7 @@ Const = require "./constants"
 require("source-map-support").install()
 log.setLevel "debug"
 
-own_filename = "constants.coffee"
-path = require.resolve("./#{own_filename}")
-path = path.substring(0, path.length - own_filename.length )
-serviceConfigProto = new protobuf(fs.readFileSync(path + "/lib/proto/svc_config.pb.desc"))
+serviceConfigProto = new protobuf(fs.readFileSync(__dirname + "/proto/svc_config.pb.desc"))
 
 class EndpointService
 
@@ -19,7 +16,7 @@ class EndpointService
     serviceConfigAddress: null
 
     @getInstance: () ->
-        @instance ?= new EndpointServiceConnector(@serviceConfigName, @serviceConfigAddress)
+        @instance ?= new EndpointServiceConnector(@serviceConfigAddress)
 
     @reset: () ->
         @instance = null
@@ -36,22 +33,25 @@ class EndpointService
         name: null
         address: null
 
-        constructor: (@name, @address) ->
+        constructor: (@address) ->
+            @svcConfigName = 'config-service'
             @reqrepSocket = zmq.socket(Const.ZMQ_REQ)
             @reqrepSocket.on "message", @_onMessage
             @connect()
             @_requestEndpoints()
 
-        getComponentAddress: (name) =>
+        getComponentAddresses: (name) =>
             addresses = {}
+            log.debug "Endpoints: ", @endpoints
             for endpoint in @endpoints when endpoint.Name is name
                 addresses[endpoint.SvcType] ?= {}
                 for conn in endpoint.Connections
                     addresses[endpoint.SvcType][conn.Type] = conn.Address
             return addresses
 
-        getOwnAddress: () =>
-            return @getComponentAddress(@name)
+        getConfigServiceAddresses: () =>
+            log.debug "In getConfigServiceAddresses", @svcConfigName
+            return @getComponentAddresses(@svcConfigName)
 
         getEndpoints: () =>
             @endpoints
@@ -72,7 +72,7 @@ class EndpointService
 
         _onMessage: (reply) =>
             @endpoints = (serviceConfigProto.parse reply, "virtdb.interface.pb.Endpoint").Endpoints
-            @serviceConfigConnections = endpoint.Connections for endpoint in @endpoints when endpoint.Name is @name
+            @serviceConfigConnections = endpoint.Connections for endpoint in @endpoints when endpoint.Name is @svcConfigName
             @_subscribeEndpoints() unless @pubsubSocket
             return
 

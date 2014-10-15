@@ -1,4 +1,4 @@
-var Const, EndpointService, fs, log, own_filename, path, protobuf, serviceConfigProto, zmq,
+var Const, EndpointService, fs, log, protobuf, serviceConfigProto, zmq,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -16,13 +16,7 @@ require("source-map-support").install();
 
 log.setLevel("debug");
 
-own_filename = "constants.coffee";
-
-path = require.resolve("./" + own_filename);
-
-path = path.substring(0, path.length - own_filename.length);
-
-serviceConfigProto = new protobuf(fs.readFileSync(path + "/lib/proto/svc_config.pb.desc"));
+serviceConfigProto = new protobuf(fs.readFileSync(__dirname + "/proto/svc_config.pb.desc"));
 
 EndpointService = (function() {
   var EndpointServiceConnector;
@@ -36,7 +30,7 @@ EndpointService = (function() {
   EndpointService.prototype.serviceConfigAddress = null;
 
   EndpointService.getInstance = function() {
-    return this.instance != null ? this.instance : this.instance = new EndpointServiceConnector(this.serviceConfigName, this.serviceConfigAddress);
+    return this.instance != null ? this.instance : this.instance = new EndpointServiceConnector(this.serviceConfigAddress);
   };
 
   EndpointService.reset = function() {
@@ -61,8 +55,7 @@ EndpointService = (function() {
 
     EndpointServiceConnector.prototype.address = null;
 
-    function EndpointServiceConnector(name, address) {
-      this.name = name;
+    function EndpointServiceConnector(address) {
       this.address = address;
       this._subscribeEndpoints = __bind(this._subscribeEndpoints, this);
       this._onPublishedMessage = __bind(this._onPublishedMessage, this);
@@ -71,17 +64,19 @@ EndpointService = (function() {
       this.connect = __bind(this.connect, this);
       this.getComponents = __bind(this.getComponents, this);
       this.getEndpoints = __bind(this.getEndpoints, this);
-      this.getOwnAddress = __bind(this.getOwnAddress, this);
-      this.getComponentAddress = __bind(this.getComponentAddress, this);
+      this.getConfigServiceAddresses = __bind(this.getConfigServiceAddresses, this);
+      this.getComponentAddresses = __bind(this.getComponentAddresses, this);
+      this.svcConfigName = 'config-service';
       this.reqrepSocket = zmq.socket(Const.ZMQ_REQ);
       this.reqrepSocket.on("message", this._onMessage);
       this.connect();
       this._requestEndpoints();
     }
 
-    EndpointServiceConnector.prototype.getComponentAddress = function(name) {
+    EndpointServiceConnector.prototype.getComponentAddresses = function(name) {
       var addresses, conn, endpoint, _i, _j, _len, _len1, _name, _ref, _ref1;
       addresses = {};
+      log.debug("Endpoints: ", this.endpoints);
       _ref = this.endpoints;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         endpoint = _ref[_i];
@@ -100,8 +95,9 @@ EndpointService = (function() {
       return addresses;
     };
 
-    EndpointServiceConnector.prototype.getOwnAddress = function() {
-      return this.getComponentAddress(this.name);
+    EndpointServiceConnector.prototype.getConfigServiceAddresses = function() {
+      log.debug("In getConfigServiceAddresses", this.svcConfigName);
+      return this.getComponentAddresses(this.svcConfigName);
     };
 
     EndpointServiceConnector.prototype.getEndpoints = function() {
@@ -138,7 +134,7 @@ EndpointService = (function() {
       _ref = this.endpoints;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         endpoint = _ref[_i];
-        if (endpoint.Name === this.name) {
+        if (endpoint.Name === this.svcConfigName) {
           this.serviceConfigConnections = endpoint.Connections;
         }
       }

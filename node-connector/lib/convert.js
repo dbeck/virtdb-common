@@ -1,7 +1,7 @@
 var Convert;
 
 Convert = (function() {
-  var addDefault, addNodeToNew, addNodeToOld, addRequired, addScope, addValue, getDefault, getRequired, getScope, getType, getValue, setValueArray;
+  var addDefault, addNodeToNew, addNodeToOld, addProperty, addRequired, addScope, addValue, getDefault, getRequired, getScope, getType, getValue, setValueArray;
 
   function Convert() {}
 
@@ -133,7 +133,7 @@ Convert = (function() {
     return _results;
   };
 
-  Convert.ToOld = function(source) {
+  Convert.TemplateToOld = function(source) {
     var ret, root;
     ret = {};
     ret.Name = source.AppName;
@@ -264,12 +264,58 @@ Convert = (function() {
     }
   };
 
-  Convert.ToNew = function(source) {
+  Convert.TemplateToNew = function(source) {
     var ret;
     ret = {};
     ret.AppName = source.Name;
     ret.Config = [];
     addNodeToNew(ret.Config, source.ConfigData.Children);
+    return ret;
+  };
+
+  Convert.ToNew = function(source) {
+    var child, data, item, ret, _i, _j, _len, _len1, _ref, _ref1;
+    ret = {};
+    ret.AppName = source.Name;
+    ret.Data = [];
+    _ref = source.ConfigData;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      _ref1 = item.Children;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        child = _ref1[_j];
+        data = {};
+        data.Location = [];
+        data.Location.push(item.Key);
+        data.Location.push(child.Key);
+        data.Data = {};
+        data.Data = child.Value;
+        ret.Data.push(data);
+      }
+    }
+    return ret;
+  };
+
+  addProperty = function(to, list, index, value) {
+    var _name;
+    if (to[_name = list[index]] == null) {
+      to[_name] = {};
+    }
+    if (list.length - 1 === index) {
+      to[list[index]] = getValue(value);
+      return;
+    }
+    return addProperty(to[list[index]], list, index + 1, value);
+  };
+
+  Convert.ToObject = function(source) {
+    var item, ret, _i, _len, _ref;
+    ret = {};
+    _ref = source.Data;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      addProperty(ret, item.Location, 0, item.Data);
+    }
     return ret;
   };
 
