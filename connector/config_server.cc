@@ -63,6 +63,7 @@ namespace virtdb { namespace connector {
     if( rep && rep->has_name() )
     {
       std::string subscription{rep->name()};
+      LOG_TRACE("publishing" << V_(subscription) << M_(*rep));
       publish(subscription,std::move(rep));
     }
   }
