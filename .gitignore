@@ -40,3 +40,4 @@ Debug/
 # xcode
 ._*.hh
 ._*.cc
+npm-debug.log
