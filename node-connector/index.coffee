@@ -16,6 +16,7 @@ class VirtDBConnector
     @EndpointService = EndpointService
     @Constants = Constants
     @Handlers = {}
+    @Sockets = {}
 
     @connect: (name, connectionString) =>
         Protocol.svcConfig connectionString, @onEndpoint
@@ -34,6 +35,24 @@ class VirtDBConnector
         @Handlers[service_type] ?= {}
         @Handlers[service_type][connection_type] = callback
 
+    @subscribe: (service_type, connection_type, callback, channel) =>
+        @onAddress service_type, connection_type, (name, address) =>
+            if connection_type == 'PUB_SUB'
+                socket_type = 'sub'
+            if @Sockets?[name]?[service_type]?[connection_type]?
+                @Sockets[name][service_type][connection_type].unsubscribe channel
+                @Sockets[name][service_type][connection_type].close()
+                @Sockets[name][service_type][connection_type] = null
+
+            @Sockets[name] ?= {}
+            @Sockets[name][service_type] ?= {}
+            @Sockets[name][service_type][connection_type] = zmq.socket socket_type
+            socket = @Sockets[name][service_type][connection_type]
+            socket.on "message", callback
+            socket.connect address
+            if connection_type == 'PUB_SUB' and channel?
+                socket.subscribe channel
+
     @onEndpoint: (endpoint) =>
         switch endpoint.SvcType
             when 'IP_DISCOVERY'
@@ -51,7 +70,7 @@ class VirtDBConnector
                 if endpoint.Connections?
                     for connection in endpoint.Connections
                         for address in connection.Address
-                            @Handlers?[endpoint.SvcType]?[connection.Type]? address
+                            @Handlers?[endpoint.SvcType]?[connection.Type]? endpoint.Name, address
 
 
     @_findMyIP: (discoveryAddress) =>

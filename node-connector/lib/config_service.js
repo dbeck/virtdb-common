@@ -45,7 +45,15 @@ ConfigService = (function() {
   };
 
   ConfigService.ConvertToOld = function(source) {
-    return source;
+    return Convert.ToOld(source);
+  };
+
+  ConfigService.ConvertToNew = function(source) {
+    return Convert.ToNew(source);
+  };
+
+  ConfigService.ConvertToObject = function(source) {
+    return Convert.ToObject(source);
   };
 
   ConfigServiceConnector = (function() {

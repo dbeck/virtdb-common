@@ -33,6 +33,9 @@ class ConfigService
     @ConvertToNew: (source) ->
         Convert.ToNew source
 
+    @ConvertToObject: (source) ->
+        Convert.ToObject source
+
     class ConfigServiceConnector
 
         reqRepSocket: null
