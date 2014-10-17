@@ -137,15 +137,20 @@ Convert = (function() {
     var ret, root;
     ret = {};
     ret.Name = source.AppName;
-    ret.ConfigData = {};
-    ret.ConfigData.Key = '';
-    ret.ConfigData.Children = [];
-    root = ret.ConfigData.Children;
+    ret.ConfigData = [];
+    ret.ConfigData.push({
+      Key: "",
+      Children: []
+    });
+    root = ret.ConfigData[0].Children;
     addNodeToOld(root, source.Config);
     return ret;
   };
 
   getValue = function(value) {
+    if (value == null) {
+      return null;
+    }
     switch (value.Type) {
       case "INT32":
         return value.Int32Value[0];

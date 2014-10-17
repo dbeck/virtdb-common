@@ -23,6 +23,8 @@ VirtDBConnector = (function() {
 
   VirtDBConnector.Handlers = {};
 
+  VirtDBConnector.Sockets = {};
+
   VirtDBConnector.connect = function(name, connectionString) {
     var endpoint;
     Protocol.svcConfig(connectionString, VirtDBConnector.onEndpoint);
@@ -47,6 +49,33 @@ VirtDBConnector = (function() {
       _base[service_type] = {};
     }
     return VirtDBConnector.Handlers[service_type][connection_type] = callback;
+  };
+
+  VirtDBConnector.subscribe = function(service_type, connection_type, callback, channel) {
+    return VirtDBConnector.onAddress(service_type, connection_type, function(name, address) {
+      var socket, socket_type, _base, _base1, _ref, _ref1, _ref2;
+      if (connection_type === 'PUB_SUB') {
+        socket_type = 'sub';
+      }
+      if (((_ref = VirtDBConnector.Sockets) != null ? (_ref1 = _ref[name]) != null ? (_ref2 = _ref1[service_type]) != null ? _ref2[connection_type] : void 0 : void 0 : void 0) != null) {
+        VirtDBConnector.Sockets[name][service_type][connection_type].unsubscribe(channel);
+        VirtDBConnector.Sockets[name][service_type][connection_type].close();
+        VirtDBConnector.Sockets[name][service_type][connection_type] = null;
+      }
+      if ((_base = VirtDBConnector.Sockets)[name] == null) {
+        _base[name] = {};
+      }
+      if ((_base1 = VirtDBConnector.Sockets[name])[service_type] == null) {
+        _base1[service_type] = {};
+      }
+      VirtDBConnector.Sockets[name][service_type][connection_type] = zmq.socket(socket_type);
+      socket = VirtDBConnector.Sockets[name][service_type][connection_type];
+      socket.on("message", callback);
+      socket.connect(address);
+      if (connection_type === 'PUB_SUB' && (channel != null)) {
+        return socket.subscribe(channel);
+      }
+    });
   };
 
   VirtDBConnector.onEndpoint = function(endpoint) {
@@ -97,7 +126,7 @@ VirtDBConnector = (function() {
               _results3 = [];
               for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
                 address = _ref3[_l];
-                _results3.push((_ref4 = this.Handlers) != null ? (_ref5 = _ref4[endpoint.SvcType]) != null ? typeof _ref5[_name = connection.Type] === "function" ? _ref5[_name](address) : void 0 : void 0 : void 0);
+                _results3.push((_ref4 = this.Handlers) != null ? (_ref5 = _ref4[endpoint.SvcType]) != null ? typeof _ref5[_name = connection.Type] === "function" ? _ref5[_name](endpoint.Name, address) : void 0 : void 0 : void 0);
               }
               return _results3;
             }).call(VirtDBConnector));

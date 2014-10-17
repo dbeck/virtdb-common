@@ -80,14 +80,17 @@ class Convert
     @TemplateToOld: (source) =>
         ret = {}
         ret.Name = source.AppName
-        ret.ConfigData = {}
-        ret.ConfigData.Key = ''
-        ret.ConfigData.Children = []
-        root = ret.ConfigData.Children
+        ret.ConfigData = []
+        ret.ConfigData.push
+            Key: ""
+            Children: []
+        root = ret.ConfigData[0].Children
         addNodeToOld root, source.Config
         return ret
 
     getValue = (value) ->
+        if not value?
+            return null
         switch value.Type
             when "INT32"
                 return value.Int32Value[0]

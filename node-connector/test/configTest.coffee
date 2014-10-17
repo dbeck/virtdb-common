@@ -86,11 +86,11 @@ describe "Config service helper", ->
                         ]
                 ]
             ,
-                Key: 'Path'
+                Key: 'Extension'
                 Value:
                     Type: 'STRING'
                 Children: [
-                    Key: 'Extension'
+                    Key: 'Path'
                     Value:
                         Type: 'STRING'
                         StringValue: [
