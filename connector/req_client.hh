@@ -125,6 +125,10 @@ namespace virtdb { namespace connector {
                       if( call_fun )
                         call_fun = cb(rep);
                     }
+                    else
+                    {
+                      LOG_ERROR("failed to parse message" << V_(rep.GetTypeName()));
+                    }
                   }
                   ++n_replies;
                 }

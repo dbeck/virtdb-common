@@ -91,6 +91,11 @@ namespace virtdb { namespace connector {
             socket_.get().send("",0);
           }
         }
+        else
+        {
+          LOG_ERROR("failed to parse message" << V_(req.GetTypeName()));
+          socket_.get().send("",0);
+        }
       }
       catch (const zmq::error_t & e)
       {

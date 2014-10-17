@@ -91,6 +91,10 @@ namespace virtdb { namespace connector {
           {
             queue_.push(std::move(std::make_pair(subscription,i)));
           }
+          else
+          {
+            LOG_ERROR("failed to parse message" << V_(i->GetTypeName()));
+          }
         }
         while( message.more() );
         

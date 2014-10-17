@@ -46,6 +46,10 @@ namespace virtdb { namespace connector {
         {
           queue_.push(std::move(i));
         }
+        else
+        {
+          LOG_ERROR("failed to parse message" << V_(i->GetTypeName()));
+        }
       }
       catch (const std::exception & e)
       {
