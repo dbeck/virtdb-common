@@ -136,6 +136,8 @@ class Convert
         return null
 
     addNodeToNew = (destination, source) ->
+        if not source?
+            return null
         isCommonScope = true
         commonScope = null
         for node in source
@@ -174,7 +176,7 @@ class Convert
         ret = {}
         ret.AppName = source.Name
         ret.Config = []
-        addNodeToNew ret.Config, source.ConfigData.Children
+        addNodeToNew ret.Config, source.ConfigData
         return ret
 
     @ToNew: (source) =>
