@@ -1,4 +1,4 @@
-var Constants, Protocol, VirtDBConnector, async, log, udp, zmq;
+var Constants, Convert, Protocol, VirtDBConnector, async, log, udp, zmq;
 
 udp = require('dgram');
 
@@ -12,6 +12,8 @@ zmq = require('zmq');
 
 Constants = require('./constants');
 
+Convert = require('./convert');
+
 VirtDBConnector = (function() {
   function VirtDBConnector() {}
 
@@ -24,6 +26,8 @@ VirtDBConnector = (function() {
   VirtDBConnector.Handlers = {};
 
   VirtDBConnector.Sockets = {};
+
+  VirtDBConnector.Convert = Convert;
 
   VirtDBConnector.connect = function(name, connectionString) {
     var endpoint;
