@@ -571,6 +571,13 @@ namespace virtdb { namespace connector {
       }
     }
   }
+  
+  size_t
+  log_record_server::cached_log_count()
+  {
+    lock log_lock(log_mtx_);
+    return logs_.size();
+  }
 
   log_record_server::~log_record_server()
   {
