@@ -219,6 +219,9 @@ Convert = (function() {
 
   addNodeToNew = function(destination, source) {
     var childrenScope, commonScope, defaultValue, isCommonScope, node, object, required, scope, type, _i, _len, _ref;
+    if (source == null) {
+      return null;
+    }
     isCommonScope = true;
     commonScope = null;
     for (_i = 0, _len = source.length; _i < _len; _i++) {
@@ -274,7 +277,7 @@ Convert = (function() {
     ret = {};
     ret.AppName = source.Name;
     ret.Config = [];
-    addNodeToNew(ret.Config, source.ConfigData.Children);
+    addNodeToNew(ret.Config, source.ConfigData);
     return ret;
   };
 
