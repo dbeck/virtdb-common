@@ -4,6 +4,7 @@ Protocol    = require './protocol'
 log         = require './diag'
 zmq         = require 'zmq'
 Constants   = require './constants'
+Convert     = require './convert'
 
 class VirtDBConnector
     @IP: null
@@ -11,6 +12,7 @@ class VirtDBConnector
     @Constants = Constants
     @Handlers = {}
     @Sockets = {}
+    @Convert = Convert
 
     @connect: (name, connectionString) =>
         Protocol.svcConfig connectionString, @onEndpoint
