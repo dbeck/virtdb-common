@@ -137,13 +137,15 @@ Convert = (function() {
     var ret, root;
     ret = {};
     ret.Name = source.AppName;
-    ret.ConfigData = [];
-    ret.ConfigData.push({
-      Key: "",
-      Children: []
-    });
-    root = ret.ConfigData[0].Children;
-    addNodeToOld(root, source.Config);
+    if (source.Config != null) {
+      ret.ConfigData = [];
+      ret.ConfigData.push({
+        Key: "",
+        Children: []
+      });
+      root = ret.ConfigData[0].Children;
+      addNodeToOld(root, source.Config);
+    }
     return ret;
   };
 
