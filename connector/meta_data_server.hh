@@ -40,6 +40,8 @@ namespace virtdb { namespace connector {
     meta_data_server(config_client & cfg_client);
     virtual ~meta_data_server();
     void add_table(table_sptr table);
+    void remove_table(const std::string & schema,
+                      const std::string & name);
     table_sptr get_table(const std::string & schema,
                          const std::string & name);
     bool has_table(const std::string & schema,

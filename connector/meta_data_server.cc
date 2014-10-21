@@ -158,6 +158,15 @@ namespace virtdb { namespace connector {
     }
   }
   
+  void
+  meta_data_server::remove_table(const std::string & schema,
+                                 const std::string & name)
+  {
+    lock l(tables_mtx_);
+    table_map::key_type key(schema, name);
+    tables_.erase(key);
+  }
+  
   bool
   meta_data_server::has_table(const std::string & schema,
                               const std::string & name)
