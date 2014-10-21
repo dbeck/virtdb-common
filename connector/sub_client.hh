@@ -161,9 +161,10 @@ namespace virtdb { namespace connector {
       ep_clnt.watch(service_type, [this](const interface::pb::EndpointData & ep) {
         
         bool no_change = true;
-        
-        if( ep.name() == this->server() )
+        std::string server_name = this->server();
+        if( ep.name() == server_name )
         {
+          LOG_TRACE("endpoint change detected for" << V_(server_name) );
           for( auto const & conn: ep.connections() )
           {
             if( conn.type() == connection_type )
@@ -175,6 +176,7 @@ namespace virtdb { namespace connector {
                 {
                   try
                   {
+                    LOG_INFO("reconnecting to" << V_(server_name) <<  V_(addr));
                     lock l(sockets_mtx_);
                     socket_.reconnect(addr.c_str());
                     no_change = false;
