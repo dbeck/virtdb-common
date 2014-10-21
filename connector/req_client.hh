@@ -40,6 +40,10 @@ namespace virtdb { namespace connector {
         zmqctx_(1),
         socket_(zmqctx_, ZMQ_REQ)
       {
+        req_item req_itm;
+        rep_item rep_itm;
+        LOG_TRACE(" " << V_(req_itm.GetTypeName()) << V_(rep_itm.GetTypeName()) << V_(this->server()) );
+        
         // this machinery makes sure we reconnect whenever the endpoint changes
         ep_clnt.watch(service_type, [this](const interface::pb::EndpointData & ep) {
           

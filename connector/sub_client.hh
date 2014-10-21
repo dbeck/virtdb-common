@@ -157,6 +157,9 @@ namespace virtdb { namespace connector {
                          this,
                          std::placeholders::_1))
     {
+      sub_item sub_itm;
+      LOG_TRACE(" " << V_(sub_itm.GetTypeName()) << V_(this->server()) );
+      
       // this machinery makes sure we reconnect whenever the endpoint changes
       ep_clnt.watch(service_type, [this](const interface::pb::EndpointData & ep) {
         

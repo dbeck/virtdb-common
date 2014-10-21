@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "endpoint_client.hh"
 #include <svc_config.pb.h>
 #include <util.hh>
@@ -163,6 +168,7 @@ namespace virtdb { namespace connector {
   void
   endpoint_client::handle_endpoint_data(const interface::pb::EndpointData & ep)
   {
+    LOG_TRACE("handle endpoint data" << M_(ep) << V_((int)ep.svctype()) );
     std::lock_guard<std::mutex> lock(mtx_);
     {
       // run monitors first
@@ -190,6 +196,7 @@ namespace virtdb { namespace connector {
   void
   endpoint_client::remove_watches(interface::pb::ServiceType st)
   {
+    LOG_TRACE("remove watches for" << V_((int)st));
     std::lock_guard<std::mutex> lock(mtx_);
     auto it = monitors_.find(st);
     if( it != monitors_.end() )
@@ -207,6 +214,7 @@ namespace virtdb { namespace connector {
   endpoint_client::watch(interface::pb::ServiceType st,
                          monitor m)
   {
+    LOG_TRACE("start watching" << V_((int)st));
     std::lock_guard<std::mutex> lock(mtx_);
     {
       auto it = monitors_.find(st);
@@ -234,6 +242,8 @@ namespace virtdb { namespace connector {
   endpoint_client::fire_monitor(monitor & m,
                                 const interface::pb::EndpointData & ep)
   {
+    LOG_TRACE("run monitior for" << M_(ep) << V_((int)ep.svctype()));
+
     bool ret = true;
     
     try

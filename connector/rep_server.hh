@@ -75,6 +75,7 @@ namespace virtdb { namespace connector {
                 else
                 {
                   LOG_ERROR("failed to serialize message");
+                  socket_.get().send("", 0);
                 }
               }
               else

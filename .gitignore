@@ -37,7 +37,12 @@ gyp-mac-tool
 out/
 Debug/
 
-# xcode
+# xcode and Mac
 ._*.hh
 ._*.cc
 npm-debug.log
+*A\ Document\ Being\ Saved*
+DS_Store
+*DS_Store
+.*DS_Store
+
