@@ -31,7 +31,7 @@ namespace virtdb { namespace util {
     }
   };
 
-  template <typename T> struct value_type {};
+  template <typename T, interface::pb::Kind = interface::pb::Kind::STRING> struct value_type {};
 
   template <>
   struct value_type<std::string> : public value_type_base
@@ -555,17 +555,11 @@ namespace virtdb { namespace util {
     }
   };
 
-  struct byte_data
-  {
-      char *   data;
-      size_t   len;
-  };
-
   template <>
-  struct value_type<byte_data> : public value_type_base
+  struct value_type<std::string, interface::pb::Kind::BYTES> : public value_type_base
   {
     static const interface::pb::Kind kind = interface::pb::Kind::BYTES;
-    typedef bool stored_type;
+    typedef std::string stored_type;
 
     template <typename ITER>
     static void
@@ -579,16 +573,16 @@ namespace virtdb { namespace util {
         pb_vt.bytesvalue();
       for( auto it=begin ; it != end ; ++it )
       {
-        pb_vt.add_bytesvalue(std::string(it->data, it->len));
+        pb_vt.add_bytesvalue(*it);
       }
     }
 
     static void
     set(interface::pb::ValueType & pb_vt,
-        byte_data v,
+        stored_type v,
         interface::pb::Kind val_kind=kind)
     {
-      const byte_data * val_ptr = &v;
+      const stored_type * val_ptr = &v;
       set(pb_vt, val_ptr, val_ptr+1, val_kind);
     }
 
@@ -607,12 +601,11 @@ namespace virtdb { namespace util {
         return default_value;
       else
       {
-        std::string bytes_as_string = pb_vt.bytesvalue(index);
-        return (bytes_as_string.data(), bytes_as_string.size());
+        return pb_vt.bytesvalue(index);
       }
     }
 
-    static stored_type
+    static const stored_type&
     get(interface::pb::ValueType & pb_vt,
         int index)
     {
@@ -620,8 +613,7 @@ namespace virtdb { namespace util {
         throw std::out_of_range(std::to_string(index) + " is out of range");
       else
       {
-        const std::string& bytes_as_string = pb_vt.mutable_bytesvalue()->Get(index);
-        return (bytes_as_string.data(), bytes_as_string.size());
+        return pb_vt.mutable_bytesvalue()->Get(index);
       }
     }
   };
