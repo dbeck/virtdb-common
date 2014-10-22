@@ -555,4 +555,75 @@ namespace virtdb { namespace util {
     }
   };
 
+  struct byte_data
+  {
+      char *   data;
+      size_t   len;
+  };
+
+  template <>
+  struct value_type<byte_data> : public value_type_base
+  {
+    static const interface::pb::Kind kind = interface::pb::Kind::BYTES;
+    typedef bool stored_type;
+
+    template <typename ITER>
+    static void
+    set(interface::pb::ValueType & pb_vt,
+        ITER begin,
+        ITER end,
+        interface::pb::Kind val_kind=kind)
+    {
+      pb_vt.set_type(val_kind);
+      if( pb_vt.bytesvalue_size() )
+        pb_vt.bytesvalue();
+      for( auto it=begin ; it != end ; ++it )
+      {
+        pb_vt.add_bytesvalue(std::string(it->data, it->len));
+      }
+    }
+
+    static void
+    set(interface::pb::ValueType & pb_vt,
+        byte_data v,
+        interface::pb::Kind val_kind=kind)
+    {
+      const byte_data * val_ptr = &v;
+      set(pb_vt, val_ptr, val_ptr+1, val_kind);
+    }
+
+    static int
+    size(interface::pb::ValueType & pb_vt)
+    {
+      return pb_vt.bytesvalue_size();
+    }
+
+    static stored_type
+    get(const interface::pb::ValueType & pb_vt,
+        int index,
+        const stored_type & default_value)
+    {
+      if( pb_vt.bytesvalue_size() <= index )
+        return default_value;
+      else
+      {
+        std::string bytes_as_string = pb_vt.bytesvalue(index);
+        return (bytes_as_string.data(), bytes_as_string.size());
+      }
+    }
+
+    static stored_type
+    get(interface::pb::ValueType & pb_vt,
+        int index)
+    {
+      if( pb_vt.bytesvalue_size() <= index )
+        throw std::out_of_range(std::to_string(index) + " is out of range");
+      else
+      {
+        const std::string& bytes_as_string = pb_vt.mutable_bytesvalue()->Get(index);
+        return (bytes_as_string.data(), bytes_as_string.size());
+      }
+    }
+  };
+
 }} // virtdb::interface
