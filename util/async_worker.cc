@@ -60,7 +60,10 @@ namespace virtdb { namespace util {
         std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > 10 )
+        {
+          LOG_ERROR("stop worker loop because of too many errors");
           break;
+        }
       }
       catch( const std::exception & e )
       {
@@ -69,7 +72,10 @@ namespace virtdb { namespace util {
         std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > 10 )
+        {
+          LOG_ERROR("stop worker loop because of too many errors");
           break;
+        }
       }
       catch( ... )
       {
@@ -78,7 +84,10 @@ namespace virtdb { namespace util {
         std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > 10 )
+        {
+          LOG_ERROR("stop worker loop because of too many errors");
           break;
+        }
       }
     }
     stop_barrier_.wait();
