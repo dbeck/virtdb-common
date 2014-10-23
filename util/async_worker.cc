@@ -42,26 +42,43 @@ namespace virtdb { namespace util {
   {
     start_barrier_.wait();
     started_ = true;
+    size_t exceptions_caught = 0;
     while( stop_ != true )
     {
       try
       {
         if( !worker_() )
           break;
+        
+        // reset exception counter
+        exceptions_caught = 0;
       }
       catch( const zmq::error_t & e )
       {
-        std::string text{e.what()};
-        LOG_ERROR("0MQ exception caught" << V_(text));
+        ++exceptions_caught;
+        LOG_ERROR("0MQ exception caught" << E_(e) << V_(exceptions_caught));
+        std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
+        // if we keep receiving exceptions we stop
+        if( exceptions_caught > 10 )
+          break;
       }
       catch( const std::exception & e )
       {
-        std::string text{e.what()};
-        LOG_ERROR("exception caught" << V_(text));
+        ++exceptions_caught;
+        LOG_ERROR("exception caught" << E_(e) << V_(exceptions_caught));
+        std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
+        // if we keep receiving exceptions we stop
+        if( exceptions_caught > 10 )
+          break;
       }
       catch( ... )
       {
-        LOG_ERROR("unknown excpetion caught");
+        ++exceptions_caught;
+        LOG_ERROR("unknown excpetion caught" << V_(exceptions_caught));
+        std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
+        // if we keep receiving exceptions we stop
+        if( exceptions_caught > 10 )
+          break;
       }
     }
     stop_barrier_.wait();
