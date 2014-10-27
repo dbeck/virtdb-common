@@ -110,8 +110,7 @@ namespace virtdb { namespace connector {
               THROW_("couldn't serialize request data");
             }
             
-            size_t send_ret = socket_.get().send( buffer.get(), req_size );
-            if( !send_ret )
+            if( !socket_.send( buffer.get(), req_size ) )
             {
               LOG_ERROR("failed to send request" <<
                         M_(req) <<

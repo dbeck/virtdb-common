@@ -187,21 +187,12 @@ namespace virtdb { namespace connector {
       if( serialzied )
       {
         // send reply
-        size_t nretries = 10;
-        size_t send_ret = ep_rep_socket_.get().send(reply_msg.get(), reply_size);
-        while( !send_ret && nretries > 0 )
+        size_t send_ret = ep_rep_socket_.send(reply_msg.get(), reply_size);
+        if( !send_ret )
         {
           LOG_ERROR("failed to send reply" <<
                     V_(send_ret) <<
-                    M_(reply_data) <<
-                    V_(nretries));
-          --nretries;
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
-          send_ret = ep_rep_socket_.get().send(reply_msg.get(), reply_size);
-        }
-        
-        if( !send_ret )
-        {
+                    M_(reply_data));
           return true;
         }
         
@@ -227,14 +218,17 @@ namespace virtdb { namespace connector {
               os << ep.svctype() << ' ' << ep.name();
               std::string subscription{os.str()};
               
-              if( !ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE) )
+              if( !ep_pub_socket_.send(subscription.c_str(),
+                                       subscription.length(),
+                                       ZMQ_SNDMORE) )
               {
-                LOG_ERROR("cannot send data");
+                LOG_ERROR("cannot send data" << V_(subscription));
                 continue;
               }
-              if( !ep_pub_socket_.get().send(pub_buffer.get(), pub_size) )
+              if( !ep_pub_socket_.send(pub_buffer.get(),
+                                       pub_size) )
               {
-                LOG_ERROR("cannot send data");
+                LOG_ERROR("cannot send data" << M_(publish_ep));
                 continue;
               }
             }

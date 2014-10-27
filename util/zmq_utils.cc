@@ -224,6 +224,66 @@ namespace virtdb { namespace util {
     set_invalid();
   }
   
+  size_t
+  zmq_socket_wrapper::send(const void *buf, size_t len, int flags)
+  {
+    size_t ret = 0;
+    if( wait_valid(SHORT_TIMEOUT_MS) )
+    {
+      size_t nretries = 10;
+      size_t sleep_ms = SHORT_TIMEOUT_MS;
+      ret = socket_.send(buf, len, flags);
+      while( !ret && nretries > 0 )
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+        LOG_ERROR("retry sending" <<
+                  V_(len) <<
+                  V_(sleep_ms) <<
+                  V_(flags) <<
+                  V_(nretries));
+        ret = socket_.send(buf, len, flags);
+        --nretries;
+        sleep_ms += SHORT_TIMEOUT_MS;
+      }
+      return ret;
+    }
+    else
+    {
+      LOG_ERROR("trying to send on an invalid socket");
+      return 0;
+    }
+  }
+  
+  bool
+  zmq_socket_wrapper::send(zmq::message_t &msg, int flags)
+  {
+    size_t ret = 0;
+    if( wait_valid(SHORT_TIMEOUT_MS) )
+    {
+      size_t nretries = 10;
+      size_t sleep_ms = SHORT_TIMEOUT_MS;
+      ret = socket_.send(msg, flags);
+      while( !ret && nretries > 0 )
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+        LOG_ERROR("retry sending" <<
+                  V_(msg.size()) <<
+                  V_(sleep_ms) <<
+                  V_(flags) <<
+                  V_(nretries));
+        ret = socket_.send(msg, flags);
+        --nretries;
+        sleep_ms += SHORT_TIMEOUT_MS;
+      }
+      return ret;
+    }
+    else
+    {
+      LOG_ERROR("trying to send on an invalid socket");
+      return 0;
+    }
+  }
+  
   void
   zmq_socket_wrapper::set_valid()
   {

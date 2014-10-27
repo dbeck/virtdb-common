@@ -104,10 +104,15 @@ namespace virtdb { namespace connector {
             THROW_("couldn't serialize request data");
           }
           
-          if( !socket_.get().send( buffer.get(), item_size ) )
+          if( !socket_.send( buffer.get(), item_size ) )
+          {
+            LOG_ERROR("failed to send" << M_(item) );
             return false;
+          }
           else
+          {
             return true;
+          }
         }
         catch (const zmq::error_t & e)
         {
