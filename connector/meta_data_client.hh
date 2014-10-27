@@ -15,6 +15,8 @@ namespace virtdb { namespace connector {
     meta_data_client(endpoint_client & ep_clnt,
                      const std::string & server);
     
-    virtual ~meta_data_client();    
+    ~meta_data_client();
+    
+    void cleanup();
   };
 }}

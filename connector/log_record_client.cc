@@ -107,4 +107,12 @@ namespace virtdb { namespace connector {
   {
   }
   
+  void
+  log_record_client::cleanup()
+  {
+    req_base_type::cleanup();
+    sub_base_type::cleanup();    
+  }
+
+  
 }}

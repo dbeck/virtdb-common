@@ -34,4 +34,12 @@ namespace virtdb { namespace connector {
   {
     req_base_type::wait_valid();
   }
+  
+  void
+  config_client::cleanup()
+  {
+    req_base_type::cleanup();
+    sub_base_type::cleanup();    
+  }
+
 }}

@@ -66,21 +66,37 @@ namespace virtdb { namespace connector {
                 if( rep->SerializeToArray(buffer.get(), rep_size) )
                 {
                   if( has_more )
-                    socket_.get().send(buffer.get(), rep_size, ZMQ_SNDMORE);
+                  {
+                    if( !socket_.send(buffer.get(), rep_size, ZMQ_SNDMORE) )
+                    {
+                      LOG_ERROR("failed to send" << M_(*rep));
+                    }
+                  }
                   else
-                    socket_.get().send(buffer.get(), rep_size);
+                  {
+                    if( !socket_.send(buffer.get(), rep_size) )
+                    {
+                      LOG_ERROR("failed to send" <<  M_(*rep));
+                    }
+                  }
                   
                   on_reply_(std::move(rep));
                 }
                 else
                 {
                   LOG_ERROR("failed to serialize message");
-                  socket_.get().send("", 0);
+                  if( !socket_.send("", 0) )
+                  {
+                    LOG_ERROR("failed to send empty message");
+                  }
                 }
               }
               else
               {
-                socket_.get().send("", 0);
+                if( !socket_.send("", 0) )
+                {
+                  LOG_ERROR("failed to send empty message");
+                }
               }
             });
 
@@ -89,13 +105,19 @@ namespace virtdb { namespace connector {
           {
             std::string text{e.what()};
             LOG_ERROR("exception during generating reply" << V_(text) << M_(req));
-            socket_.get().send("",0);
+            if( !socket_.send("",0) )
+            {
+              LOG_ERROR("failed to send empty message");
+            }
           }
         }
         else
         {
           LOG_ERROR("failed to parse message" << V_(req.GetTypeName()));
-          socket_.get().send("",0);
+          if( !socket_.send("",0) )
+          {
+            LOG_ERROR("failed to send empty message");
+          }
         }
       }
       catch (const zmq::error_t & e)

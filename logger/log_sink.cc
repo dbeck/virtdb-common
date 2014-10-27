@@ -214,7 +214,10 @@ namespace virtdb { namespace logger {
         if( serialized )
         {
           // sending out the message
-          socket_->get().send(work_buffer, message_size);
+          if( !socket_->send(work_buffer, message_size) )
+          {
+            std::cerr << "failed to send message" << __FILE__ << ':' << __LINE__ << "\n";
+          }
         }
       }
     }

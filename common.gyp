@@ -141,6 +141,8 @@
                              'connector/meta_data_server.cc',     'connector/meta_data_server.hh',
                              'connector/query_client.cc',         'connector/query_client.hh',
                              'connector/query_server.cc',         'connector/query_server.hh',
+                             # data helpers
+                             'datasrc/column.hh',                 'datasrc/pool.hh',
                            ],
     },
     {
@@ -158,6 +160,7 @@
                              'test/logger_test.cc',       'test/logger_test.hh',
                              'test/util_test.cc',         'test/util_test.hh',
                              'test/connector_test.cc',    'test/connector_test.hh',
+                             'test/datasrc_test.cc',      'test/datasrc_test.hh',
                            ],
     },
     {

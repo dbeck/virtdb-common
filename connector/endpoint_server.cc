@@ -187,7 +187,15 @@ namespace virtdb { namespace connector {
       if( serialzied )
       {
         // send reply
-        ep_rep_socket_.get().send(reply_msg.get(), reply_size);
+        size_t send_ret = ep_rep_socket_.send(reply_msg.get(), reply_size);
+        if( !send_ret )
+        {
+          LOG_ERROR("failed to send reply" <<
+                    V_(send_ret) <<
+                    M_(reply_data));
+          return true;
+        }
+        
         LOG_TRACE("sent reply" << M_(reply_data));
         
         // publish new messages one by one, so subscribers can choose what to
@@ -209,8 +217,20 @@ namespace virtdb { namespace connector {
               std::ostringstream os;
               os << ep.svctype() << ' ' << ep.name();
               std::string subscription{os.str()};
-              ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
-              ep_pub_socket_.get().send(pub_buffer.get(), pub_size);
+              
+              if( !ep_pub_socket_.send(subscription.c_str(),
+                                       subscription.length(),
+                                       ZMQ_SNDMORE) )
+              {
+                LOG_ERROR("cannot send data" << V_(subscription));
+                continue;
+              }
+              if( !ep_pub_socket_.send(pub_buffer.get(),
+                                       pub_size) )
+              {
+                LOG_ERROR("cannot send data" << M_(publish_ep));
+                continue;
+              }
             }
           }
         }

@@ -15,4 +15,10 @@ namespace virtdb { namespace connector {
   {
   }
   
+  void
+  column_client::cleanup()
+  {
+    sub_base_type::cleanup();
+  }
+  
 }}

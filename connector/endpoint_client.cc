@@ -267,4 +267,11 @@ namespace virtdb { namespace connector {
     worker_.stop();
   }
   
+  void
+  endpoint_client::cleanup()
+  {
+    remove_watches();
+    worker_.stop();
+  }
+  
 }}

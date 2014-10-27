@@ -46,6 +46,9 @@ namespace virtdb { namespace util {
     bool valid() const;
     const endpoint_set & endpoints() const;
     
+    size_t send(const void *buf_, size_t len_, int flags_ = 0);
+    bool send(zmq::message_t &msg_, int flags_ = 0);
+    
     template <typename ITER>
     bool connected_to(const ITER & begin, const ITER & end) const
     {

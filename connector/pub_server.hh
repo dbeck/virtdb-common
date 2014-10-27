@@ -38,8 +38,18 @@ namespace virtdb { namespace connector {
         {
           if( tp.second->SerializeToArray(pub_buffer.get(), pub_size) )
           {
-            socket_.get().send(tp.first.c_str(), tp.first.length(), ZMQ_SNDMORE);
-            socket_.get().send(pub_buffer.get(), pub_size);
+            if( !socket_.send(tp.first.c_str(), tp.first.length(), ZMQ_SNDMORE) )
+            {
+              LOG_ERROR("failed to send" << M_(*(tp.second)) << V_(tp.first));
+            }
+            else
+            {
+              if( !socket_.send(pub_buffer.get(), pub_size) )
+              {
+                LOG_ERROR("failed to send" << M_(*(tp.second)) << V_(tp.first));
+              }
+              
+            }
             release_pub_item(std::move(tp.second));
           }
           else

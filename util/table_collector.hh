@@ -226,7 +226,7 @@ namespace virtdb { namespace util {
         }
       }
       
-      auto wait_till = (std::chrono::system_clock::now() +
+      auto wait_till = (std::chrono::steady_clock::now() +
                         std::chrono::milliseconds(timeout_ms));
 
       std::cv_status cvstat = std::cv_status::no_timeout;

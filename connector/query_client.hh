@@ -14,6 +14,8 @@ namespace virtdb { namespace connector {
     query_client(endpoint_client & ep_clnt,
                  const std::string & server);
     
-    virtual ~query_client();
+    ~query_client();
+    
+    void cleanup();
   };
 }}

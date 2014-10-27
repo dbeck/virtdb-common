@@ -12,4 +12,10 @@ namespace virtdb { namespace connector {
   {
   }
   
+  void
+  query_client::cleanup()
+  {
+    push_base_type::cleanup();
+  }
+  
 }}
