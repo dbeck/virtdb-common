@@ -2,6 +2,7 @@
 
 #include <data.pb.h>
 #include <functional>
+#include <memory>
 
 namespace virtdb { namespace datasrc {
 
@@ -65,10 +66,10 @@ namespace virtdb { namespace datasrc {
     column() = delete;
     column(const column &) = delete;
     column & operator=(const column &) = delete;
-  t};
+  };
   
   template <typename T>
-  class column_t : public column
+  class typed_column : public column
   {
   public:
   };

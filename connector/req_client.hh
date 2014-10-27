@@ -115,7 +115,7 @@ namespace virtdb { namespace connector {
             {
               LOG_ERROR("failed to send request" <<
                         M_(req) <<
-                        V_(req_itm.GetTypeName()) <<
+                        V_(req.GetTypeName()) <<
                         V_(this->server()));
               return false;
             }
