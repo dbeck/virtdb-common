@@ -40,13 +40,13 @@ namespace virtdb { namespace connector {
           {
             if( !socket_.send(tp.first.c_str(), tp.first.length(), ZMQ_SNDMORE) )
             {
-              LOG_ERROR("failed to send" << M_(tp.second) << V_(tp.first));
+              LOG_ERROR("failed to send" << M_(*(tp.second)) << V_(tp.first));
             }
             else
             {
               if( !socket_.send(pub_buffer.get(), pub_size) )
               {
-                LOG_ERROR("failed to send" << M_(tp.second) << V_(tp.first));
+                LOG_ERROR("failed to send" << M_(*(tp.second)) << V_(tp.first));
               }
               
             }

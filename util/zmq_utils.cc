@@ -257,7 +257,7 @@ namespace virtdb { namespace util {
   bool
   zmq_socket_wrapper::send(zmq::message_t &msg, int flags)
   {
-    size_t ret = 0;
+    bool ret = false;
     if( wait_valid(SHORT_TIMEOUT_MS) )
     {
       size_t nretries = 10;
@@ -280,7 +280,7 @@ namespace virtdb { namespace util {
     else
     {
       LOG_ERROR("trying to send on an invalid socket");
-      return 0;
+      return false;
     }
   }
   
