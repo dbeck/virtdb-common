@@ -196,6 +196,7 @@ namespace virtdb { namespace connector {
                     M_(reply_data) <<
                     V_(nretries));
           --nretries;
+          std::this_thread::sleep_for(std::chrono::milliseconds(100));
           send_ret = ep_rep_socket_.get().send(reply_msg.get(), reply_size);
         }
         
@@ -225,8 +226,17 @@ namespace virtdb { namespace connector {
               std::ostringstream os;
               os << ep.svctype() << ' ' << ep.name();
               std::string subscription{os.str()};
-              ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
-              ep_pub_socket_.get().send(pub_buffer.get(), pub_size);
+              
+              if( !ep_pub_socket_.get().send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE) )
+              {
+                LOG_ERROR("cannot send data");
+                continue;
+              }
+              if( !ep_pub_socket_.get().send(pub_buffer.get(), pub_size) )
+              {
+                LOG_ERROR("cannot send data");
+                continue;
+              }
             }
           }
         }
