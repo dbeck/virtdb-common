@@ -245,11 +245,18 @@ namespace virtdb { namespace util {
         --nretries;
         sleep_ms += SHORT_TIMEOUT_MS;
       }
+      if( nretries != 10 && ret > 0 )
+      {
+        LOG_INFO("sent" <<
+                 V_(len) <<
+                 V_(ret) <<
+                 V_(nretries));
+      }
       return ret;
     }
     else
     {
-      LOG_ERROR("trying to send on an invalid socket");
+      LOG_ERROR("trying to send on an invalid socket" << V_(len) << V_(flags));
       return 0;
     }
   }
@@ -275,11 +282,18 @@ namespace virtdb { namespace util {
         --nretries;
         sleep_ms += SHORT_TIMEOUT_MS;
       }
+      if( nretries != 10 && ret )
+      {
+        LOG_INFO("sent" <<
+                 V_(msg.size()) <<
+                 V_(ret) <<
+                 V_(nretries));
+      }
       return ret;
     }
     else
     {
-      LOG_ERROR("trying to send on an invalid socket");
+      LOG_ERROR("trying to send on an invalid socket" << V_(msg.size()) << V_(flags));
       return false;
     }
   }
@@ -376,9 +390,8 @@ namespace virtdb { namespace util {
       0
     };
     
-    // willing to wait for 3s for new messages
-    if( zmq::poll(&poll_item, 1, ms) == -1 ||
-       !(poll_item.revents & ZMQ_POLLIN) )
+    int poll_ret = zmq::poll(&poll_item, 1, ms);
+    if( poll_ret == -1 || !(poll_item.revents & ZMQ_POLLIN) )
     {
       return false;
     }
