@@ -285,6 +285,14 @@ namespace virtdb { namespace connector {
       queue_.stop();
     }
     
+    virtual void cleanup()
+    {
+      ep_clnt_->remove_watches(service_type);
+      worker_.stop();
+      queue_.stop();
+      socket_.disconnect_all();
+    }
+    
     virtual bool wait_valid(unsigned long ms)
     {
       return socket_.wait_valid(ms);

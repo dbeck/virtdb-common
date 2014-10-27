@@ -25,5 +25,7 @@ namespace virtdb { namespace connector {
     
     void wait_valid_sub();
     void wait_valid_req();
+    
+    void cleanup();
   };
 }}

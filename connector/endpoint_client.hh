@@ -48,6 +48,7 @@ namespace virtdb { namespace connector {
     void register_endpoint(const interface::pb::EndpointData &);
     const std::string & name() const;
     const std::string & service_ep() const;
+    void cleanup();
     
   private:
     endpoint_client() = delete;

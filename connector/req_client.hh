@@ -110,7 +110,15 @@ namespace virtdb { namespace connector {
               THROW_("couldn't serialize request data");
             }
             
-            socket_.get().send( buffer.get(), req_size );
+            size_t send_ret = socket_.get().send( buffer.get(), req_size );
+            if( !send_ret )
+            {
+              LOG_ERROR("failed to send request" <<
+                        M_(req) <<
+                        V_(req_itm.GetTypeName()) <<
+                        V_(this->server()));
+              return false;
+            }
             
             bool call_fun = true;
             size_t n_replies = 0;
@@ -185,6 +193,12 @@ namespace virtdb { namespace connector {
       virtual ~req_client()
       {
         ep_clnt_->remove_watches(service_type);
+      }
+      
+      virtual void cleanup()
+      {
+        ep_clnt_->remove_watches(service_type);
+        socket_.disconnect_all();
       }
       
     private:

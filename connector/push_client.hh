@@ -142,6 +142,12 @@ namespace virtdb { namespace connector {
       ep_clnt_->remove_watches(service_type);
     }
     
+    virtual void cleanup()
+    {
+      ep_clnt_->remove_watches(service_type);
+      socket_.disconnect_all();
+    }
+    
   private:
     push_client() = delete;
     push_client(const push_client & other)  = delete;

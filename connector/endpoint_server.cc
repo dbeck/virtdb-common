@@ -187,7 +187,23 @@ namespace virtdb { namespace connector {
       if( serialzied )
       {
         // send reply
-        ep_rep_socket_.get().send(reply_msg.get(), reply_size);
+        size_t nretries = 10;
+        size_t send_ret = ep_rep_socket_.get().send(reply_msg.get(), reply_size);
+        while( !send_ret && nretries > 0 )
+        {
+          LOG_ERROR("failed to send reply" <<
+                    V_(send_ret) <<
+                    M_(reply_data) <<
+                    V_(nretries));
+          --nretries;
+          send_ret = ep_rep_socket_.get().send(reply_msg.get(), reply_size);
+        }
+        
+        if( !send_ret )
+        {
+          return true;
+        }
+        
         LOG_TRACE("sent reply" << M_(reply_data));
         
         // publish new messages one by one, so subscribers can choose what to

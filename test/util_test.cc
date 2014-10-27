@@ -237,10 +237,10 @@ TEST_F(TableCollectorTest, Basic)
   EXPECT_NE(q.last_updated(0), 0);
   q.insert(0, 1, i);
   auto const & val1 = q.get(0,200);
-  EXPECT_EQ(val1.empty(), true);
+  EXPECT_TRUE(val1.empty());
   q.insert(0, 2, i);
   auto const & val2 = q.get(0,200);
-  EXPECT_NE(val2.empty(), false);
+  EXPECT_FALSE(val2.empty());
   EXPECT_EQ(val2.size(), 3);
   // test timeout too
   relative_time rt;
