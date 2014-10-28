@@ -25,6 +25,9 @@ namespace virtdb { namespace connector {
     
     void wait_valid_sub();
     void wait_valid_req();
+
+    bool wait_valid_sub(uint64_t timeout_ms);
+    bool wait_valid_req(uint64_t timeout_ms);
     
     void cleanup();
   };

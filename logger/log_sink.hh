@@ -9,6 +9,7 @@ namespace virtdb { namespace logger {
   class log_sink final
   {
   public:
+    typedef std::shared_ptr<log_sink>                   sptr;
     typedef std::shared_ptr<util::zmq_socket_wrapper>   socket_sptr;
     typedef std::shared_ptr<log_sink>                   log_sink_sptr;
     typedef std::weak_ptr<log_sink>                     log_sink_wptr;

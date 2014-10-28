@@ -5,14 +5,17 @@
 #include <util/compare_messages.hh>
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
+#include <util/timer_service.hh>
 #include "ip_discovery_server.hh"
 #include <set>
+#include <map>
 
 namespace virtdb { namespace connector {
   
   class endpoint_server final
   {
-    typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data> ep_data_set;
+    typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data>  ep_data_set;
+    typedef std::map<std::string, uint64_t> keep_alive_map;
     
     std::string                 name_;
     std::string                 local_ep_;
@@ -23,6 +26,8 @@ namespace virtdb { namespace connector {
     util::zmq_socket_wrapper    ep_pub_socket_;
     util::async_worker          worker_;
     ip_discovery_server         discovery_;
+    util::timer_service         timer_svc_;
+    keep_alive_map              keep_alive_;
     std::mutex                  mtx_;
     
     bool worker_function();

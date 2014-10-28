@@ -35,6 +35,18 @@ namespace virtdb { namespace connector {
     req_base_type::wait_valid();
   }
   
+  bool
+  config_client::wait_valid_sub(uint64_t timeout_ms)
+  {
+    return sub_base_type::wait_valid(timeout_ms);
+  }
+  
+  bool
+  config_client::wait_valid_req(uint64_t timeout_ms)
+  {
+    return req_base_type::wait_valid(timeout_ms);
+  }
+  
   void
   config_client::cleanup()
   {

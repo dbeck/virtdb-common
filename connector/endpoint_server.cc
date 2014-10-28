@@ -7,6 +7,7 @@
 #include <util/net.hh>
 #include <util/flex_alloc.hh>
 #include <util/constants.hh>
+#include <util/relative_time.hh>
 #include <logger.hh>
 #include <sstream>
 #include <iostream>
@@ -73,6 +74,7 @@ namespace virtdb { namespace connector {
       }
       if( discovery_address_count > 0 )
       {
+        std::unique_lock<std::mutex> l(mtx_);
         endpoints_.insert(discovery_endpoint);
       }
     }
@@ -118,7 +120,10 @@ namespace virtdb { namespace connector {
         }
       }
       if( svc_config_address_count > 0 )
+      {
+        std::unique_lock<std::mutex> l(mtx_);
         endpoints_.insert(self_endpoint);
+      }
     }
   }
   
@@ -142,18 +147,54 @@ namespace virtdb { namespace connector {
       {
         for( int i=0; i<request.endpoints_size(); ++i )
         {
+          std::unique_lock<std::mutex> l(mtx_);
+          auto const & epr = request.endpoints(i);
           // ignore endpoints with no connections
-          if( request.endpoints(i).connections_size() > 0 &&
-              request.endpoints(i).svctype() != pb::ServiceType::NONE )
+          if( epr.connections_size() > 0 &&
+              epr.svctype() != pb::ServiceType::NONE )
           {
             // remove old endpoints if exists
-            auto it = endpoints_.find(request.endpoints(i));
+            auto it = endpoints_.find(epr);
             if( it != endpoints_.end() )
               endpoints_.erase(it);
             
             // insert endpoint
-            endpoints_.insert(request.endpoints(i));
+            endpoints_.insert(epr);
           }
+          
+          if( epr.has_validforms() )
+          {
+            std::string exp_svc_name{epr.name()};
+            pb::ServiceType exp_svc_type{epr.svctype()};
+            
+            uint64_t now     = util::relative_time::instance().get_msec();
+            uint64_t expiry  = now + epr.validforms();
+            
+            // set maximum vaildity for the component
+            keep_alive_[exp_svc_name] = expiry;
+            
+            // schedule removal
+            timer_svc_.schedule(epr.validforms()+SHORT_TIMEOUT_MS,
+                                [this,
+                                 exp_svc_name,
+                                 exp_svc_type]() {
+              {
+                std::unique_lock<std::mutex> l(mtx_);
+                uint64_t now     = util::relative_time::instance().get_msec();
+                uint64_t expiry  = keep_alive_[exp_svc_name];
+                if( now >= expiry )
+                {
+                  pb::EndpointData to_remove;
+                  to_remove.set_name(exp_svc_name);
+                  to_remove.set_svctype(exp_svc_type);
+                  endpoints_.erase(to_remove);
+                }
+              }
+              // non-periodic check it is
+              return false;              
+            });
+           }
+          
         }
         LOG_TRACE("endpoint request arrived" << M_(request));
       }
@@ -173,10 +214,13 @@ namespace virtdb { namespace connector {
     pb::Endpoint reply_data;
     
     // filling the reply
-    for( auto const & ep_data : endpoints_ )
     {
-      auto ep_ptr = reply_data.add_endpoints();
-      ep_ptr->MergeFrom(ep_data);
+      std::unique_lock<std::mutex> l(mtx_);
+      for( auto const & ep_data : endpoints_ )
+      {
+        auto ep_ptr = reply_data.add_endpoints();
+        ep_ptr->MergeFrom(ep_data);
+      }
     }
 
     int reply_size = reply_data.ByteSize();
