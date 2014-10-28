@@ -45,7 +45,8 @@ namespace virtdb { namespace connector {
     void watch(interface::pb::ServiceType, monitor);
     void remove_watches(interface::pb::ServiceType);
     void remove_watches();
-    void register_endpoint(const interface::pb::EndpointData &);
+    void register_endpoint(const interface::pb::EndpointData &,
+                           monitor m=[](const interface::pb::EndpointData &){return true;});
     const std::string & name() const;
     const std::string & service_ep() const;
     void cleanup();

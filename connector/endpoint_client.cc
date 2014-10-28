@@ -75,13 +75,15 @@ namespace virtdb { namespace connector {
   }
   
   void
-  endpoint_client::register_endpoint(const interface::pb::EndpointData & ep_data)
+  endpoint_client::register_endpoint(const interface::pb::EndpointData & ep_data,
+                                     monitor m)
   {
     pb::Endpoint ep;
     auto ep_data_ptr = ep.add_endpoints();
     ep_data_ptr->MergeFrom(ep_data);
 
     int ep_size = ep.ByteSize();
+    bool run_monitor = true;
     
     if( ep_size > 0 )
     {
@@ -108,7 +110,24 @@ namespace virtdb { namespace connector {
       }
       
       for( int i=0; i<peers.endpoints_size(); ++i )
+      {
+        try
+        {
+          if( run_monitor )
+            run_monitor = m(peers.endpoints(i));
+        }
+        catch( const std::exception & e)
+        {
+          LOG_ERROR("exception caught" << E_(e));
+          run_monitor = false;
+        }
+        catch( ... )
+        {
+          LOG_ERROR("unknown exception caught");
+          run_monitor = false;
+        }
         handle_endpoint_data(peers.endpoints(i));
+      }
     }
   }
   
