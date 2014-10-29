@@ -142,7 +142,8 @@
                              'connector/query_client.cc',         'connector/query_client.hh',
                              'connector/query_server.cc',         'connector/query_server.hh',
                              # data helpers
-                             'datasrc/column.hh',                 'datasrc/pool.hh',
+                             'datasrc/column.cc',   'datasrc/column.hh',
+                             'datasrc/pool.hh',
                            ],
     },
     {
