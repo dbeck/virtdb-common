@@ -152,7 +152,7 @@
                              'datasrc/float_column.cc',     'datasrc/float_column.hh',
                              'datasrc/double_column.cc',    'datasrc/double_column.hh',
                              'datasrc/int64_column.cc',     'datasrc/int64_column.hh',
-                             'datasrc/pool.hh',
+                             'datasrc/pool.cc',             'datasrc/pool.hh',
                            ],
     },
     {

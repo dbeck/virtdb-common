@@ -3,51 +3,14 @@
 
 namespace virtdb { namespace datasrc {
 
-  column::column(size_t max_rows,
-                 on_dispose d)
+  column::column(size_t max_rows)
   : max_rows_{max_rows},
-    on_dispose_{d}
+    nulls_(max_rows, false)
   {
     if( !max_rows )
     {
       THROW_("max_rows parameter is zero");
     }
-  }
-  
-  interface::pb::ValueType &
-  column::get_data_impl()
-  {
-    return data_;
-  }
-  
-  size_t
-  column::n_rows_impl() const
-  {
-    return 0;
-  }
-  
-  void
-  column::dispose_impl()
-  {
-    if( on_dispose_ )
-      on_dispose_();
-  }
-  
-  void
-  column::convert_pb_impl()
-  {
-  }
-  
-  void
-  column::compress_impl()
-  {
-    // TODO
-  }
-  
-  void
-  column::compress()
-  {
-    compress_impl();
   }
   
   size_t
@@ -56,34 +19,46 @@ namespace virtdb { namespace datasrc {
     return max_rows_;
   }
   
+  column::null_vector &
+  column::nulls()
+  {
+    return nulls_;
+  }
+  
+  void
+  column::set_on_dispose(on_dispose d)
+  {
+    on_dispose_ = d;    
+  }
+  
+  void
+  column::compress()
+  {
+    // TODO
+  }
+  
   interface::pb::ValueType &
   column::get_data()
   {
-    return get_data_impl();
-  }
-  
-  size_t
-  column::n_rows() const
-  {
-    return n_rows_impl();
+    return data_;
   }
   
   void
-  column::dispose()
+  column::dispose(sptr p)
   {
-    dispose_impl();
+    if( on_dispose_ )
+      on_dispose_(std::move(p));
   }
-
-  void
-  column::convert_pb()
-  {
-    convert_pb();
-  }
+  
+  
+  /////////////////
   
   fixed_width_column::fixed_width_column(size_t max_rows,
-                                         size_t max_size,
-                                         column::on_dispose d)
-  : parent_type{max_rows*max_size, d}
+                                         size_t max_size)
+  : parent_type{max_rows},
+    data_{new char[max_rows*max_size]},
+    actual_sizes_{max_rows, 0},
+    max_size_{max_size}
   {
     if( !max_size )
     {
@@ -95,13 +70,18 @@ namespace virtdb { namespace datasrc {
   fixed_width_column::actual_sizes()
   {
     return actual_sizes_;
-    
   }
   
   size_t
   fixed_width_column::max_size() const
   {
     return max_size_;
+  }
+  
+  char *
+  fixed_width_column::get_ptr()
+  {
+    return data_.get();
   }
 
 }}

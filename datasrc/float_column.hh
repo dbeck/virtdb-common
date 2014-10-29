@@ -6,8 +6,10 @@ namespace virtdb { namespace datasrc {
   
   class float_column : public typed_column<float>
   {
+    typedef typed_column<float> parent_type;
+    
   public:
-    float_column(size_t max_rows, on_dispose d=[](){});
+    float_column(size_t max_rows);
   };
 
 }}

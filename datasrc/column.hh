@@ -10,33 +10,33 @@ namespace virtdb { namespace datasrc {
   class column
   {
   public:
-    typedef std::shared_ptr<column>    sptr;
-    typedef std::function<void(void)>  on_dispose;
+    typedef std::shared_ptr<column>       sptr;
+    typedef std::function<void(sptr)>     on_dispose;
+    typedef std::vector<bool>             null_vector;
     
   private:
     size_t                     max_rows_;
     interface::pb::ValueType   data_;
     on_dispose                 on_dispose_;
-    
-    virtual size_t n_rows_impl() const;
-    
-    virtual void convert_pb_impl();
-    virtual void compress_impl();
-    virtual interface::pb::ValueType & get_data_impl();
-    virtual void dispose_impl();
+    null_vector                nulls_;
     
   public:
-    column(size_t max_rows, on_dispose d=[](){});
+    column(size_t max_rows);
     virtual ~column() {}
     
+    // common properties
     size_t max_rows() const;
-    size_t n_rows() const;
-    
-    void convert_pb(); // step #1: convert internal data to uncompressed PB
-    void compress();   // step #2: compress data
-                       // step #3: get pb data for sending over
-    interface::pb::ValueType & get_data();
-    void dispose();    // step #4: return this column to the pool
+    null_vector & nulls();
+    void set_on_dispose(on_dispose);
+
+    // interface for children
+    virtual size_t n_rows() const = 0;
+    virtual void prepare() {}         // step #1: preparation
+    virtual void convert_pb() = 0;    // step #2: convert internal data to uncompressed PB
+    virtual void compress();          // step #3: compress data
+                                      // step #4: get pb data for sending over
+    virtual interface::pb::ValueType & get_data();
+    virtual void dispose(sptr);       // step #5: return this column to the pool
     
   private:
     column() = delete;
@@ -52,28 +52,32 @@ namespace virtdb { namespace datasrc {
     data_uptr data_;
     
   public:
-    typed_column(size_t max_rows, on_dispose d=[](){})
-    : column{max_rows, d},
+    typed_column(size_t max_rows)
+    : column{max_rows},
       data_{new T[max_rows]}
     {}
     
     T * get_ptr() { return data_.get(); }
   };
   
-  class fixed_width_column : public typed_column<char>
+  class fixed_width_column : public column
   {
   public:
     typedef std::vector<size_t> size_vector;
     
   private:
-    typedef typed_column<char>  parent_type;
-    size_vector  actual_sizes_;
-    size_t       max_size_;
+    typedef column                   parent_type;
+    typedef std::unique_ptr<char[]>  data_uptr;
+    
+    data_uptr       data_;
+    size_vector     actual_sizes_;
+    size_t          max_size_;
     
   public:
-    fixed_width_column(size_t max_rows, size_t max_size, on_dispose d=[](){});
+    fixed_width_column(size_t max_rows, size_t max_size);
     size_vector & actual_sizes();
     size_t max_size() const;
+    char * get_ptr();
   };
   
 }}

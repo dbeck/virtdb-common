@@ -9,7 +9,7 @@ namespace virtdb { namespace datasrc {
     typedef fixed_width_column parent_type;
     
   public:
-    bytes_column(size_t max_rows, size_t max_size, on_dispose d=[](){});
+    bytes_column(size_t max_rows, size_t max_size);
   };
   
 }}
