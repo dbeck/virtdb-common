@@ -3,6 +3,7 @@
 #include <data.pb.h>
 #include <functional>
 #include <memory>
+#include <vector>
 
 namespace virtdb { namespace datasrc {
 
@@ -48,15 +49,31 @@ namespace virtdb { namespace datasrc {
   {
   private:
     typedef std::unique_ptr<T[]> data_uptr;
-    
     data_uptr data_;
     
   public:
     typed_column(size_t max_rows, on_dispose d=[](){})
-    : data_{new T[max_rows]}
+    : column{max_rows, d},
+      data_{new T[max_rows]}
     {}
     
     T * get_ptr() { return data_.get(); }
+  };
+  
+  class fixed_width_column : public typed_column<char>
+  {
+  public:
+    typedef std::vector<size_t> size_vector;
+    
+  private:
+    typedef typed_column<char>  parent_type;
+    size_vector  actual_sizes_;
+    size_t       max_size_;
+    
+  public:
+    fixed_width_column(size_t max_rows, size_t max_size, on_dispose d=[](){});
+    size_vector & actual_sizes();
+    size_t max_size() const;
   };
   
 }}

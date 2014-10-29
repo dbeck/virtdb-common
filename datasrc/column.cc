@@ -1,4 +1,5 @@
 #include "column.hh"
+#include <util/exception.hh>
 
 namespace virtdb { namespace datasrc {
 
@@ -7,6 +8,10 @@ namespace virtdb { namespace datasrc {
   : max_rows_{max_rows},
     on_dispose_{d}
   {
+    if( !max_rows )
+    {
+      THROW_("max_rows parameter is zero");
+    }
   }
   
   interface::pb::ValueType &
@@ -75,4 +80,28 @@ namespace virtdb { namespace datasrc {
     convert_pb();
   }
   
+  fixed_width_column::fixed_width_column(size_t max_rows,
+                                         size_t max_size,
+                                         column::on_dispose d)
+  : parent_type{max_rows*max_size, d}
+  {
+    if( !max_size )
+    {
+      THROW_("max_size parameter is zero");
+    }
+  }
+  
+  fixed_width_column::size_vector &
+  fixed_width_column::actual_sizes()
+  {
+    return actual_sizes_;
+    
+  }
+  
+  size_t
+  fixed_width_column::max_size() const
+  {
+    return max_size_;
+  }
+
 }}
