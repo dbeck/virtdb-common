@@ -43,5 +43,6 @@ gulp.task('test', ['coffee'], function ()
             .pipe(mocha({reporter: 'min'}));
 })
 
+gulp.task('build', ['coffee', 'collect-proto']);
 
 gulp.task("default", ["watch"]);
