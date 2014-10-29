@@ -13,54 +13,29 @@ namespace virtdb { namespace datasrc {
     typedef std::function<void(void)>  on_dispose;
     
   private:
-    size_t                     max_items_;
+    size_t                     max_rows_;
     interface::pb::ValueType   data_;
     on_dispose                 on_dispose_;
     
-    virtual interface::pb::ValueType & get_data_impl()
-    {
-      return data_;
-    }
+    virtual size_t n_rows_impl() const;
     
-    virtual size_t n_rows_impl() const
-    {
-      return 0;
-    }
-    
-    virtual void dispose_impl()
-    {
-      if( on_dispose_ )
-        on_dispose_();
-    }
+    virtual void convert_pb_impl();
+    virtual void compress_impl();
+    virtual interface::pb::ValueType & get_data_impl();
+    virtual void dispose_impl();
     
   public:
-    
-    inline size_t max_items() const
-    {
-      return max_items_;
-    }
-    
-    inline interface::pb::ValueType & get_data()
-    {
-      return get_data_impl();
-    }
-    
-    column(size_t max_itms,
-           on_dispose d=[](){})
-    : max_items_{max_itms},
-      on_dispose_{d} {}
-    
-    inline size_t n_rows() const
-    {
-      return n_rows_impl();
-    }
-    
-    inline void dispose()
-    {
-      dispose_impl();
-    }
-    
+    column(size_t max_rows, on_dispose d=[](){});
     virtual ~column() {}
+    
+    size_t max_rows() const;
+    size_t n_rows() const;
+    
+    void convert_pb(); // step #1: convert internal data to uncompressed PB
+    void compress();   // step #2: compress data
+                       // step #3: get pb data for sending over
+    interface::pb::ValueType & get_data();
+    void dispose();    // step #4: return this column to the pool
     
   private:
     column() = delete;
@@ -71,7 +46,17 @@ namespace virtdb { namespace datasrc {
   template <typename T>
   class typed_column : public column
   {
+  private:
+    typedef std::unique_ptr<T[]> data_uptr;
+    
+    data_uptr data_;
+    
   public:
+    typed_column(size_t max_rows, on_dispose d=[](){})
+    : data_{new T[max_rows]}
+    {}
+    
+    T * get_ptr() { return data_.get(); }
   };
   
 }}
