@@ -3,64 +3,40 @@
 #include <data.pb.h>
 #include <functional>
 #include <memory>
+#include <vector>
 
 namespace virtdb { namespace datasrc {
 
   class column
   {
   public:
-    typedef std::shared_ptr<column>    sptr;
-    typedef std::function<void(void)>  on_dispose;
+    typedef std::shared_ptr<column>       sptr;
+    typedef std::function<void(sptr)>     on_dispose;
+    typedef std::vector<bool>             null_vector;
     
   private:
-    size_t                     max_items_;
+    size_t                     max_rows_;
     interface::pb::ValueType   data_;
     on_dispose                 on_dispose_;
-    
-    virtual interface::pb::ValueType & get_data_impl()
-    {
-      return data_;
-    }
-    
-    virtual size_t n_rows_impl() const
-    {
-      return 0;
-    }
-    
-    virtual void dispose_impl()
-    {
-      if( on_dispose_ )
-        on_dispose_();
-    }
+    null_vector                nulls_;
     
   public:
-    
-    inline size_t max_items() const
-    {
-      return max_items_;
-    }
-    
-    inline interface::pb::ValueType & get_data()
-    {
-      return get_data_impl();
-    }
-    
-    column(size_t max_itms,
-           on_dispose d=[](){})
-    : max_items_{max_itms},
-      on_dispose_{d} {}
-    
-    inline size_t n_rows() const
-    {
-      return n_rows_impl();
-    }
-    
-    inline void dispose()
-    {
-      dispose_impl();
-    }
-    
+    column(size_t max_rows);
     virtual ~column() {}
+    
+    // common properties
+    size_t max_rows() const;
+    null_vector & nulls();
+    void set_on_dispose(on_dispose);
+
+    // interface for children
+    virtual size_t n_rows() const = 0;
+    virtual void prepare() {}         // step #1: preparation
+    virtual void convert_pb() = 0;    // step #2: convert internal data to uncompressed PB
+    virtual void compress();          // step #3: compress data
+                                      // step #4: get pb data for sending over
+    virtual interface::pb::ValueType & get_data();
+    virtual void dispose(sptr);       // step #5: return this column to the pool
     
   private:
     column() = delete;
@@ -71,7 +47,37 @@ namespace virtdb { namespace datasrc {
   template <typename T>
   class typed_column : public column
   {
+  private:
+    typedef std::unique_ptr<T[]> data_uptr;
+    data_uptr data_;
+    
   public:
+    typed_column(size_t max_rows)
+    : column{max_rows},
+      data_{new T[max_rows]}
+    {}
+    
+    T * get_ptr() { return data_.get(); }
+  };
+  
+  class fixed_width_column : public column
+  {
+  public:
+    typedef std::vector<size_t> size_vector;
+    
+  private:
+    typedef column                   parent_type;
+    typedef std::unique_ptr<char[]>  data_uptr;
+    
+    data_uptr       data_;
+    size_vector     actual_sizes_;
+    size_t          max_size_;
+    
+  public:
+    fixed_width_column(size_t max_rows, size_t max_size);
+    size_vector & actual_sizes();
+    size_t max_size() const;
+    char * get_ptr();
   };
   
 }}

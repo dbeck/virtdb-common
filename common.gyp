@@ -142,7 +142,17 @@
                              'connector/query_client.cc',         'connector/query_client.hh',
                              'connector/query_server.cc',         'connector/query_server.hh',
                              # data helpers
-                             'datasrc/column.hh',                 'datasrc/pool.hh',
+                             'datasrc/column.cc',           'datasrc/column.hh',
+                             'datasrc/int32_column.cc',     'datasrc/int32_column.hh',
+                             'datasrc/date_column.cc',      'datasrc/date_column.hh',
+                             'datasrc/time_column.cc',      'datasrc/time_column.hh',
+                             'datasrc/datetime_column.cc',  'datasrc/datetime_column.hh',
+                             'datasrc/string_column.cc',    'datasrc/string_column.hh',
+                             'datasrc/bytes_column.cc',     'datasrc/bytes_column.hh',
+                             'datasrc/float_column.cc',     'datasrc/float_column.hh',
+                             'datasrc/double_column.cc',    'datasrc/double_column.hh',
+                             'datasrc/int64_column.cc',     'datasrc/int64_column.hh',
+                             'datasrc/pool.cc',             'datasrc/pool.hh',
                            ],
     },
     {
