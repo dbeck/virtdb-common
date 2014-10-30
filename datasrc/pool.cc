@@ -16,7 +16,25 @@ namespace virtdb { namespace datasrc {
   bool
   pool::wait_all_disposed(uint64_t timeout_ms)
   {
-    // TODO
+    {
+      // initial check for block state
+      lock l(mtx_);
+      if( allocated_ == pool_.size() )
+        return true;
+    }
+    
+    auto wait_till = (std::chrono::steady_clock::now() +
+                      std::chrono::milliseconds(timeout_ms));
+    
+    std::cv_status cvstat = std::cv_status::no_timeout;
+    
+    while( cvstat != std::cv_status::timeout )
+    {
+      lock l(mtx_);
+      cvstat = cv_.wait_until(l, wait_till);
+      if( allocated_ == pool_.size() )
+        return true;
+    }
     return false;
   }
   
