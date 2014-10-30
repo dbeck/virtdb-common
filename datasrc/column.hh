@@ -16,7 +16,7 @@ namespace virtdb { namespace datasrc {
     
   private:
     size_t                     max_rows_;
-    interface::pb::ValueType   data_;
+    interface::pb::Column      pb_column_;
     on_dispose                 on_dispose_;
     null_vector                nulls_;
     
@@ -28,14 +28,17 @@ namespace virtdb { namespace datasrc {
     size_t max_rows() const;
     null_vector & nulls();
     void set_on_dispose(on_dispose);
+    void set_last();
+    void set_seqno(size_t seqno);
 
     // interface for children
+    virtual char * get_ptr() = 0;
     virtual size_t n_rows() const = 0;
     virtual void prepare() {}         // step #1: preparation
     virtual void convert_pb() = 0;    // step #2: convert internal data to uncompressed PB
     virtual void compress();          // step #3: compress data
                                       // step #4: get pb data for sending over
-    virtual interface::pb::ValueType & get_data();
+    virtual interface::pb::Column & get_pb_column();
     virtual void dispose(sptr);       // step #5: return this column to the pool
     
   private:
@@ -57,7 +60,8 @@ namespace virtdb { namespace datasrc {
       data_{new T[max_rows]}
     {}
     
-    T * get_ptr() { return data_.get(); }
+    T * get_typed_ptr() { return data_.get(); }
+    char * get_ptr() { return reinterpret_cast<char *>(data_.get()); }
   };
   
   class fixed_width_column : public column

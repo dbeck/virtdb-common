@@ -13,6 +13,20 @@ namespace virtdb { namespace datasrc {
     }
   }
   
+  void
+  column::set_last()
+  {
+    auto & c = get_pb_column();
+    c.set_endofdata(true);
+  }
+  
+  void
+  column::set_seqno(size_t seqno)
+  {
+    auto & c = get_pb_column();
+    c.set_seqno(seqno);
+  }
+  
   size_t
   column::max_rows() const
   {
@@ -37,10 +51,10 @@ namespace virtdb { namespace datasrc {
     // TODO
   }
   
-  interface::pb::ValueType &
-  column::get_data()
+  interface::pb::Column &
+  column::get_pb_column()
   {
-    return data_;
+    return pb_column_;
   }
   
   void

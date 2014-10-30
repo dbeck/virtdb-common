@@ -23,6 +23,8 @@ namespace virtdb { namespace datasrc {
     std::mutex               mtx_;
     
   public:
+    typedef std::shared_ptr<pool> sptr;
+    
     pool(size_t max_rows);
     bool wait_all_disposed(uint64_t timeout_ms);
     size_t n_allocated();
