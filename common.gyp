@@ -70,6 +70,16 @@
   },
   'targets' : [
     {
+      'target_name':       'lz4',
+      'type':              'static_library',
+      'sources':           [
+                             'lz4/lz4.c',
+                             'lz4/lz4.h',
+                             'lz4/lz4hc.c',
+                             'lz4/lz4hc.h',
+                           ],
+    },
+    {
       'conditions': [
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
@@ -90,7 +100,7 @@
       ],
       'target_name':       'common',
       'type':              'static_library',
-      'dependencies':      [ 'proto/proto.gyp:*', ],
+      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
       'export_dependent_settings': [ 'proto/proto.gyp:*', ],
       'cflags': [
         '-std=c++11',
@@ -172,16 +182,6 @@
                              'test/util_test.cc',         'test/util_test.hh',
                              'test/connector_test.cc',    'test/connector_test.hh',
                              'test/datasrc_test.cc',      'test/datasrc_test.hh',
-                           ],
-    },
-    {
-      'target_name':       'lz4',
-      'type':              'static_library',
-      'sources':           [
-                             'lz4/lz4.c',
-                             'lz4/lz4.h',
-                             'lz4/lz4hc.c',
-                             'lz4/lz4hc.h',
                            ],
     },
     {
