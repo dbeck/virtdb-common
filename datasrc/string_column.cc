@@ -33,12 +33,12 @@ namespace virtdb { namespace datasrc {
     {
       if( null_vals[i] )
       {
-        data_pb_ptr->set_stringvalue(i, val_ptr+in_field_offset(), sizes[i]);
+        data_pb_ptr->add_stringvalue(val_ptr+in_field_offset(), sizes[i]);
         util::value_type_base::set_null(*data_pb_ptr, i);        
       }
       else
       {
-        data_pb_ptr->set_stringvalue(i, "");
+        data_pb_ptr->add_stringvalue("",0);
       }
       val_ptr += max_size();
     }

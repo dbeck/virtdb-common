@@ -31,12 +31,12 @@ namespace virtdb { namespace datasrc {
     {
       if( null_vals[i] )
       {
-        data_pb_ptr->set_int32value(i, 0.0);
+        data_pb_ptr->add_int32value(0.0);
         util::value_type_base::set_null(*data_pb_ptr, i);
       }
       else
       {
-        data_pb_ptr->set_doublevalue(i, values[i]);
+        data_pb_ptr->add_int32value(values[i]);
       }
     }
   }
