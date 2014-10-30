@@ -10,6 +10,8 @@ namespace virtdb { namespace datasrc {
     
   public:
     bytes_column(size_t max_rows, size_t max_size);
+    
+    void convert_pb();
   };
   
 }}

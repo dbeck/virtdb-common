@@ -16,6 +16,7 @@ namespace virtdb { namespace datasrc {
     
   private:
     size_t                     max_rows_;
+    size_t                     n_rows_;
     interface::pb::Column      pb_column_;
     on_dispose                 on_dispose_;
     null_vector                nulls_;
@@ -29,12 +30,15 @@ namespace virtdb { namespace datasrc {
     null_vector & nulls();
     void set_on_dispose(on_dispose);
     void set_last();
-    void set_seqno(size_t seqno);
+    void seqno(size_t seqno);
+    void n_rows(size_t n);
+    size_t seqno();
+    bool is_last();
 
     // interface for children
     virtual char * get_ptr() = 0;
-    virtual size_t n_rows() const = 0;
-    virtual void prepare() {}         // step #1: preparation
+    virtual size_t n_rows() const;
+    virtual void prepare();           // step #1: preparation
     virtual void convert_pb() = 0;    // step #2: convert internal data to uncompressed PB
     virtual void compress();          // step #3: compress data
                                       // step #4: get pb data for sending over
@@ -76,12 +80,15 @@ namespace virtdb { namespace datasrc {
     data_uptr       data_;
     size_vector     actual_sizes_;
     size_t          max_size_;
+    size_t          in_field_offset_;
     
   public:
     fixed_width_column(size_t max_rows, size_t max_size);
     size_vector & actual_sizes();
     size_t max_size() const;
     char * get_ptr();
+    void in_field_offset(size_t o);
+    size_t in_field_offset() const;
   };
   
 }}

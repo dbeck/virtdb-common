@@ -142,6 +142,7 @@
                              'connector/query_client.cc',         'connector/query_client.hh',
                              'connector/query_server.cc',         'connector/query_server.hh',
                              # data helpers
+                             'datasrc.hh',
                              'datasrc/column.cc',           'datasrc/column.hh',
                              'datasrc/int32_column.cc',     'datasrc/int32_column.hh',
                              'datasrc/date_column.cc',      'datasrc/date_column.hh',
