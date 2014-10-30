@@ -1,8 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <datasrc/pool.hh>
-#include <datasrc/column.hh>
+#include <datasrc.hh>
 
 namespace virtdb { namespace test {
   

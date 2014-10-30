@@ -137,13 +137,12 @@ namespace virtdb { namespace datasrc {
   }
   
   void
-  column::dispose(sptr p)
+  column::dispose(sptr && p)
   {
-    if( on_dispose_ )
+    if( on_dispose_ && p )
       on_dispose_(std::move(p));
   }
-  
-  
+    
   /////////////////
   
   fixed_width_column::fixed_width_column(size_t max_rows,

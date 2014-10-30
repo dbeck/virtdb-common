@@ -7,12 +7,13 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
+#include <set>
 
 namespace virtdb { namespace datasrc {
   
   class pool
   {
-    typedef std::list<column::sptr>       column_pool;
+    typedef std::set<column::sptr>        column_pool;
     typedef std::unique_lock<std::mutex>  lock;
     
     column_pool              pool_;
@@ -36,8 +37,9 @@ namespace virtdb { namespace datasrc {
       lock l(mtx_);
       if( pool_.size() > 0 )
       {
-        auto front = pool_.front();
-        pool_.pop_front();
+        auto it = pool_.begin();
+        column::sptr front = *it;
+        pool_.erase(it);
         COLUMN_TYPE * ptr = dynamic_cast<COLUMN_TYPE *>(front.get());
         if( !ptr ) { THROW_("invalid item found in column pool"); }
         return front;
@@ -57,8 +59,9 @@ namespace virtdb { namespace datasrc {
       lock l(mtx_);
       if( pool_.size() > 0 )
       {
-        auto front = pool_.front();
-        pool_.pop_front();
+        auto it = pool_.begin();
+        column::sptr front = *it;
+        pool_.erase(it);
         COLUMN_TYPE * ptr = dynamic_cast<COLUMN_TYPE *>(front.get());
         if( !ptr ) { THROW_("invalid item found in column pool"); }
         return front;
@@ -79,8 +82,9 @@ namespace virtdb { namespace datasrc {
       lock l(mtx_);
       if( pool_.size() > 0 )
       {
-        auto front = pool_.front();
-        pool_.pop_front();
+        auto it = pool_.begin();
+        column::sptr front = *it;
+        pool_.erase(it);
         COLUMN_TYPE * ptr = dynamic_cast<COLUMN_TYPE *>(front.get());
         if( !ptr ) { THROW_("invalid item found in column pool"); }
         return front;

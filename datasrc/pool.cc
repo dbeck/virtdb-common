@@ -6,10 +6,13 @@ namespace virtdb { namespace datasrc {
   : max_rows_{max_rows},
   allocated_{0}
   {
-    on_dispose_ = [this](column::sptr col) {
-      lock l{mtx_};
-      pool_.push_back(col);
-      cv_.notify_all();
+    on_dispose_ = [this](column::sptr && col) {
+      if( col )
+      {
+        lock l{mtx_};
+        pool_.insert(std::move(col));
+        cv_.notify_all();
+      }
     };
   }
   

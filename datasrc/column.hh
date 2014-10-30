@@ -43,7 +43,7 @@ namespace virtdb { namespace datasrc {
     virtual void compress();          // step #3: compress data
                                       // step #4: get pb data for sending over
     virtual interface::pb::Column & get_pb_column();
-    virtual void dispose(sptr);       // step #5: return this column to the pool
+    virtual void dispose(sptr &&);    // step #5: return this column to the pool
     
   private:
     column() = delete;
