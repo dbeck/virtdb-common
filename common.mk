@@ -33,6 +33,7 @@ $(info $$LDFLAGS is [${LDFLAGS}])
 UTIL_SRCS            := $(wildcard util/*.cc)
 LOGGER_SRCS          := $(wildcard logger/*.cc)
 CONNECTOR_SRCS       := $(wildcard connector/*.cc)
+DATASRC_SRCS         := $(wildcard datasrc/*.cc)
 TEST_SRCS_WILDCARD   := $(wildcard test/*.cc)
 TEST_EXCLUDES        := test/gtest_main.cc
 TEST_SRCS            := $(filter-out $(TEST_EXCLUDES),$(TEST_SRCS_WILDCARD))
@@ -40,6 +41,7 @@ TEST_SRCS            := $(filter-out $(TEST_EXCLUDES),$(TEST_SRCS_WILDCARD))
 UTIL_OBJECTS       := $(patsubst %.cc,%.o,$(UTIL_SRCS))
 LOGGER_OBJECTS     := $(patsubst %.cc,%.o,$(LOGGER_SRCS))
 CONNECTOR_OBJECTS  := $(patsubst %.cc,%.o,$(CONNECTOR_SRCS))
+DATASRC_OBJECTS    := $(patsubst %.cc,%.o,$(DATASRC_SRCS))
 TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
 
 PROTO_LIB := proto/libproto.a
@@ -47,11 +49,11 @@ COMMON_LIB := libcommon.a
 
 all: $(COMMON_LIB) gtest-test 
 
-gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
-	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
+gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(DATASRC_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
+	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(DATASRC_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LDFLAGS) 
 
-$(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(UTIL_OBJECTS)
-	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
+$(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(DATASRC_OBJECTS)  $(UTIL_OBJECTS)
+	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(DATASRC_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
 
 $(PROTO_LIB):
 	@echo "building proto project in ./proto" 
@@ -82,7 +84,7 @@ gtest-pkg-clean:
 	@echo "cleaning finished in gtest package"
 
 clean: gtest-pkg-clean
-	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(TEST_OBJECTS)
+	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(DATASRC_OBJECTS) $(TEST_OBJECTS)
 	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main 
 	cd ./proto; make -f proto.mk clean
 	@echo "checking for suspicious files"
