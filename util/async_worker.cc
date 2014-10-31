@@ -57,35 +57,35 @@ namespace virtdb { namespace util {
       {
         ++exceptions_caught;
         LOG_ERROR("0MQ exception caught" << E_(e) << V_(exceptions_caught));
-        std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
+        std::this_thread::sleep_for(std::chrono::seconds(exceptions_caught));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > 10 )
         {
-          LOG_ERROR("stop worker loop because of too many errors");
-          break;
+          LOG_ERROR("stop worker loop because of too many errors. rethrowing exception" << E_(e));
+          throw;
         }
       }
       catch( const std::exception & e )
       {
         ++exceptions_caught;
         LOG_ERROR("exception caught" << E_(e) << V_(exceptions_caught));
-        std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
+        std::this_thread::sleep_for(std::chrono::seconds(exceptions_caught));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > 10 )
         {
-          LOG_ERROR("stop worker loop because of too many errors");
-          break;
+          LOG_ERROR("stop worker loop because of too many errors. rethrowing exception" << E_(e));
+          throw;
         }
       }
       catch( ... )
       {
         ++exceptions_caught;
         LOG_ERROR("unknown excpetion caught" << V_(exceptions_caught));
-        std::this_thread::sleep_for(std::chrono::milliseconds(exceptions_caught*100));
+        std::this_thread::sleep_for(std::chrono::seconds(exceptions_caught));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > 10 )
         {
-          LOG_ERROR("stop worker loop because of too many errors");
+          LOG_ERROR("stop worker loop because of too many errors. rethrowing exception");
           break;
         }
       }
