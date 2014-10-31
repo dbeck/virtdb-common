@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "string_column.hh"
 #include <util/value_type.hh>
 #include <logger.hh>
