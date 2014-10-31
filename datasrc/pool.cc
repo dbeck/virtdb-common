@@ -1,19 +1,32 @@
 #include "pool.hh"
+#include <logger.hh>
 
 namespace virtdb { namespace datasrc {
   
   pool::pool(size_t max_rows)
   : max_rows_{max_rows},
-  allocated_{0}
+    allocated_{0},
+    is_valid_{true}
   {
     on_dispose_ = [this](column::sptr && col) {
-      if( col )
+      if( !is_valid_ )
+      {
+        LOG_ERROR("trying to return a column to an invalid pool");
+      }
+      else if( col )
       {
         lock l{mtx_};
-        pool_.insert(std::move(col));
+        pool_.insert(col);
         cv_.notify_all();
       }
     };
+  }
+
+  pool::~pool()
+  {
+    is_valid_ = false;
+    lock l{mtx_};
+    pool_.clear();
   }
   
   bool

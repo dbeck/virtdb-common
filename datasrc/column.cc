@@ -111,12 +111,14 @@ namespace virtdb { namespace datasrc {
         return;
       }
       
+#if 0
       LOG_TRACE("block compressed" <<
                 V_(lz4ret) <<
                 V_(byte_size) <<
                 V_(c.queryid()) <<
                 V_(c.name()) <<
                 V_(c.seqno()));
+#endif
       
       // clear original data, but set type
       dta->Clear();
@@ -149,7 +151,6 @@ namespace virtdb { namespace datasrc {
                                          size_t max_size)
   : parent_type{max_rows},
     data_{new char[max_rows*max_size]},
-    actual_sizes_{max_rows, 0},
     max_size_{max_size},
     in_field_offset_{0}
   {
@@ -157,6 +158,9 @@ namespace virtdb { namespace datasrc {
     {
       THROW_("max_size parameter is zero");
     }
+    actual_sizes_.reserve(max_rows);
+    for( size_t i=0; i<max_rows; ++i )
+      actual_sizes_.push_back(0);
   }
   
   fixed_width_column::size_vector &

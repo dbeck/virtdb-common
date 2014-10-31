@@ -8,6 +8,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <set>
+#include <atomic>
 
 namespace virtdb { namespace datasrc {
   
@@ -22,11 +23,13 @@ namespace virtdb { namespace datasrc {
     column::on_dispose       on_dispose_;
     std::condition_variable  cv_;
     std::mutex               mtx_;
+    std::atomic<bool>        is_valid_;
     
   public:
     typedef std::shared_ptr<pool> sptr;
     
     pool(size_t max_rows);
+    virtual ~pool();
     bool wait_all_disposed(uint64_t timeout_ms);
     size_t n_allocated();
     size_t n_disposed();
@@ -98,5 +101,10 @@ namespace virtdb { namespace datasrc {
         return ret;
       }
     }
+
+  private:
+    pool() = delete;
+    pool(const pool &) = delete;
+    pool& operator=(const pool &) = delete;
   };
 }}

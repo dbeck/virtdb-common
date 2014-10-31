@@ -260,12 +260,12 @@ namespace virtdb { namespace logger {
     {
       if( rec && queue_impl_ && queue_impl_->zmq_queue_ && socket_is_valid())
       {
-        queue_impl_->zmq_queue_->push( std::move(rec) );
+        queue_impl_->zmq_queue_->push( rec );
         return true;
       }
       else if( rec && queue_impl_ && queue_impl_->print_queue_ )
       {
-        queue_impl_->print_queue_->push( std::move(rec) );
+        queue_impl_->print_queue_->push( rec );
         return true;
       }
     }

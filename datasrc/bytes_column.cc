@@ -31,14 +31,15 @@ namespace virtdb { namespace datasrc {
     
     for( size_t i=0; i<n; ++i  )
     {
-      if( null_vals[i] )
+      if( !null_vals[i] && sizes[i] > 0 )
       {
         data_pb_ptr->add_bytesvalue(val_ptr+in_field_offset(), sizes[i]);
-        util::value_type_base::set_null(*data_pb_ptr, i);
       }
       else
       {
         data_pb_ptr->add_bytesvalue("", 0);
+        if( null_vals[i] )
+          util::value_type_base::set_null(*data_pb_ptr, i);
       }
       val_ptr += max_size();
 

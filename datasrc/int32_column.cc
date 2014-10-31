@@ -29,14 +29,14 @@ namespace virtdb { namespace datasrc {
     
     for( size_t i=0; i<n; ++i  )
     {
-      if( null_vals[i] )
+      if( !null_vals[i] )
       {
-        data_pb_ptr->add_int32value(0.0);
-        util::value_type_base::set_null(*data_pb_ptr, i);
+        data_pb_ptr->add_int32value(values[i]);
       }
       else
       {
-        data_pb_ptr->add_int32value(values[i]);
+        data_pb_ptr->add_int32value(0);
+        util::value_type_base::set_null(*data_pb_ptr, i);
       }
     }
   }

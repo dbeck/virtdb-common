@@ -164,7 +164,7 @@ namespace virtdb { namespace util {
         {
           try
           {
-            handler_(std::move(tmp));
+            handler_(tmp);
           }
           catch( const std::exception & e )
           {
