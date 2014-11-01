@@ -12,6 +12,8 @@ namespace virtdb { namespace datasrc {
   void
   bytes_column::convert_pb()
   {
+    if( !get_ptr() ) return;
+
     size_t n = std::min(max_rows(), n_rows());
     auto & column_pb = get_pb_column();
     auto * data_pb_ptr = column_pb.mutable_data();
@@ -42,8 +44,9 @@ namespace virtdb { namespace datasrc {
           util::value_type_base::set_null(*data_pb_ptr, i);
       }
       val_ptr += max_size();
-
     }
+
+    free_temp_data();
   }
   
 }}

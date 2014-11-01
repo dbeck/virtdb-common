@@ -81,6 +81,10 @@ namespace virtdb { namespace datasrc {
     size_vector     actual_sizes_;
     size_t          max_size_;
     size_t          in_field_offset_;
+
+  protected:
+    void free_temp_data();
+    void prepare();
     
   public:
     fixed_width_column(size_t max_rows, size_t max_size);

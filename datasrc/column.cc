@@ -162,6 +162,25 @@ namespace virtdb { namespace datasrc {
     for( size_t i=0; i<max_rows; ++i )
       actual_sizes_.push_back(0);
   }
+
+  void
+  fixed_width_column::free_temp_data()
+  {
+    if( max_size() > 32 )
+    {
+      data_.reset();
+    }
+  }
+
+  void
+  fixed_width_column::prepare()
+  {
+    if( !data_ )
+    {
+      data_.reset(new char[max_rows()*max_size()]);
+    }
+    column::prepare();
+  }
   
   fixed_width_column::size_vector &
   fixed_width_column::actual_sizes()
