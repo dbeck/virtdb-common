@@ -118,6 +118,7 @@
                              'util/async_worker.cc',     'util/async_worker.hh',
                              'util/compare_messages.hh', 'util/table_collector.hh',
                              'util/timer_service.cc',    'util/timer_service.hh',   
+                             'util/utf8.cc',             'util/utf8.hh',
                              # logger support
                              'logger.hh',
                              'logger/macros.hh',        'logger/on_return.hh',
@@ -159,6 +160,7 @@
                              'datasrc/time_column.cc',      'datasrc/time_column.hh',
                              'datasrc/datetime_column.cc',  'datasrc/datetime_column.hh',
                              'datasrc/string_column.cc',    'datasrc/string_column.hh',
+                             'datasrc/utf8_column.cc',      'datasrc/utf8_column.hh',
                              'datasrc/bytes_column.cc',     'datasrc/bytes_column.hh',
                              'datasrc/float_column.cc',     'datasrc/float_column.hh',
                              'datasrc/double_column.cc',    'datasrc/double_column.hh',

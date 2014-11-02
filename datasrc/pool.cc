@@ -3,9 +3,11 @@
 
 namespace virtdb { namespace datasrc {
   
-  pool::pool(size_t max_rows)
+  pool::pool(size_t max_rows,
+             size_t max_allocated)
   : max_rows_{max_rows},
     allocated_{0},
+    max_allocated_{max_allocated},
     is_valid_{true}
   {
     on_dispose_ = [this](column::sptr && col) {
@@ -25,8 +27,10 @@ namespace virtdb { namespace datasrc {
   pool::~pool()
   {
     is_valid_ = false;
-    lock l{mtx_};
-    pool_.clear();
+    {
+      lock l{mtx_};
+      pool_.clear();
+    }
   }
   
   bool

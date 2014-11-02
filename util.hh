@@ -13,3 +13,5 @@
 #include "util/constants.hh"
 #include "util/table_collector.hh"
 #include "util/timer_service.hh"
+#include "util/utf8.hh"
+
