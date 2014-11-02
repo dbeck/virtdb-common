@@ -92,4 +92,23 @@ TEST_F(PoolTest, AsyncQueuedTripleDispose)
   }
 }
 
-
+TEST_F(PoolTest, AsyncBounded)
+{
+  size_t max_rows{10};
+  active_queue<column::sptr> q{16,[](column::sptr col){
+    column::sptr col_copy = col;
+    col->dispose(std::move(col_copy));
+  }};
+  
+  {
+    pool p{max_rows,2};
+    for( int i=0;i<10000;++i )
+    {
+      column::sptr c = p.allocate<int32_column>();
+      q.push(c);
+    }
+    bool res = p.wait_all_disposed(1000);
+    EXPECT_TRUE(res);
+    std::cout << "allocated:" << p.n_allocated() << "\n";
+  }
+}

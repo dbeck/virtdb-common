@@ -251,4 +251,175 @@ TEST_F(TableCollectorTest, Basic)
   EXPECT_LT(rt.get_msec(), 10);
 }
 
+TEST_F(Utf8Test, Valid)
+{
+  char simple[] = u8"árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP";
+  std::string simple_str{u8"árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"};
+  EXPECT_GT(sizeof(simple), 10);
+  
+  utf8::sanitize(simple, simple_str.size());
+  EXPECT_EQ(simple_str, simple);
+}
+
+TEST_F(Utf8Test, InValid)
+{
+  char simple[] = "árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP";
+  std::string simple_str{u8"árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"};
+  
+  utf8::sanitize(simple, simple_str.size());
+  EXPECT_EQ(simple_str, simple);
+}
+
+TEST_F(Utf8Test, ZeroChar)
+{
+  char simple[] = "X\0X";
+  std::string simple_str{"X X"};
+  
+  utf8::sanitize(simple, simple_str.size());
+  EXPECT_EQ(simple_str, simple);
+}
+
+TEST_F(Utf8Test, BadContinuation)
+{
+  char c = 128;
+  char str[] = { 'X', c ,'X', 0 };
+  std::string str2{"X X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Short2ByteSeq)
+{
+  char c = 128+64;
+  char str[] = { 'X', c ,'X', 0 };
+  std::string str2{"X X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Long2ByteSeq)
+{
+  char tb = 128+64;
+  char c = 128+1;
+  char str[] = { 'X', tb, c, c ,'X', 0 };
+  std::string str2{"X   X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Short3ByteSeq1)
+{
+  char tb = 128+64+32;
+  char str[] = { 'X', tb, 'X', 0 };
+  std::string str2{"X X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Short3ByteSeq2)
+{
+  char tb = 128+64+32;
+  char c  = 128+4;
+  char str[] = { 'X', tb, c ,'X', 0 };
+  std::string str2{"X  X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Long3ByteSeq)
+{
+  char tb = 128+64+32;
+  char c = 128+1;
+  char str[] = { 'X', tb, c, c, c, c,'X', 0 };
+  std::string str2{"X     X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Short4ByteSeq1)
+{
+  char tb = 128+64+32+16;
+  char str[] = { 'X', tb, 'X', 0 };
+  std::string str2{"X X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Short4ByteSeq2)
+{
+  char tb = 128+64+32+16;
+  char c  = 128+4;
+  char str[] = { 'X', tb, c ,'X', 0 };
+  std::string str2{"X  X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Short4ByteSeq3)
+{
+  char tb = 128+64+32+16;
+  char c  = 128+4;
+  char str[] = { 'X', tb, c, c,'X', 0 };
+  std::string str2{"X   X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Long4ByteSeq)
+{
+  char tb = 128+64+32+16;
+  char c = 128+1;
+  char str[] = { 'X', tb, c, c, c, c, c,'X', 0 };
+  std::string str2{"X      X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Mixed1)
+{
+  char tb1 = 128;
+  char tb2 = 128+64;
+  char tb3 = 128+64+32;
+  char tb4 = 128+64+32+16;
+  char c = 128+1;
+  char str[] = { 'X', tb1, tb2, tb3, tb4, c, 'X', 0 };
+  std::string str2{"X     X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Mixed2)
+{
+  char tb1 = 128;
+  char tb2 = 128+64;
+  char tb3 = 128+64+32;
+  char tb4 = 128+64+32+16;
+  char c = 128+1;
+  char str[] = { 'X', tb4, tb3, tb2, tb1, c, 'X', 0 };
+  std::string str2{"X     X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
+
+TEST_F(Utf8Test, Garbage)
+{
+  char c = 0xff;
+  char str[] = { 'X', c, 'X', 0 };
+  std::string str2{"X X"};
+  
+  utf8::sanitize(str, str2.size());
+  EXPECT_EQ(str2, str);
+}
 

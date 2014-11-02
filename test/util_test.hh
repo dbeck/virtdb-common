@@ -30,5 +30,6 @@ namespace virtdb { namespace test {
   class CompareMessagesTest : public ::testing::Test { };
   class ZmqTest : public ::testing::Test { };
   class TableCollectorTest : public ::testing::Test { };
+  class Utf8Test : public ::testing::Test { };
 }}
 
