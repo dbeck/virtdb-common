@@ -34,13 +34,17 @@ namespace virtdb { namespace connector {
     
   public:
     endpoint_server(const std::string & svc_endpoint,
-                    const std::string & service_name);
+                    const std::string & service_name,
+                    size_t n_retries_on_exception=10,
+                    bool die_on_exception=true);
     
     const std::string & local_ep() const;
     const std::string & global_ep() const;
     const std::string & name() const;
     
     ~endpoint_server();
+    void cleanup();
+    void rethrow_error();
     
   private:
     endpoint_server() = delete;

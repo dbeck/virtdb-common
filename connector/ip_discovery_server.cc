@@ -43,8 +43,11 @@ namespace virtdb { namespace connector {
     }
   }
   
-  ip_discovery_server::ip_discovery_server()
-  : worker_(std::bind(&ip_discovery_server::handle_requests,this)),
+  ip_discovery_server::ip_discovery_server(size_t n_retries_on_exception,
+                                           bool die_on_exception)
+  : worker_(std::bind(&ip_discovery_server::handle_requests,this),
+            n_retries_on_exception,
+            die_on_exception),
     fd_ipv4_(-1),
     fd_ipv6_(-1)
   {
@@ -146,6 +149,18 @@ namespace virtdb { namespace connector {
     
     fd_ipv4_ = -1;
     fd_ipv6_ = -1;
+  }
+  
+  void
+  ip_discovery_server::cleanup()
+  {
+    worker_.stop();
+  }
+  
+  void
+  ip_discovery_server::rethrow_error()
+  {
+    worker_.rethrow_error();
   }
   
   const ip_discovery_server::endpoint_set &

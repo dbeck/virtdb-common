@@ -1,7 +1,6 @@
 #pragma once
 
 #include "endpoint_client.hh"
-#include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
 #include "req_client.hh"
 #include "sub_client.hh"
@@ -39,7 +38,10 @@ namespace virtdb { namespace connector {
 
   public:
     log_record_client(endpoint_client & ep_client,
-                      const std::string & server_name);
+                      const std::string & server_name,
+                      size_t n_retries_on_exception=10,
+                      bool die_on_exception=true);
+    
     ~log_record_client();
     
     bool logger_ready() const;
@@ -52,5 +54,6 @@ namespace virtdb { namespace connector {
     bool wait_valid_sub(uint64_t timeout_ms);
     
     void cleanup();
+    void rethrow_error();
   };
 }}
