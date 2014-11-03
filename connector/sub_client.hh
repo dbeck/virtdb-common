@@ -145,14 +145,17 @@ namespace virtdb { namespace connector {
     }
 
   public:
-    
     sub_client(endpoint_client & ep_clnt,
-               const std::string & server)
+               const std::string & server,
+               size_t n_retries_on_worker_exception=10,
+               bool die_on_worker_exception=true)
     : client_base(ep_clnt, server),
       ep_clnt_(&ep_clnt),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_SUB),
-      worker_(std::bind(&sub_client::worker_function, this)),
+      worker_(std::bind(&sub_client::worker_function, this),
+              n_retries_on_worker_exception,
+              die_on_worker_exception),
       queue_(1,std::bind(&sub_client::dispatch_function,
                          this,
                          std::placeholders::_1))
@@ -292,6 +295,11 @@ namespace virtdb { namespace connector {
       socket_.disconnect_all();
     }
     
+    virtual void rethrow_error()
+    {
+      worker_.rethrow_error();
+    }
+        
     virtual bool wait_valid(unsigned long ms)
     {
       return socket_.wait_valid(ms);

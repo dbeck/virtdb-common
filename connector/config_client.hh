@@ -18,7 +18,10 @@ namespace virtdb { namespace connector {
     endpoint_client * ep_client_;
   public:
     config_client(endpoint_client & ep_client,
-                  const std::string & server_name);
+                  const std::string & server_name,
+                  size_t n_retries_on_exception=10,
+                  bool die_on_exception=true);
+    
     virtual ~config_client();
     
     endpoint_client & get_endpoint_client();
@@ -30,5 +33,6 @@ namespace virtdb { namespace connector {
     bool wait_valid_req(uint64_t timeout_ms);
     
     void cleanup();
+    void rethrow_error();
   };
 }}

@@ -22,14 +22,20 @@ namespace virtdb { namespace connector {
   const std::string & endpoint_server::global_ep() const { return global_ep_; }
   
   endpoint_server::endpoint_server(const std::string & svc_endpoint,
-                                   const std::string & service_name)
+                                   const std::string & service_name,
+                                   size_t n_retries_on_exception,
+                                   bool die_on_exception)
   : name_(service_name),
     local_ep_(svc_endpoint),
     global_ep_(svc_endpoint),
     zmqctx_(1),
     ep_rep_socket_(zmqctx_, ZMQ_REP),
     ep_pub_socket_(zmqctx_, ZMQ_PUB),
-    worker_(std::bind(&endpoint_server::worker_function,this))
+    worker_{std::bind(&endpoint_server::worker_function,this),
+            n_retries_on_exception,
+            die_on_exception},
+    timer_svc_{n_retries_on_exception,
+               die_on_exception}
   {
     process_info::set_app_name(name_);
     
@@ -291,6 +297,20 @@ namespace virtdb { namespace connector {
   endpoint_server::~endpoint_server()
   {
     worker_.stop();
+  }
+  
+  void
+  endpoint_server::cleanup()
+  {
+    worker_.stop();
+    timer_svc_.cleanup();
+  }
+  
+  void
+  endpoint_server::rethrow_error()
+  {
+    worker_.rethrow_error();
+    timer_svc_.rethrow_error();
   }
 
   const std::string &

@@ -5,6 +5,9 @@
 #include <mutex>
 #include <functional>
 #include <atomic>
+#include <future>
+#include <exception>
+#include <stdexcept>
 
 namespace virtdb { namespace util {
   
@@ -20,14 +23,21 @@ namespace virtdb { namespace util {
     std::atomic<bool>          stop_;
     std::atomic<bool>          started_;
     std::thread                thread_;
+    size_t                     n_retries_on_exception_;
+    bool                       die_on_exception_;
+    std::exception_ptr         error_;
+    std::mutex                 error_mutex_;
     
     void entry();
     
   public:
-    async_worker(std::function<bool(void)> worker);
+    async_worker(std::function<bool(void)> worker,
+                 size_t n_retries_on_exception=10,
+                 bool die_on_exception=true);
     ~async_worker();
     void stop();
     void start();
+    void rethrow_error();
   };
 }}
 

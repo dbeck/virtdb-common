@@ -78,9 +78,17 @@ TEST_F(FlexAllocTest, DummyTest)
   // TODO : FlexAllocTest
 }
 
-TEST_F(AsyncWorkerTest, DummyTest)
+TEST_F(AsyncWorkerTest, CatchThreadException)
 {
-  // TODO : AsyncWorkerTest
+  auto fun = [](void) {
+    throw std::logic_error("hello");
+    return true;
+  };
+  async_worker worker{fun,0,false};
+  worker.start();
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  EXPECT_THROW(worker.rethrow_error(), std::logic_error);
 }
 
 TEST_F(CompareMessagesTest, DummyTest)

@@ -47,9 +47,14 @@ namespace virtdb { namespace connector {
   }
   
   log_record_client::log_record_client(endpoint_client & ep_client,
-                                       const std::string & server_name)
+                                       const std::string & server_name,
+                                       size_t n_retries_on_exception,
+                                       bool die_on_exception)
   : req_base_type(ep_client, server_name),
-    sub_base_type(ep_client, server_name),
+    sub_base_type(ep_client,
+                  server_name,
+                  n_retries_on_exception,
+                  die_on_exception),
     zmqctx_(1),
     logger_push_socket_(new util::zmq_socket_wrapper(zmqctx_,ZMQ_PUSH)),
     log_sink_sptr_(new log_sink(logger_push_socket_))
@@ -128,6 +133,11 @@ namespace virtdb { namespace connector {
     req_base_type::cleanup();
     sub_base_type::cleanup();    
   }
-
   
+  void
+  log_record_client::rethrow_error()
+  {
+    sub_base_type::rethrow_error();
+  }
+
 }}
