@@ -29,6 +29,12 @@
                virtdb::logger::on_return LOG_INTERNAL_LOCAL_VAR(_on_return_) \
                  ( LOG_INTERNAL_LOCAL_VAR(_log_record_)  )
 
+#define LOG_STATUS(MSG) \
+  LOG_COMMON_( MSG, \
+               virtdb::interface::pb::LogLevel::VIRTDB_STATUS, \
+               LOG_STATUS_IS_ENABLED, \
+               0)
+
 #define V_(VARIABLE) virtdb::logger::make_variable( #VARIABLE, VARIABLE )
 #define M_(VARIABLE) virtdb::logger::make_variable<::google::protobuf::Message>( #VARIABLE, VARIABLE )
 #define E_(VARIABLE) virtdb::logger::make_variable<::std::exception>( #VARIABLE, VARIABLE )

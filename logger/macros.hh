@@ -24,6 +24,11 @@
 #define LOG_SCOPED_IS_ENABLED true
 #endif
 
+#ifndef LOG_STATUS_IS_ENABLED
+#define LOG_STATUS_IS_ENABLED true
+#endif
+
+
 // macro helpers for concatenating variable names
 #define LOG_INTERNAL_MACRO_CONCAT(A,B) __LOG_INTERNAL__##A##B
 #define LOG_INTERNAL_MACRO_CONCAT2(A,B) LOG_INTERNAL_MACRO_CONCAT(A,B)

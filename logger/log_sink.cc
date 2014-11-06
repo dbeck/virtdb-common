@@ -37,6 +37,7 @@ namespace virtdb { namespace logger {
         { pb::LogLevel::VIRTDB_ERROR,         "ERROR", },
         { pb::LogLevel::VIRTDB_SIMPLE_TRACE,  "TRACE", },
         { pb::LogLevel::VIRTDB_SCOPED_TRACE,  "SCOPED" },
+        { pb::LogLevel::VIRTDB_STATUS,        "STATUS", },
       };
       
       static std::string unknown("UNKNOWN");
