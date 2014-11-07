@@ -29,7 +29,7 @@ const ::std::string& query::table_name() const {
     return query_data->table();
 }
 
-void query::add_column(column_id_t column_id, pb::Field& column)
+void query::add_column(column_id_t column_id, const pb::Field& column)
 {
     bool found = false;
     for (auto item : columns)
@@ -75,6 +75,11 @@ pb::Query& query::get_message()
 const pb::Query& query::get_message() const
 {
     return *query_data;
+}
+
+bool query::has_segment_id() const
+{
+    return query_data->has_segmentid();
 }
 
 void query::set_segment_id(std::string segmentid)

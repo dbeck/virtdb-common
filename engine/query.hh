@@ -52,7 +52,7 @@ namespace virtdb {
             const ::std::string& table_name() const;
 
             // Columns
-            void add_column(column_id_t column_id, virtdb::interface::pb::Field& column);
+            void add_column(column_id_t column_id, const virtdb::interface::pb::Field& column);
             int columns_size() const { return query_data->fields_size(); }
             virtdb::interface::pb::Field column(column_id_t i) const { return query_data->fields(i); }
             column_id_t column_id(int i) const { return columns.find(i)->second; }
@@ -85,6 +85,7 @@ namespace virtdb {
             virtdb::interface::pb::Query& get_message();
             const virtdb::interface::pb::Query& get_message() const;
 
+            bool has_segment_id() const;
             void set_segment_id(std::string segmentid);
             std::string segment_id() const ;
 
