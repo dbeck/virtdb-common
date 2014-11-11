@@ -16,8 +16,9 @@ class data_chunk {
         std::map<column_id_t, column_chunk> columns;
         uint32_t n_columns = 0;
         int cursor = -1;
+  
     public:
-        data_chunk(sequence_id_t _seq_no, uint32_t _column_count);
+        data_chunk(sequence_id_t _seq_no, uint32_t _n_columns);
         int size();
         bool is_last();
         bool is_complete() const;
@@ -33,7 +34,7 @@ class data_chunk {
             return columns[column_id].get<T, KIND>(cursor);
         }
 
-
+        void for_each(std::function<void(column_id_t, const column_chunk &)> iterator);
 };
 
 }}

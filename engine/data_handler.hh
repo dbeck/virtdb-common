@@ -19,11 +19,7 @@ namespace virtdb { namespace engine {
             const std::string queryid;
             data_chunk* current_chunk = nullptr;
             chunk_store* data_store = nullptr;
-            std::map<std::string, column_id_t>  column_names;
-            std::map<column_id_t, virtdb::interface::pb::Field> fields;
-            std::vector<column_id_t> _column_ids;
 
-            void push(int column_id, virtdb::interface::pb::Column* new_data);
             void pop_first_chunk();
             bool has_data();
             bool wait_for_data();
@@ -41,21 +37,11 @@ namespace virtdb { namespace engine {
             bool has_more_data();
             virtdb::interface::pb::Kind get_type(int column_id);
 
-            inline const std::vector<column_id_t>& column_ids() const
-            {
-                return _column_ids;
-            }
-
             // Returns the value of the given column in the actual row or NULL
             template<typename T, interface::pb::Kind KIND = interface::pb::Kind::STRING>
             const T* const get(int column_id)
             {
                 return current_chunk->get<T, KIND>(column_id);
-            }
-
-            inline size_t length(int column_id)
-            {
-                return fields[column_id].desc().length();
             }
     };
 }}

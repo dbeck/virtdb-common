@@ -3,8 +3,18 @@
 
 using namespace virtdb::engine;
 
-data_chunk::data_chunk(sequence_id_t _seq_no, uint32_t _column_count) : seq_no(_seq_no), n_columns(_column_count)
+data_chunk::data_chunk(sequence_id_t _seq_no, uint32_t _n_columns)
+: seq_no(_seq_no), n_columns(_n_columns)
 {
+}
+
+void
+data_chunk::for_each(std::function<void(column_id_t, const column_chunk &)> iterator)
+{
+    for( auto it : columns )
+    {
+       iterator(it.first, it.second);
+    }
 }
 
 int data_chunk::size()

@@ -34,6 +34,8 @@ namespace virtdb {  namespace engine {
                     THROW_(os.str().c_str());
                 }
             }
+      
+            const std::string & name() const;
     };
 
 }}

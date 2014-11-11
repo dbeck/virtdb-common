@@ -95,6 +95,14 @@ void receiver_thread::add_query(
                     LOG_TRACE("Pushing it to handler.")
                     handler->push(column->name(), new interface::pb::Column(*column));
                 }
+                else
+                {
+                    LOG_ERROR("couldn't find a handler for" <<
+                              V_(column->queryid()) <<
+                              V_(column->name()) <<
+                              V_(provider_name) <<
+                              V_(subscription));
+                }
             });
     // }
     }

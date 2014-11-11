@@ -54,23 +54,11 @@ namespace virtdb {  namespace engine {
 
             // Columns
             void add_column(column_id_t column_id, const virtdb::interface::pb::Field& column);
-            int columns_size() const { return query_data->fields_size(); }
-            virtdb::interface::pb::Field column(column_id_t i) const { return query_data->fields(i); }
-            column_id_t column_id(int i) const { return columns.find(i)->second; }
-            virtdb::interface::pb::Kind column_type(column_id_t i) const { return query_data->fields(i).desc().type(); }
-            std::string column_name_by_id(column_id_t id) const
-            {
-                for (auto item : columns)
-                {
-                    if (item.second == id)
-                    {
-                        return column(item.first).name();
-                    }
-                }
-
-                std::string err = std::string("Column not found with id: ") + std::to_string(id);
-                THROW_(err.c_str());
-            }
+            int columns_size() const;
+            virtdb::interface::pb::Field column(column_id_t i) const;
+            column_id_t column_id(int i) const;
+            virtdb::interface::pb::Kind column_type(column_id_t i) const;
+            std::string column_name_by_id(column_id_t id) const;
 
             // Filter
             void add_filter(std::shared_ptr<expression> filter);

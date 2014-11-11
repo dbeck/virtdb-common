@@ -6,6 +6,33 @@
 
 using namespace virtdb::engine;
 
+void chunk_store::push(std::string name,
+                       virtdb::interface::pb::Column* new_data,
+                       bool & is_complete)
+{
+    add(column_names[name], new_data, is_complete);
+}
+
+void chunk_store::add(int column_id,
+                      virtdb::interface::pb::Column* new_data,
+                      bool & is_complete)
+{
+    // if (column_id == 1)
+    // {
+    //     LOG_INFO("Received chunk" << V_(new_data->name()) << V_(new_data->seqno()) << V_(new_data- >endofdata()));
+    // }
+    LOG_TRACE("Received new chunk." << V_(column_id) << V_(new_data->name()) << V_(new_data->seqno()));
+    auto * data_chunk = get_chunk(new_data->seqno());
+    data_chunk->add_chunk(column_id, new_data);
+    if (not is_expected(column_id, new_data->seqno()))
+    {
+        ask_for_missing_chunks(column_id, new_data->seqno());
+    }
+    mark_as_received(column_id, new_data->seqno());
+  
+    is_complete = data_chunk->is_complete();
+}
+
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
 {
     for (auto * chunk : data_container)
@@ -32,6 +59,11 @@ chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_res
     {
         missing_chunks[query_data.column_id(i)];
         next_chunk[query_data.column_id(i)] = 0;
+      
+        std::string colname = query_data.column(i).name();
+        column_names[colname] = query_data.column_id(i);
+        fields[query_data.column_id(i)] = query_data.column(i);
+        _column_ids.push_back(query_data.column_id(i));
     }
 }
 
@@ -53,22 +85,6 @@ data_chunk* chunk_store::pop()
     return next_chunk;
 }
 
-const data_chunk* const chunk_store::add(int column_id, virtdb::interface::pb::Column* new_data)
-{
-    // if (column_id == 1)
-    // {
-    //     LOG_INFO("Received chunk" << V_(new_data->name()) << V_(new_data->seqno()) << V_(new_data->endofdata()));
-    // }
-    LOG_TRACE("Received new chunk." << V_(column_id) << V_(new_data->name()) << V_(new_data->seqno()));
-    auto * data_chunk = get_chunk(new_data->seqno());
-    data_chunk->add_chunk(column_id, new_data);
-    if (not is_expected(column_id, new_data->seqno()))
-    {
-        ask_for_missing_chunks(column_id, new_data->seqno());
-    }
-    mark_as_received(column_id, new_data->seqno());
-    return data_chunk;
-}
 
 bool chunk_store::is_expected(column_id_t column_id, sequence_id_t current_sequence_id)
 {
@@ -138,12 +154,10 @@ void chunk_store::remove_from_missing_list(column_id_t column_id, sequence_id_t 
 {
     std::lock_guard<std::mutex> lock(mutex_missing_chunk);
     auto & missing_list = missing_chunks[column_id];
-    missing_list.remove_if(
-        [&](const sequence_id_t& item)
-        {
-            return item == current_sequence_id;
-        }
-    );
+    missing_list.remove_if([&](const sequence_id_t& item)
+                           {
+                               return item == current_sequence_id;
+                           });
 }
 
 
@@ -160,4 +174,48 @@ bool chunk_store::did_pop_last()
 int chunk_store::columns_count() const
 {
     return n_columns;
+}
+
+void
+chunk_store::dump_front(std::ostream & os)
+{
+    bool front_is_complete = (data_container.size() > 0 and data_container.front()->is_complete());
+  
+    os << "data_container.size()=" << data_container.size() << " "
+       << "front_is_complete=" << (front_is_complete?"TRUE":"FALSE") << " "
+       << "last_inserted_sequence_id=" << last_inserted_sequence_id << " ";
+  
+    os << "front{";
+  
+    if( data_container.size() > 0 )
+    {
+        auto * front = data_container.front();
+        std::set<column_id_t> received_columns;
+        front->for_each([&received_columns](column_id_t id, const column_chunk &){
+            received_columns.insert(id);
+        });
+    
+        for( auto it : column_names )
+        {
+            os << "(" << it.first << ":" << next_chunk[it.second] << ":";
+          
+            if( received_columns.count(it.second) == 0 )
+            {
+                os << "MISSING,[";
+        
+                for( auto & missing_chunk : missing_chunks[it.second] )
+                {
+                    os << missing_chunk;
+                }
+        
+                os << ']';
+            }
+            else
+            {
+                os << "OK";
+            }
+            os  << ')';
+        }
+    }
+    os << "}";
 }

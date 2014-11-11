@@ -2,6 +2,7 @@
 #include "query.hh"
 #include <logger.hh>
 #include <util/exception.hh>
+#include <sstream>
 
 namespace virtdb { namespace engine {
 
@@ -9,13 +10,6 @@ data_handler::data_handler(const query& query_data, std::function<void(column_id
     queryid (query_data.id())
 {
     data_store = new chunk_store(query_data, ask_for_resend);
-    for (int i = 0; i < data_store->columns_count(); i++)
-    {
-        std::string colname = query_data.column(i).name();
-        column_names[colname] = query_data.column_id(i);
-        fields[query_data.column_id(i)] = query_data.column(i);
-        _column_ids.push_back(query_data.column_id(i));
-    }
 }
 
 bool data_handler::wait_for_data()
@@ -35,6 +29,10 @@ bool data_handler::wait_for_data()
             // check that we are not missing any notifications
             if( !received_data() )
             {
+                std::ostringstream os;
+                data_store->dump_front(os);
+                LOG_ERROR(P_(current_chunk) <<
+                          V_(os.str()));
                 THROW_("Timed out while waiting for data.");
             }
         }
@@ -75,16 +73,14 @@ const std::string& data_handler::query_id() const
 
 void data_handler::push(std::string name, virtdb::interface::pb::Column* new_data)
 {
-    push(column_names[name], new_data);
-}
-
-void data_handler::push(int column_id, virtdb::interface::pb::Column* new_data)
-{
-    std::unique_lock<std::mutex> cv_lock(mutex);
-    auto * data_chunk = data_store->add(column_id, new_data);
-    if (data_chunk->is_complete())
+    bool is_complete = false;
     {
-        variable.notify_all();
+        std::unique_lock<std::mutex> cv_lock(mutex);
+        data_store->push(name, new_data, is_complete);
+        if( is_complete )
+        {
+            variable.notify_all();
+        }
     }
 }
 

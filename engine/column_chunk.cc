@@ -4,12 +4,23 @@
 #include <logger.hh>
 #include <lz4/lz4.h>
 #include <util/exception.hh>
+#include <util/flex_alloc.hh>
 
 using namespace virtdb::engine;
 
 column_chunk::~column_chunk()
 {
     delete column_data;
+}
+
+const std::string &
+column_chunk::name() const
+{
+    static const std::string empty;
+    if( column_data )
+        return column_data->name();
+    else
+        return empty;
 }
 
 int column_chunk::size()
@@ -53,14 +64,23 @@ void column_chunk::uncompress()
     if (column_data->comptype() == virtdb::interface::pb::CompressionType::LZ4_COMPRESSION)
     {
         int maxDecompressedSize = column_data->uncompressedsize();
-        char* destinationBuffer = new char[maxDecompressedSize];
-        LZ4_decompress_safe(column_data->compresseddata().c_str(), destinationBuffer, column_data->compresseddata().size(), maxDecompressedSize);
+        util::flex_alloc<char, 2048> buffer(maxDecompressedSize);
+        char* destinationBuffer = buffer.get();
+        int comp_ret = LZ4_decompress_safe(column_data->compresseddata().c_str(),
+                                           destinationBuffer,
+                                           column_data->compresseddata().size(),
+                                           maxDecompressedSize);
+        if( comp_ret <= 0 )
+        {
+            THROW_("failed to decompress data");
+        }
         virtdb::interface::pb::ValueType uncompressed_data;
-        uncompressed_data.ParseFromArray(destinationBuffer, maxDecompressedSize);
+        if( !uncompressed_data.ParseFromArray(destinationBuffer, maxDecompressedSize) )
+        {
+            THROW_("failed to parse decompressed data");
+        }
         column_data->mutable_data()->MergeFrom(uncompressed_data);
-        delete [] destinationBuffer;
     }
-
 }
 
 void column_chunk::operator=(virtdb::interface::pb::Column* right_operand)
