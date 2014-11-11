@@ -4,7 +4,7 @@
 #include "query.hh"
 #include <logger.hh>
 
-using namespace virtdb;
+using namespace virtdb::engine;
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
 {

@@ -8,7 +8,7 @@
 #include "chunk_store.hh"
 #include "data_chunk.hh"
 
-namespace virtdb {
+namespace virtdb { namespace engine {
 
     class query;
 
@@ -58,4 +58,5 @@ namespace virtdb {
                 return fields[column_id].desc().length();
             }
     };
-}
+}}
+

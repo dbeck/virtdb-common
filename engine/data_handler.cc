@@ -3,7 +3,7 @@
 #include <logger.hh>
 #include <util/exception.hh>
 
-namespace virtdb {
+namespace virtdb { namespace engine {
 
 data_handler::data_handler(const query& query_data, std::function<void(column_id_t, const std::list<sequence_id_t>&)> ask_for_resend) :
     queryid (query_data.id())
@@ -122,4 +122,4 @@ bool data_handler::read_next()
     return true;
 }
 
-} // namespace virtdb
+}} // namespace virtdb::engine

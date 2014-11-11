@@ -5,7 +5,7 @@
 #include <common.pb.h>
 #include "query.hh"
 
-namespace virtdb {
+namespace virtdb { namespace engine {
 
 class data_chunk {
     private:
@@ -36,4 +36,4 @@ class data_chunk {
 
 };
 
-}
+}}

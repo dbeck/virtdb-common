@@ -15,8 +15,8 @@
 #include "data_handler.hh"
 #include "query.hh"
 
-using namespace virtdb;
-using namespace connector;
+using namespace virtdb::engine;
+using namespace virtdb::connector;
 
 receiver_thread::receiver_thread()
 {

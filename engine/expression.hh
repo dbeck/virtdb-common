@@ -6,7 +6,8 @@
 // standard headers
 #include <memory>
 
-namespace virtdb {
+namespace virtdb {  namespace engine {
+  
     class expression {
         private:
             virtdb::interface::pb::SimpleExpression simple;
@@ -47,4 +48,4 @@ namespace virtdb {
             // Accessing encapsulated object
             virtdb::interface::pb::Expression get_message() const;
     };
-}
+}}

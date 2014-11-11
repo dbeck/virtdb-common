@@ -1,7 +1,7 @@
 #include "data_chunk.hh"
 #include <util/exception.hh>
 
-using namespace virtdb;
+using namespace virtdb::engine;
 
 data_chunk::data_chunk(sequence_id_t _seq_no, uint32_t _column_count) : seq_no(_seq_no), n_columns(_column_count)
 {

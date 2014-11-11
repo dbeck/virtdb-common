@@ -5,8 +5,7 @@
 #include <util/exception.hh>
 #include <sstream>
 
-namespace virtdb
-{
+namespace virtdb {  namespace engine {
 
     class column_chunk {
         private:
@@ -37,4 +36,4 @@ namespace virtdb
             }
     };
 
-}
+}}

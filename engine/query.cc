@@ -4,7 +4,7 @@
 
 using namespace virtdb::interface;
 
-namespace virtdb {
+namespace virtdb {  namespace engine {
 
 query::query() : query(gen_random(32))
 {
@@ -95,4 +95,4 @@ std::string query::segment_id() const
     return query_data->segmentid();
 }
 
-}
+}}

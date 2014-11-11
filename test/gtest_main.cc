@@ -3,6 +3,7 @@
 #include "logger_test.hh"
 #include "util_test.hh"
 #include "connector_test.hh"
+#include "engine_test.hh"
 
 int main(int argc, char **argv)
 {

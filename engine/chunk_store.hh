@@ -5,7 +5,8 @@
 #include <stdint.h>
 #include "data_chunk.hh"
 
-namespace virtdb {
+namespace virtdb { namespace engine {
+  
     class query;
 
     typedef std::function<void(column_id_t, const std::list<sequence_id_t>&)> resend_function_t;
@@ -36,4 +37,4 @@ namespace virtdb {
             bool did_pop_last();
             int columns_count() const;
     };
-}
+}}

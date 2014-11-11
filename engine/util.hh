@@ -3,6 +3,8 @@
 #include <string>
 #include <murmur3/murmur3.h>
 
+namespace virtdb { namespace engine {
+
 inline std::string generate_hash(const std::string& source)
 {
     std::string ret = "";
@@ -35,3 +37,5 @@ inline std::string gen_random(const int len) {
     delete [] s;
     return ret;
 }
+
+}}

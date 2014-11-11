@@ -5,7 +5,7 @@
 #include <lz4/lz4.h>
 #include <util/exception.hh>
 
-using namespace virtdb;
+using namespace virtdb::engine;
 
 column_chunk::~column_chunk()
 {

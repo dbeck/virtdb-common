@@ -2,23 +2,20 @@
 #include <string>
 #include <map>
 
-namespace gpdb {
-    unsigned long UlSegmentCountGP();
-}
-
-
-namespace virtdb
-{
+namespace virtdb {
+  
     namespace connector
     {
         template<typename PUSH_ITEM> class push_client;
         template<typename SUB_ITEM> class sub_client;
     }
-    class query;
-    class data_handler;
 }
 
-namespace virtdb {
+namespace virtdb {  namespace engine {
+  
+    class query;
+    class data_handler;
+
     class receiver_thread
     {
         typedef virtdb::connector::push_client<virtdb::interface::pb::Query> query_push_client;
@@ -30,7 +27,7 @@ namespace virtdb {
                 query_push_client& query_client,
                 virtdb::connector::sub_client<virtdb::interface::pb::Column>& data_client,
                 long node,
-                const virtdb::query& query
+                const virtdb::engine::query& query
             );
 
             receiver_thread& operator=(const receiver_thread&) = delete;
@@ -47,9 +44,9 @@ namespace virtdb {
                 query_push_client& query_client,
                 virtdb::connector::sub_client<virtdb::interface::pb::Column>& data_client,
                 long node,
-                const virtdb::query& query
+                const virtdb::engine::query& query
             );
 
             void stop_query(const std::string& table_name, query_push_client& query_client, long node, const std::string& segment_id);
     };
-}
+}}

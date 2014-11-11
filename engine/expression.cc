@@ -2,7 +2,7 @@
 
 using namespace virtdb::interface;
 
-namespace virtdb {
+namespace virtdb {  namespace engine {
 
 std::map<int, std::string> expression::columns() const
 {
@@ -90,4 +90,4 @@ pb::Expression expression::get_message() const
     return ret;
 }
 
-}
+}}

@@ -16,7 +16,8 @@
 // standard headers
 #include <memory>
 
-namespace virtdb {
+namespace virtdb {  namespace engine {
+  
     using column_id_t = uint32_t;
     using sequence_id_t = uint64_t;
 
@@ -94,4 +95,4 @@ namespace virtdb {
                 query_data->set_maxchunksize(size);
             }
     };
-}
+}}
