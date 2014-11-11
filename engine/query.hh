@@ -72,7 +72,7 @@ namespace virtdb {
             }
 
             // Filter
-            // void add_filter(std::shared_ptr<expression> filter);
+            void add_filter(std::shared_ptr<expression> filter);
             const virtdb::interface::pb::Expression& get_filter(int index) { return query_data->filter(index); }
 
             // Limit

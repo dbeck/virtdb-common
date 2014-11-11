@@ -47,15 +47,18 @@ void query::add_column(column_id_t column_id, const pb::Field& column)
     }
 }
 
-// void query::add_filter(std::shared_ptr<expression> filter)
-// {
-//     std::map<int, std::string> filter_columns = filter->columns();
-//     for (auto it = filter_columns.begin(); it != filter_columns.end(); it++)
-//     {
-//         add_column(it->first, it->second);
-//     }
-//     *query_data->add_filter() = filter->get_message();
-// }
+void query::add_filter(std::shared_ptr<expression> filter_expression)
+{
+    std::map<int, std::string> filter_columns = filter_expression->columns();
+    for (auto it = filter_columns.begin(); it != filter_columns.end(); it++)
+    {
+        virtdb::interface::pb::Field field;
+        field.set_name(it->second);
+        field.mutable_desc()->set_type(virtdb::interface::pb::Kind::STRING);
+        add_column(it->first, field);
+    }
+    *query_data->add_filter() = filter_expression->get_message();
+}
 
 void query::set_limit(uint64_t limit)
 {

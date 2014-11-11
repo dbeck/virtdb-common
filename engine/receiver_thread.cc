@@ -82,7 +82,7 @@ void receiver_thread::add_query(
             channel_id +=  " " + query_data.segment_id();
         }
         LOG_TRACE("Subscribing to:" << V_(channel_id));
-        data_client.watch("",
+        data_client.watch(channel_id,
             [&](const std::string & provider_name,
                                    const std::string & channel,
                                    const std::string & subscription,
