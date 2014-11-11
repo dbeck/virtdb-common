@@ -13,13 +13,16 @@ namespace virtdb { namespace datasrc {
 
   column::column(size_t max_rows)
   : max_rows_{max_rows},
-    n_rows_{0},
-    nulls_(max_rows, false)
+    n_rows_{0}
   {
     if( !max_rows )
     {
       THROW_("max_rows parameter is zero");
     }
+    
+    nulls_.reserve(max_rows);
+    for( size_t i=0; i<max_rows; ++i )
+      nulls_.push_back(false);
   }
   
   void
