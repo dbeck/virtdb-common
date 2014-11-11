@@ -43,6 +43,11 @@ namespace virtdb { namespace engine {
             {
                 return current_chunk->get<T, KIND>(column_id);
             }
+      
+            const std::vector<column_id_t>& column_ids() const
+            {
+                return data_store->column_ids();
+            }
     };
 }}
 
