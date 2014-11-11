@@ -53,7 +53,7 @@ void receiver_thread::stop_query(const std::string& table_name, query_push_clien
         stop_query.set_table(table_name);
         stop_query.set_querycontrol(virtdb::interface::pb::Query_Command_STOP);
         stop_query.set_segmentid(segment_id);
-        LOG_TRACE("Sending stop query." << V_(stop_query.queryid()) << V_(stop_query.table()) << V_((long)stop_query.querycontrol()));
+        LOG_TRACE("Sending stop query." << V_(stop_query.queryid()) << V_(stop_query.table()) << V_((int64_t)stop_query.querycontrol()));
         if( query_client.wait_valid(30000) )
         {
           query_client.send_request(stop_query);

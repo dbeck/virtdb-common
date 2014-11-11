@@ -166,6 +166,15 @@
                              'datasrc/double_column.cc',    'datasrc/double_column.hh',
                              'datasrc/int64_column.cc',     'datasrc/int64_column.hh',
                              'datasrc/pool.cc',             'datasrc/pool.hh',
+                             # engine
+                             'engine/chunk_store.cc',       'engine/chunk_store.hh',
+                             'engine/column_chunk.cc',      'engine/column_chunk.hh',
+                             'engine/data_chunk.cc',        'engine/data_chunk.hh',
+                             'engine/data_handler.cc',      'engine/data_handler.hh',
+                             'engine/expression.cc',        'engine/expression.hh',
+                             'engine/query.cc',             'engine/query.hh',
+                             'engine/receiver_thread.cc',   'engine/receiver_thread.hh',
+                             'engine/util.hh',
                            ],
     },
     {
@@ -184,6 +193,7 @@
                              'test/util_test.cc',         'test/util_test.hh',
                              'test/connector_test.cc',    'test/connector_test.hh',
                              'test/datasrc_test.cc',      'test/datasrc_test.hh',
+                             'test/engine_test.cc',       'test/engine_test.hh',
                            ],
     },
     {
