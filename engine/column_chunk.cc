@@ -83,14 +83,14 @@ void column_chunk::uncompress()
     }
 }
 
-void column_chunk::operator=(virtdb::interface::pb::Column* right_operand)
+column_chunk::column_chunk(virtdb::interface::pb::Column* data)
 {
-    if (column_data != nullptr)
+    if (data == nullptr)
     {
-        std::string err = std::string("Overwriting column_data") + column_data->name() + ", " + std::to_string(column_data->seqno());
+        std::string err = std::string("Initializing column_chunk with nullptr as data");
         THROW_(err.c_str());
     }
-    column_data = right_operand;
+    column_data = data;
 }
 
 void column_chunk::operator=(const column_chunk& source)

@@ -10,11 +10,12 @@ namespace virtdb {  namespace engine {
     class column_chunk {
         private:
             virtdb::interface::pb::Column* column_data = nullptr;
+            column_chunk() = delete;
         public:
+            column_chunk(virtdb::interface::pb::Column* data);
             virtual ~column_chunk();
             int size();
             void uncompress();
-            void operator=(virtdb::interface::pb::Column* right_operand);
             void operator=(const column_chunk& source);
             virtdb::interface::pb::Kind get_type();
 
@@ -34,7 +35,7 @@ namespace virtdb {  namespace engine {
                     THROW_(os.str().c_str());
                 }
             }
-      
+
             const std::string & name() const;
     };
 

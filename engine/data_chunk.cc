@@ -69,7 +69,7 @@ void data_chunk::add_chunk(column_id_t column_id, virtdb::interface::pb::Column*
         THROW_("Trying to add chunk with different sequence number.");
     }
     has_data = true;
-    columns[column_id] = data;
+    columns.insert({column_id, column_chunk(data)});
     // LOG_TRACE("Adding chunk" << V_(columns.size()) << V_(n_columns) << V_(seq_no) << V_(columns[column_id].size()));
     if (columns.size() == n_columns)
     {
@@ -83,5 +83,5 @@ void data_chunk::add_chunk(column_id_t column_id, virtdb::interface::pb::Column*
 
 virtdb::interface::pb::Kind data_chunk::get_type(column_id_t column_id)
 {
-    return columns[column_id].get_type();
+    return columns.at(column_id).get_type();
 }
