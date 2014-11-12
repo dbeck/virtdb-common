@@ -15,6 +15,9 @@ data_handler::data_handler(const query& query_data, std::function<void(column_id
 bool data_handler::wait_for_data()
 {
     // LOG_SCOPED("wait_for_data");
+    int tries = 0;
+    static const int max_tries = 5;
+    static const int data_timeout = 10000;
     while ( true )
     {
         // locking inside the loop so we give more chance to others to acquire the lock
@@ -24,16 +27,23 @@ bool data_handler::wait_for_data()
           break;
         }
 
-        if (variable.wait_for(cv_lock, std::chrono::milliseconds(60000)) == std::cv_status::timeout)
+        if (variable.wait_for(cv_lock, std::chrono::milliseconds(data_timeout)) == std::cv_status::timeout)
         {
             // check that we are not missing any notifications
             if( !received_data() )
             {
-                std::ostringstream os;
-                data_store->dump_front(os);
-                LOG_ERROR(P_(current_chunk) <<
-                          V_(os.str()));
-                THROW_("Timed out while waiting for data.");
+                if (tries++ > max_tries)
+                {
+                    std::ostringstream os;
+                    data_store->dump_front(os);
+                    LOG_ERROR(P_(current_chunk) <<
+                              V_(os.str()));
+                    THROW_("Timed out while waiting for data.");
+                }
+                else
+                {
+                    data_store->ask_for_missing_chunks();
+                }
             }
         }
     }
