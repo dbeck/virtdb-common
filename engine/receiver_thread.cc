@@ -145,6 +145,7 @@ void receiver_thread::add_query(
             virtdb::interface::pb::Query new_query;
             new_query.set_queryid(query_data.id());
             new_query.set_table(query_data.table_name());
+            new_query.set_segmentid(query_data.segment_id());
             auto * field = new_query.add_fields();
             field->set_name(query_data.column_name_by_id(column_id));
             field->mutable_desc()->set_type(query_data.column_type(column_id));
@@ -154,7 +155,7 @@ void receiver_thread::add_query(
                 new_query.add_seqnos(sequence_id);
             }
             new_query.set_querycontrol(virtdb::interface::pb::Query_Command_RESEND_CHUNK);
-            // query_client.send_request(new_query);
+            query_client.send_request(new_query);
         }
     );
 }

@@ -29,7 +29,7 @@ void chunk_store::add(int column_id,
         ask_for_missing_chunks(column_id, new_data->seqno());
     }
     mark_as_received(column_id, new_data->seqno());
-  
+
     is_complete = data_chunk->is_complete();
 }
 
@@ -59,7 +59,7 @@ chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_res
     {
         missing_chunks[query_data.column_id(i)];
         next_chunk[query_data.column_id(i)] = 0;
-      
+
         std::string colname = query_data.column(i).name();
         column_names[colname] = query_data.column_id(i);
         fields[query_data.column_id(i)] = query_data.column(i);
@@ -69,20 +69,20 @@ chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_res
 
 data_chunk* chunk_store::pop()
 {
-    data_chunk* next_chunk = nullptr;
+    data_chunk* front_chunk = nullptr;
     if (data_container.size() > 0)
     {
-        next_chunk = data_container.front();
+        front_chunk = data_container.front();
 
-        next_chunk->uncompress();
+        front_chunk->uncompress();
 
-        if (next_chunk->is_last())
+        if (front_chunk->is_last())
         {
             popped_last_chunk = true;
         }
         data_container.pop_front();
     }
-    return next_chunk;
+    return front_chunk;
 }
 
 
@@ -144,10 +144,7 @@ void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_
         next_chunk[column_id]++;
         LOG_TRACE("Next chunk to be waited for: " << V_(column_id) << V_(next_chunk[column_id]));
     }
-    else
-    {
-        remove_from_missing_list(column_id, current_sequence_id);
-    }
+    remove_from_missing_list(column_id, current_sequence_id);
 }
 
 void chunk_store::remove_from_missing_list(column_id_t column_id, sequence_id_t current_sequence_id)
@@ -176,17 +173,37 @@ int chunk_store::columns_count() const
     return n_columns;
 }
 
+void chunk_store::ask_for_missing_chunks()
+{
+    std::set<column_id_t> received_columns;
+    if( data_container.size() > 0 )
+    {
+        auto * front = data_container.front();
+        front->for_each([&received_columns](column_id_t id, const column_chunk &){
+            received_columns.insert(id);
+        });
+    }
+
+    for( auto it : column_names )
+    {
+        if( received_columns.count(it.second) == 0 )
+        {
+            ask_for_missing_chunks(it.second, next_chunk[it.second]);
+        }
+    }
+}
+
 void
 chunk_store::dump_front(std::ostream & os)
 {
     bool front_is_complete = (data_container.size() > 0 and data_container.front()->is_complete());
-  
+
     os << "data_container.size()=" << data_container.size() << " "
        << "front_is_complete=" << (front_is_complete?"TRUE":"FALSE") << " "
        << "last_inserted_sequence_id=" << last_inserted_sequence_id << " ";
-  
+
     os << "front{";
-  
+
     if( data_container.size() > 0 )
     {
         auto * front = data_container.front();
@@ -194,20 +211,20 @@ chunk_store::dump_front(std::ostream & os)
         front->for_each([&received_columns](column_id_t id, const column_chunk &){
             received_columns.insert(id);
         });
-    
+
         for( auto it : column_names )
         {
             os << "(" << it.first << ":" << next_chunk[it.second] << ":";
-          
+
             if( received_columns.count(it.second) == 0 )
             {
                 os << "MISSING,[";
-        
+
                 for( auto & missing_chunk : missing_chunks[it.second] )
                 {
                     os << missing_chunk << ' ';
                 }
-        
+
                 os << ']';
             }
             else
