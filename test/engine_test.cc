@@ -1,9 +1,20 @@
 #include "engine_test.hh"
+#include <engine/chunk_store.hh>
 #include <engine/column_chunk.hh>
+#include <engine/data_chunk.hh>
+#include <engine/data_handler.hh>
+#include <engine/expression.hh>
+#include <engine/query.hh>
+#include <engine/receiver_thread.hh>
+#include <engine/util.hh>
 
+using namespace virtdb::util;
 using namespace virtdb::engine;
 using namespace virtdb::test;
 using namespace virtdb::interface::pb;
+
+// check invalid sequence number
+// check invalid query id in the column
 
 class DummyColumn : public Column
 {
@@ -46,3 +57,5 @@ TEST_F(ColumnChunkTest, empty_int32_withname)
     ASSERT_THROW(chunk.get<std::string>(0), std::exception);
     ASSERT_EQ(name, chunk.name());
 }
+
+

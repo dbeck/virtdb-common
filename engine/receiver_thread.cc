@@ -76,19 +76,50 @@ void receiver_thread::add_query(
     {
     // for (auto i = 0; i < query_data.columns_size(); i++)
     // {
-        std::string channel_id = query_data.id();
+        std::string query_id = query_data.id();
+        std::string channel_id = query_id;
+      
         if (query_data.has_segment_id())
         {
             channel_id +=  " " + query_data.segment_id();
         }
         LOG_TRACE("Subscribing to:" << V_(channel_id));
         data_client.watch(channel_id,
-            [&](const std::string & provider_name,
-                                   const std::string & channel,
-                                   const std::string & subscription,
-                                   std::shared_ptr<interface::pb::Column> column)
+            [&,query_id,node](const std::string & provider_name,
+                              const std::string & channel,
+                              const std::string & subscription,
+                              std::shared_ptr<interface::pb::Column> column)
             {
-                LOG_TRACE("Received column chunk." << V_(column->queryid()));
+                LOG_TRACE("Received column chunk." <<
+                          V_(column->queryid()) <<
+                          V_(channel) <<
+                          V_(subscription) <<
+                          V_(column->name()) <<
+                          V_((int64_t)node));
+              
+                if( query_id != column->queryid() )
+                {
+                    LOG_ERROR("inconsistent query id" <<
+                              V_(query_id) <<
+                              V_(column->queryid()) <<
+                              V_(channel) <<
+                              V_(subscription) <<
+                              V_(column->name()) <<
+                              V_((int64_t)node));
+                    return;
+                }
+                else if( subscription.find(column->queryid()) != 0 )
+                {
+                    LOG_ERROR("subscription is inconsistent w/ column's id" <<
+                              V_(query_id) <<
+                              V_(column->queryid()) <<
+                              V_(channel) <<
+                              V_(subscription) <<
+                              V_(column->name()) <<
+                              V_((int64_t)node));
+                    return;
+                }
+              
                 data_handler* handler = get_data_handler(column->queryid());
                 if (handler != nullptr)
                 {

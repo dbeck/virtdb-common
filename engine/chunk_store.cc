@@ -225,7 +225,7 @@ chunk_store::dump_front(std::ostream & os)
 
                 for( auto & missing_chunk : missing_chunks[it.second] )
                 {
-                    os << missing_chunk;
+                    os << missing_chunk << ' ';
                 }
 
                 os << ']';
