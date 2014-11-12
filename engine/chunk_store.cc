@@ -106,8 +106,16 @@ bool chunk_store::is_expected(column_id_t column_id, sequence_id_t current_seque
 
 void chunk_store::ask_for_missing_chunks(column_id_t column_id, sequence_id_t current_sequence_id)
 {
+    LOG_SCOPED(V_(column_id) << V_(current_sequence_id));
+  
     {
         std::lock_guard<std::mutex> lock(mutex_missing_chunk);
+        if( missing_chunks.count(column_id) == 0 ||
+            next_chunk.count(column_id) == 0 )
+        {
+            LOG_ERROR(V_(column_id) << "not found in missing_cunks or next_chunk");
+            return;
+        }
         auto & missing_list = missing_chunks[column_id];
         for (sequence_id_t i = next_chunk[column_id]; i < current_sequence_id; i++)
         {
@@ -116,6 +124,7 @@ void chunk_store::ask_for_missing_chunks(column_id_t column_id, sequence_id_t cu
     }
 
     std::async([this, column_id](){
+        LOG_SCOPED("ask_for_missing_chunks-lambda" << V_(column_id));
         try
         {
             std::this_thread::sleep_for( std::chrono::milliseconds{2000} );
@@ -150,6 +159,14 @@ void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_
 void chunk_store::remove_from_missing_list(column_id_t column_id, sequence_id_t current_sequence_id)
 {
     std::lock_guard<std::mutex> lock(mutex_missing_chunk);
+    if( missing_chunks.count(column_id) == 0 )
+    {
+        LOG_ERROR("missing list for" <<
+                  V_(column_id) << "is not available" <<
+                  V_(current_sequence_id));
+        return;
+    }
+  
     auto & missing_list = missing_chunks[column_id];
     missing_list.remove_if([&](const sequence_id_t& item)
                            {
