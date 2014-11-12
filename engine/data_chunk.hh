@@ -16,7 +16,7 @@ class data_chunk {
         std::map<column_id_t, column_chunk> columns;
         uint32_t n_columns = 0;
         int cursor = -1;
-  
+
     public:
         data_chunk(sequence_id_t _seq_no, uint32_t _n_columns);
         int size();
@@ -31,7 +31,7 @@ class data_chunk {
         template<typename T, interface::pb::Kind KIND = interface::pb::Kind::STRING>
         const T* const get(int column_id)
         {
-            return columns[column_id].get<T, KIND>(cursor);
+            return columns.at(column_id).get<T, KIND>(cursor);
         }
 
         void for_each(std::function<void(column_id_t, const column_chunk &)> iterator);
