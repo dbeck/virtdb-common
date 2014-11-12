@@ -10,6 +10,7 @@ void chunk_store::push(std::string name,
                        virtdb::interface::pb::Column* new_data,
                        bool & is_complete)
 {
+    LOG_SCOPED("push" << V_(name));
     add(column_names[name], new_data, is_complete);
 }
 
@@ -17,13 +18,17 @@ void chunk_store::add(int column_id,
                       virtdb::interface::pb::Column* new_data,
                       bool & is_complete)
 {
+    LOG_SCOPED("add" << V_(column_id));
     // if (column_id == 1)
     // {
     //     LOG_INFO("Received chunk" << V_(new_data->name()) << V_(new_data->seqno()) << V_(new_data- >endofdata()));
     // }
     LOG_TRACE("Received new chunk." << V_(column_id) << V_(new_data->name()) << V_(new_data->seqno()));
     auto * data_chunk = get_chunk(new_data->seqno());
+
+    LOG_TRACE(P_(data_chunk) << V_(new_data->seqno()));
     data_chunk->add_chunk(column_id, new_data);
+
     if (not is_expected(column_id, new_data->seqno()))
     {
         ask_for_missing_chunks(column_id, new_data->seqno());
@@ -35,6 +40,7 @@ void chunk_store::add(int column_id,
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
 {
+    LOG_SCOPED(V_(sequence_number));
     for (auto * chunk : data_container)
     {
         if (chunk->sequence_number() == sequence_number)
@@ -148,6 +154,7 @@ void chunk_store::ask_for_missing_chunks(column_id_t column_id, sequence_id_t cu
 
 void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_sequence_id)
 {
+    LOG_SCOPED(V_(column_id) << V_(current_sequence_id));
     if (next_chunk[column_id] == current_sequence_id)
     {
         next_chunk[column_id]++;
@@ -192,6 +199,7 @@ int chunk_store::columns_count() const
 
 void chunk_store::ask_for_missing_chunks()
 {
+    LOG_SCOPED("asking for missing");
     std::set<column_id_t> received_columns;
     if( data_container.size() > 0 )
     {

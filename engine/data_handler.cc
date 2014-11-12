@@ -14,7 +14,7 @@ data_handler::data_handler(const query& query_data, std::function<void(column_id
 
 bool data_handler::wait_for_data()
 {
-    // LOG_SCOPED("wait_for_data");
+    LOG_SCOPED("waiting for data" << P_(data_store));
     int tries = 0;
     static const int max_tries = 5;
     static const int data_timeout = 10000;
@@ -56,6 +56,7 @@ bool data_handler::wait_for_data()
 
 bool data_handler::has_more_data()
 {
+    // LOG_SCOPED("check more data");
     if (current_chunk != nullptr and current_chunk->is_complete())
     {
         return true;
@@ -96,12 +97,14 @@ void data_handler::push(std::string name, virtdb::interface::pb::Column* new_dat
 
 bool data_handler::received_data() const
 {
+    LOG_SCOPED(P_(current_chunk) << P_(data_store));
     return (current_chunk != nullptr or data_store->is_next_chunk_available());
 }
 
 
 bool data_handler::read_next()
 {
+    // LOG_SCOPED("reading next data");
     if (not has_more_data())
     {
         return false;
