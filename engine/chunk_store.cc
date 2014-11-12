@@ -144,10 +144,7 @@ void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_
         next_chunk[column_id]++;
         LOG_TRACE("Next chunk to be waited for: " << V_(column_id) << V_(next_chunk[column_id]));
     }
-    else
-    {
-        remove_from_missing_list(column_id, current_sequence_id);
-    }
+    remove_from_missing_list(column_id, current_sequence_id);
 }
 
 void chunk_store::remove_from_missing_list(column_id_t column_id, sequence_id_t current_sequence_id)
