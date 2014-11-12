@@ -95,7 +95,7 @@ void receiver_thread::add_query(
                           V_(channel) <<
                           V_(subscription) <<
                           V_(column->name()) <<
-                          V_(node));
+                          V_((int64_t)node));
               
                 if( query_id != column->queryid() )
                 {
@@ -105,7 +105,7 @@ void receiver_thread::add_query(
                               V_(channel) <<
                               V_(subscription) <<
                               V_(column->name()) <<
-                              V_(node));
+                              V_((int64_t)node));
                     return;
                 }
                 else if( subscription.find(column->queryid()) != 0 )
@@ -116,7 +116,7 @@ void receiver_thread::add_query(
                               V_(channel) <<
                               V_(subscription) <<
                               V_(column->name()) <<
-                              V_(node));
+                              V_((int64_t)node));
                     return;
                 }
               
