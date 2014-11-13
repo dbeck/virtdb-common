@@ -2,6 +2,7 @@
 
 #include <string>
 #include <murmur3/murmur3.h>
+#include <cstdlib>
 
 namespace virtdb { namespace engine {
 
@@ -29,7 +30,7 @@ inline std::string gen_random(const int len) {
         "abcdefghijklmnopqrstuvwxyz";
 
     for (int i = 0; i < len; ++i) {
-        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+        s[i] = alphanum[std::rand() % (sizeof(alphanum) - 1)];
     }
 
     s[len] = 0;

@@ -1,5 +1,6 @@
 #include "ip_discovery_server.hh"
-#include <util.hh>
+#include <util/exception.hh>
+#include <util/net.hh>
 #include <logger.hh>
 #include <unistd.h>
 #include <functional>

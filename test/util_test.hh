@@ -2,7 +2,8 @@
 
 #include <gtest/gtest.h>
 #include <memory>
-#include <util.hh>
+#include <util/active_queue.hh>
+#include <util/barrier.hh>
 #include <atomic>
 
 namespace virtdb { namespace test {

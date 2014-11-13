@@ -5,7 +5,9 @@
 
 #include "endpoint_client.hh"
 #include <svc_config.pb.h>
-#include <util.hh>
+#include <util/flex_alloc.hh>
+#include <util/exception.hh>
+#include <util/constants.hh>
 #include <logger.hh>
 
 using namespace virtdb::interface;
