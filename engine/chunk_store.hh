@@ -4,6 +4,7 @@
 #include <mutex>
 #include <stdint.h>
 #include <iosfwd>
+#include <set>
 #include "data_chunk.hh"
 
 namespace virtdb { namespace engine {
@@ -23,7 +24,9 @@ namespace virtdb { namespace engine {
 
             std::map<std::string, column_id_t>  column_names;
             std::map<column_id_t, virtdb::interface::pb::Field> fields;
+            std::map<column_id_t, std::set<sequence_id_t>> received_ids;
             std::vector<column_id_t> _column_ids;
+      
       
             data_chunk* get_chunk(sequence_id_t sequence_number);
             void ask_for_missing_chunks(std::string, sequence_id_t);

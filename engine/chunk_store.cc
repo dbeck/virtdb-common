@@ -33,13 +33,19 @@ void chunk_store::push(std::string name,
     LOG_ERROR("missing" << V_(column_id) << "from next_chunk" << V_(next_chunk.size()));
     THROW_("misisng column_id");
   }
+
+  mark_as_received(column_id, new_data->seqno());
   
-  for( auto i = next_it->second; i<current_sequence_id; ++i )
+  // TODO : optimize me
+  auto recvd_set = received_ids[column_id];
+  for( auto i = 0; i<current_sequence_id; ++i )
   {
-    ask_for_missing_chunks(name, i);
+    if( recvd_set.count(i) == 0 )
+    {
+      ask_for_missing_chunks(name, i);
+    }
   }
   
-  mark_as_received(column_id, new_data->seqno());
 }
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
@@ -69,6 +75,7 @@ chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_res
     {
         column_id_t col_id = query_data.column_id(i);
         next_chunk[col_id] = 0;
+        received_ids[col_id] = std::set<sequence_id_t>();
 
         std::string colname = query_data.column(i).name();
         column_names[colname] = col_id;
@@ -116,11 +123,21 @@ void chunk_store::ask_for_missing_chunks(std::string col_name, sequence_id_t cur
 void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_sequence_id)
 {
     LOG_SCOPED(V_(column_id) << V_(current_sequence_id));
-    if (next_chunk[column_id] == current_sequence_id)
+    next_chunk[column_id] = current_sequence_id+1;
+  
+    auto it = received_ids.find(column_id);
+    if( it == received_ids.end() )
     {
-        next_chunk[column_id]++;
-        LOG_TRACE("Next chunk to be waited for: " << V_(column_id) << V_(next_chunk[column_id]));
+      LOG_ERROR("not found" << V_(column_id));
+      THROW_("invalid column id not found in received_ids");
     }
+  
+    it->second.insert(current_sequence_id);
+  
+    LOG_TRACE("Next chunk to be waited for: " <<
+              V_(column_id) <<
+              V_(next_chunk[column_id]) <<
+              V_(current_sequence_id));
 }
 
 bool chunk_store::is_next_chunk_available() const
