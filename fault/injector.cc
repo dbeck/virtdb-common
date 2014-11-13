@@ -78,8 +78,8 @@ namespace virtdb { namespace fault {
                    const std::string & instance_name)
   {
     std::unique_lock<std::mutex> l(mtx_);
-    rule & r{get_rule(rule_name)};
-    fault_inst & i{get_instance(instance_name, r)};
+    rule & r = get_rule(rule_name);
+    fault_inst & i = get_instance(instance_name, r);
     uint64_t now = util::relative_time::instance().get_msec();
     
     // we are in a grace period, we don't inject faults
