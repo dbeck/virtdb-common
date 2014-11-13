@@ -4,6 +4,7 @@
 #include <mutex>
 #include <stdint.h>
 #include <iosfwd>
+#include <util/timer_service.hh>
 #include "data_chunk.hh"
 
 namespace virtdb { namespace engine {
@@ -26,6 +27,8 @@ namespace virtdb { namespace engine {
             std::map<std::string, column_id_t>  column_names;
             std::map<column_id_t, virtdb::interface::pb::Field> fields;
             std::vector<column_id_t> _column_ids;
+      
+            util::timer_service timer_;
 
             data_chunk* get_chunk(sequence_id_t sequence_number);
             bool is_expected(column_id_t, sequence_id_t);

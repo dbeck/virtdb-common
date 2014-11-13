@@ -128,12 +128,11 @@ void chunk_store::ask_for_missing_chunks(column_id_t column_id, sequence_id_t cu
             missing_list.push_back(i);
         }
     }
-
-    std::async([this, column_id](){
+  
+    timer_.schedule(2000, [this, column_id](){
         LOG_SCOPED("ask_for_missing_chunks-lambda" << V_(column_id));
         try
         {
-            std::this_thread::sleep_for( std::chrono::milliseconds{2000} );
             std::lock_guard<std::mutex> lock(mutex_missing_chunk);
             auto & missing_list = missing_chunks[column_id];
             if (missing_list.size() > 0)
@@ -149,6 +148,8 @@ void chunk_store::ask_for_missing_chunks(column_id_t column_id, sequence_id_t cu
         {
             LOG_ERROR("unknown exception caught");
         }
+        // telling the timer not to reschedule this function
+        return false;
     });
 }
 
