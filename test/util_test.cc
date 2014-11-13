@@ -4,6 +4,7 @@
 #include <util/net.hh>
 #include <util/exception.hh>
 #include <util/utf8.hh>
+#include <util/table_collector.hh>
 #include <future>
 #include <thread>
 

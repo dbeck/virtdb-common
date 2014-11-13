@@ -7,11 +7,11 @@ namespace virtdb { namespace fault {
   injector::rule::rule(const std::string & name,
                        uint64_t lead_period,
                        uint64_t min_period,
-                       double chance)
+                       double probability)
   : name_{name},
     lead_period_ms_{lead_period},
     min_period_ms_{min_period},
-    chance_for_error_{chance}
+    probability_{probability}
   {
   }
 
@@ -26,12 +26,12 @@ namespace virtdb { namespace fault {
   
   injector::injector(uint64_t default_lead_period_ms,
                      uint64_t default_min_period_ms,
-                     double default_error_chance)
+                     double default_probability)
   : rnd_generator_{rnd_dev_()},
     rnd_distribution_{0.0, 1.0},
     started_at_{util::relative_time::instance().get_msec()},
     default_rule_{std::string(), default_lead_period_ms,
-                  default_min_period_ms, default_error_chance}
+                  default_min_period_ms, default_probability}
   {
   }
 
@@ -95,7 +95,7 @@ namespace virtdb { namespace fault {
     // make sure fault frequency doesn't exceed min_period_ms
     i.no_faults_till_ = now + r.min_period_ms_;
     
-    if( rnd_val < r.chance_for_error_ )
+    if( rnd_val < r.probability_ )
     {
       ++(i.fault_count_);
       return true;
@@ -110,7 +110,7 @@ namespace virtdb { namespace fault {
   injector::set_rule(const std::string & name,
                      uint64_t lead_period_ms,
                      uint64_t min_period_ms,
-                     double error_chance)
+                     double probability)
   {
     std::unique_lock<std::mutex> l(mtx_);
     rule * r = nullptr;
@@ -124,7 +124,7 @@ namespace virtdb { namespace fault {
       if( it == rules_.end() )
       {
         rule::sptr tmp_rule{new rule{name, lead_period_ms,
-                                     min_period_ms, error_chance}};
+                                     min_period_ms, probability}};
         rules_.insert(std::make_pair(name, tmp_rule));
         r = tmp_rule.get();
       }
@@ -133,9 +133,9 @@ namespace virtdb { namespace fault {
         r = it->second.get();
       }
     }
-    r->lead_period_ms_   = lead_period_ms;
-    r->min_period_ms_    = min_period_ms;
-    r->chance_for_error_ = error_chance;
+    r->lead_period_ms_  = lead_period_ms;
+    r->min_period_ms_   = min_period_ms;
+    r->probability_     = probability;
   }
   
 }}

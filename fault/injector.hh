@@ -16,13 +16,13 @@ namespace virtdb { namespace fault {
       uint64_t     lead_period_ms_;       // no errors for this many initial ms
       uint64_t     min_period_ms_;        // if an error happened, wait at leat this
                                           // amount, before the next error
-      double       chance_for_error_;     // when time allows, this is the chance
+      double       probability_;          // when time allows, this is the chance
                                           // for a new error
       
       rule(const std::string & name,
            uint64_t lead_period,
            uint64_t min_period,
-           double chance);
+           double probability);
       
       typedef std::shared_ptr<rule> sptr;
     };
@@ -54,9 +54,9 @@ namespace virtdb { namespace fault {
                               const rule & r);
     
   public:
-    injector(uint64_t default_lead_period_ms=5000,
-             uint64_t default_min_period_ms=2000,
-             double default_error_chance=0.1);
+    injector(uint64_t default_lead_period_ms=0,
+             uint64_t default_min_period_ms=0,
+             double default_probability=0.0);
     
     ~injector();
     
@@ -69,10 +69,36 @@ namespace virtdb { namespace fault {
     void set_rule(const std::string & name,
                   uint64_t lead_period_ms,
                   uint64_t min_period_ms,
-                  double error_chance);
+                  double probability);
     
   private:
     injector(const injector &) = delete;
     injector & operator=(const injector &) = delete;
   };
 }}
+
+#ifdef INJECT_FAULTS
+
+  #ifndef IF_INJECT_FAULT
+  #define IF_INJECT_FAULT(RULE,NAME) \
+      if( virtdb::fault::injector::instance().inject(RULE,NAME) == true )
+  #endif // IF_INJECT_FAULT
+
+  #ifndef UNLESS_INJECT_FAULT
+  #define UNLESS_INJECT_FAULT(RULE,NAME) \
+      if( virtdb::fault::injector::instance().inject(RULE,NAME) == false )
+  #endif // UNLESS_INJECT_FAULT
+
+#else // INJECT_FAULTS
+
+  #ifndef IF_INJECT_FAULT
+  #define IF_INJECT_FAULT(RULE,NAME) \
+      if( false )
+  #endif // IF_INJECT_FAULT
+
+  #ifndef UNLESS_INJECT_FAULT
+  #define UNLESS_INJECT_FAULT(RULE,NAME) \
+      if( true )
+  #endif // UNLESS_INJECT_FAULT
+
+#endif // INJECT_FAULTS

@@ -224,6 +224,7 @@
     {
       'target_name':       'gtest_main',
       'type':              'executable',
+      'defines':           [ 'INJECT_FAULTS', ],
       'dependencies':      [
                              'proto/proto.gyp:*',
                              'gtest/gyp/gtest.gyp:gtest_lib',
