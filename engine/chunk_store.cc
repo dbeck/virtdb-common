@@ -25,8 +25,6 @@ void chunk_store::push(std::string name,
   auto * data_chunk = get_chunk(new_data->seqno());
   data_chunk->add_chunk(column_id, new_data);
   
-  mark_as_received(column_id, new_data->seqno());
-  
   is_complete = data_chunk->is_complete();
   
   auto next_it = next_chunk.find(column_id);
@@ -40,6 +38,8 @@ void chunk_store::push(std::string name,
   {
     ask_for_missing_chunks(name, i);
   }
+  
+  mark_as_received(column_id, new_data->seqno());
 }
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
