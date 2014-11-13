@@ -68,45 +68,8 @@
       },],
     ],
   },
-  'targets' : [
-    {
-      'target_name':       'lz4',
-      'type':              'static_library',
-      'sources':           [
-                             'lz4/lz4.c',
-                             'lz4/lz4.h',
-                             'lz4/lz4hc.c',
-                             'lz4/lz4hc.h',
-                           ],
-    },
-    {
-      'conditions': [
-        ['OS=="mac"', {
-          'variables':  { 'common_root':  '<!(pwd)/../', },
-          'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', ],
-            'include_dirs':       [ '<(common_root)/', ],
-            'xcode_settings': {
-              'OTHER_CFLAGS':     [ '-std=c++11', ],
-            },
-          },
-        },],
-        ['OS=="linux"', {
-          'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', ],
-            'include_dirs':       [ '.', ],
-          },
-        },],
-      ],
-      'target_name':       'common',
-      'type':              'static_library',
-      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
-      'export_dependent_settings': [ 'proto/proto.gyp:*', ],
-      'cflags': [
-        '-std=c++11',
-        '-Wall',
-      ],
-      'sources':           [
+  'variables': {
+    'common_sources' :     [
                              # generic utils
                              'util.hh',                  'util/constants.hh',
                              'util/active_queue.hh',     'util/flex_alloc.hh',
@@ -175,12 +138,98 @@
                              'engine/query.cc',             'engine/query.hh',
                              'engine/receiver_thread.cc',   'engine/receiver_thread.hh',
                              'engine/util.hh',
+                             # fault injection
+                             'fault/injector.cc',           'fault/injector.hh',
                            ],
+  },
+  'targets' : [
+    {
+      'target_name':       'lz4',
+      'type':              'static_library',
+      'sources':           [
+                             'lz4/lz4.c',
+                             'lz4/lz4.h',
+                             'lz4/lz4hc.c',
+                             'lz4/lz4hc.h',
+                           ],
+    },
+    {
+      'conditions': [
+        ['OS=="mac"', {
+          'variables':  { 'common_root':  '<!(pwd)/../', },
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', ],
+            'include_dirs':       [ '<(common_root)/', ],
+            'xcode_settings': {
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', ],
+            'include_dirs':       [ '.', ],
+          },
+        },],
+      ],
+      'target_name':       'common',
+      'type':              'static_library',
+      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
+      'export_dependent_settings': [ 'proto/proto.gyp:*', ],
+      'cflags': [
+        '-std=c++11',
+        '-Wall',
+      ],
+      'sources':           [ '<@(common_sources)', ],
+    },
+    {
+      'conditions': [
+        ['OS=="mac"', {
+          'variables':  { 'common_root':  '<!(pwd)/../', },
+          'direct_dependent_settings': {
+            'defines':            [
+                                    'USING_COMMON_LIB',
+                                    'COMMON_MAC_BUILD',
+                                    # compile with faults:
+                                    'INJECT_FAULTS',
+                                  ],
+            'include_dirs':       [ '<(common_root)/', ],
+            'xcode_settings': {
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [
+                                    'USING_COMMON_LIB',
+                                    'COMMON_LINUX_BUILD',
+                                    # compile with faults:
+                                    'INJECT_FAULTS', 
+                                  ],
+            'include_dirs':       [ '.', ],
+          },
+        },],
+      ],
+      'target_name':       'common_with_faults',
+      'type':              'static_library',
+      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
+      'export_dependent_settings': [ 'proto/proto.gyp:*', ],
+      'cflags': [
+        '-std=c++11',
+        '-Wall',
+      ],
+      'sources':           [ '<@(common_sources)', ],
     },
     {
       'target_name':       'gtest_main',
       'type':              'executable',
-      'dependencies':      [ 'proto/proto.gyp:*', 'gtest/gyp/gtest.gyp:gtest_lib', 'common', ],
+      'defines':           [ 'INJECT_FAULTS', ],
+      'dependencies':      [
+                             'proto/proto.gyp:*',
+                             'gtest/gyp/gtest.gyp:gtest_lib',
+                             'common_with_faults',
+                           ],
       'include_dirs':      [ './gtest/include/', ],
       'cflags': [
         '-std=c++11',
@@ -194,6 +243,7 @@
                              'test/connector_test.cc',    'test/connector_test.hh',
                              'test/datasrc_test.cc',      'test/datasrc_test.hh',
                              'test/engine_test.cc',       'test/engine_test.hh',
+                             'test/fault_test.cc',        'test/fault_test.hh',
                            ],
     },
     {

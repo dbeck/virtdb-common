@@ -1,6 +1,5 @@
 #include "ip_discovery_client.hh"
 #include "endpoint_client.hh"
-#include <util.hh>
 #include <unistd.h>
 #include <functional>
 #include <future>
@@ -9,7 +8,6 @@
 #include <arpa/inet.h>
 
 using namespace virtdb::interface;
-using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
