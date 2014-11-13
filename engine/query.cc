@@ -1,6 +1,7 @@
 #include <engine/query.hh>
 #include <engine/expression.hh>
 #include <engine/util.hh>
+#include <logger.hh>
 
 using namespace virtdb::interface;
 
@@ -61,7 +62,16 @@ query::column(column_id_t i) const
 column_id_t
 query::column_id(int i) const
 {
-    return columns.find(i)->second;
+    auto it = columns.find(i);
+    if( it == columns.end() )
+    {
+        LOG_ERROR("invalid column id" << V_(i) << V_(columns.size()));
+        THROW_("invalid column id");
+    }
+    else
+    {
+        return columns.find(i)->second;
+    }
 }
   
 virtdb::interface::pb::Kind

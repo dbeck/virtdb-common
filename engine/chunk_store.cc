@@ -11,7 +11,16 @@ void chunk_store::push(std::string name,
                        bool & is_complete)
 {
     LOG_SCOPED("push" << V_(name));
-    add(column_names[name], new_data, is_complete);
+    auto it = column_names.find(name);
+    if( it == column_names.end() )
+    {
+        LOG_ERROR("couldn't find id for" << V_(name) << V_(column_names.size()));
+        THROW_("unexpected column name");
+    }
+    else
+    {
+        add(it->second, new_data, is_complete);
+    }
 }
 
 void chunk_store::add(int column_id,
@@ -63,13 +72,14 @@ chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_res
 {
     for (int i = 0; i < n_columns; i++)
     {
-        missing_chunks[query_data.column_id(i)];
-        next_chunk[query_data.column_id(i)] = 0;
+        column_id_t col_id = query_data.column_id(i);
+        missing_chunks[col_id];
+        next_chunk[col_id] = 0;
 
         std::string colname = query_data.column(i).name();
-        column_names[colname] = query_data.column_id(i);
-        fields[query_data.column_id(i)] = query_data.column(i);
-        _column_ids.push_back(query_data.column_id(i));
+        column_names[colname] = col_id;
+        fields[col_id] = query_data.column(i);
+        _column_ids.push_back(col_id);
     }
 }
 
@@ -94,10 +104,18 @@ data_chunk* chunk_store::pop()
 
 bool chunk_store::is_expected(column_id_t column_id, sequence_id_t current_sequence_id)
 {
-    if (current_sequence_id == next_chunk[column_id])
+    auto next_it = next_chunk.find(column_id);
+    if( next_it == next_chunk.end() )
+    {
+        LOG_ERROR("missing" << V_(column_id) << "from next_chunk" << V_(next_chunk.size()));
+        THROW_("misisng column_id");
+    }
+  
+    if (current_sequence_id == next_it->second)
     {
         return true;
     }
+  
     {
         std::lock_guard<std::mutex> lock(mutex_missing_chunk);
         auto & missing_list = missing_chunks[column_id];
@@ -106,7 +124,12 @@ bool chunk_store::is_expected(column_id_t column_id, sequence_id_t current_seque
             return true;
         }
     }
-    LOG_TRACE("Chunk not expected: " << V_(column_id) << V_(current_sequence_id) << V_(next_chunk[column_id]));
+  
+    LOG_TRACE("Chunk not expected: " <<
+              V_(column_id) <<
+              V_(current_sequence_id) <<
+              V_(next_it->second));
+  
     return false;
 }
 
@@ -129,8 +152,8 @@ void chunk_store::ask_for_missing_chunks(column_id_t column_id, sequence_id_t cu
         }
     }
   
-    timer_.schedule(2000, [this, column_id](){
-        LOG_SCOPED("ask_for_missing_chunks-lambda" << V_(column_id));
+    timer_.schedule(2000, [this, column_id, current_sequence_id](){
+        LOG_SCOPED("ask_for_missing_chunks-lambda" << V_(column_id) << V_(current_sequence_id));
         try
         {
             std::lock_guard<std::mutex> lock(mutex_missing_chunk);

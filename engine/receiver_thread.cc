@@ -141,7 +141,7 @@ void receiver_thread::add_query(
     active_queries[node] = new data_handler(query_data,
         [query_data, &query_client](column_id_t column_id, const std::list<sequence_id_t>& missing_chunks)
         {
-            LOG_INFO("Asking for missing chunks.");
+            LOG_INFO("Asking for missing chunks." << V_(column_id));
             virtdb::interface::pb::Query new_query;
             new_query.set_queryid(query_data.id());
             new_query.set_table(query_data.table_name());
