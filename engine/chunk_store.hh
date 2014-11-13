@@ -4,7 +4,6 @@
 #include <mutex>
 #include <stdint.h>
 #include <iosfwd>
-#include <util/timer_service.hh>
 #include "data_chunk.hh"
 
 namespace virtdb { namespace engine {
@@ -15,7 +14,6 @@ namespace virtdb { namespace engine {
 
     class chunk_store {
         private:
-            std::mutex mutex_missing_chunk;
             const int n_columns;
             std::list<data_chunk*> data_container;
             bool popped_last_chunk = false;
@@ -27,16 +25,9 @@ namespace virtdb { namespace engine {
             std::map<column_id_t, virtdb::interface::pb::Field> fields;
             std::vector<column_id_t> _column_ids;
       
-            util::timer_service timer_;
-
             data_chunk* get_chunk(sequence_id_t sequence_number);
-            bool is_expected(column_id_t, sequence_id_t);
             void ask_for_missing_chunks(std::string, sequence_id_t);
             void mark_as_received(column_id_t, sequence_id_t);
-
-            void add(int column_id,
-                     virtdb::interface::pb::Column* new_data,
-                     bool & is_complete);
 
         public:
             chunk_store(const query& query_data, resend_function_t _ask_for_resend);

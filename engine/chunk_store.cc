@@ -10,33 +10,36 @@ void chunk_store::push(std::string name,
                        virtdb::interface::pb::Column* new_data,
                        bool & is_complete)
 {
-    LOG_SCOPED("push" << V_(name));
+  auto current_sequence_id = new_data->seqno();
+  LOG_SCOPED("Received new chunk." << V_(name) << V_(new_data->name()) << V_(current_sequence_id));
   
-    auto it = column_names.find(name);
-    if( it == column_names.end() )
-    {
-        LOG_ERROR("couldn't find id for" << V_(name) << V_(column_names.size()));
-        THROW_("unexpected column name");
-    }
-    else
-    {
-        add(it->second, new_data, is_complete);
-    }
-}
-
-void chunk_store::add(int column_id,
-                      virtdb::interface::pb::Column* new_data,
-                      bool & is_complete)
-{
-    LOG_SCOPED("Received new chunk." << V_(column_id) << V_(new_data->name()) << V_(new_data->seqno()));
-    auto * data_chunk = get_chunk(new_data->seqno());
-
-    LOG_TRACE(P_(data_chunk) << V_(new_data->seqno()));
-    data_chunk->add_chunk(column_id, new_data);
-
-    mark_as_received(column_id, new_data->seqno());
-
-    is_complete = data_chunk->is_complete();
+  auto it = column_names.find(name);
+  if( it == column_names.end() )
+  {
+    LOG_ERROR("couldn't find id for" << V_(name) << V_(column_names.size()));
+    THROW_("unexpected column name");
+  }
+  
+  auto column_id = it->second;
+  
+  auto * data_chunk = get_chunk(new_data->seqno());
+  data_chunk->add_chunk(column_id, new_data);
+  
+  mark_as_received(column_id, new_data->seqno());
+  
+  is_complete = data_chunk->is_complete();
+  
+  auto next_it = next_chunk.find(column_id);
+  if( next_it == next_chunk.end() )
+  {
+    LOG_ERROR("missing" << V_(column_id) << "from next_chunk" << V_(next_chunk.size()));
+    THROW_("misisng column_id");
+  }
+  
+  for( auto i = next_it->second; i<current_sequence_id; ++i )
+  {
+    ask_for_missing_chunks(name, i);
+  }
 }
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
@@ -92,64 +95,22 @@ data_chunk* chunk_store::pop()
     return front_chunk;
 }
 
-
-bool chunk_store::is_expected(column_id_t column_id, sequence_id_t current_sequence_id)
-{
-  return true;
-  
-  /*
-    auto next_it = next_chunk.find(column_id);
-    if( next_it == next_chunk.end() )
-    {
-        LOG_ERROR("missing" << V_(column_id) << "from next_chunk" << V_(next_chunk.size()));
-        THROW_("misisng column_id");
-    }
-  
-    if (current_sequence_id == next_it->second)
-    {
-        return true;
-    }
-  
-    {
-        std::lock_guard<std::mutex> lock(mutex_missing_chunk);
-        auto & missing_list = missing_chunks[column_id];
-        if (missing_list.size() > 0 && *missing_list.begin() == current_sequence_id)
-        {
-            return true;
-        }
-    }
-  
-    LOG_TRACE("Chunk not expected: " <<
-              V_(column_id) <<
-              V_(current_sequence_id) <<
-              V_(next_it->second));
-  
-    return false;
-   */
-}
-
 void chunk_store::ask_for_missing_chunks(std::string col_name, sequence_id_t current_sequence_id)
 {
-    LOG_SCOPED(V_(col_name) << V_(current_sequence_id));
+  LOG_SCOPED(V_(col_name) << V_(current_sequence_id));
   
-    timer_.schedule(2000, [this, col_name, current_sequence_id](){
-        LOG_SCOPED("ask_for_missing_chunks-lambda" << V_(col_name) << V_(current_sequence_id));
-        try
-        {
-            std::lock_guard<std::mutex> lock(mutex_missing_chunk);
-            ask_for_resend(col_name, current_sequence_id);
-        }
-        catch( const std::exception & e )
-        {
-            LOG_ERROR("exception caught" << E_(e));
-        }
-        catch( ... )
-        {
-            LOG_ERROR("unknown exception caught");
-        }
-        // telling the timer not to reschedule this function
-        return false;
-    });
+  try
+  {
+    ask_for_resend(col_name, current_sequence_id);
+  }
+  catch( const std::exception & e )
+  {
+    LOG_ERROR("exception caught" << E_(e));
+  }
+  catch( ... )
+  {
+    LOG_ERROR("unknown exception caught");
+  }
 }
 
 void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_sequence_id)
