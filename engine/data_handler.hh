@@ -29,7 +29,7 @@ namespace virtdb { namespace engine {
             data_handler(const data_handler&) = delete;
 
         public:
-            data_handler(const query& query_data, std::function<void(column_id_t, const std::list<sequence_id_t>&)> ask_for_resend);
+            data_handler(const query& query_data, resend_function_t ask_for_resend);
             virtual ~data_handler() { delete data_store; }
             const std::string& query_id() const;
             void push(std::string name, virtdb::interface::pb::Column* new_data);

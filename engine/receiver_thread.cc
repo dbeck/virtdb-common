@@ -138,22 +138,19 @@ void receiver_thread::add_query(
     // }
     }
 
-    active_queries[node] = new data_handler(query_data,
-        [query_data, &query_client](column_id_t column_id, const std::list<sequence_id_t>& missing_chunks)
+    active_queries[node] =
+      new data_handler(query_data,
+                      [query_data, &query_client](std::string colname, sequence_id_t seqno)
         {
-            LOG_INFO("Asking for missing chunks." << V_(column_id));
+            LOG_INFO("Asking for missing chunks." << V_(colname) << V_(seqno));
             virtdb::interface::pb::Query new_query;
             new_query.set_queryid(query_data.id());
             new_query.set_table(query_data.table_name());
             new_query.set_segmentid(query_data.segment_id());
             auto * field = new_query.add_fields();
-            field->set_name(query_data.column_name_by_id(column_id));
-            field->mutable_desc()->set_type(query_data.column_type(column_id));
-            for (auto sequence_id : missing_chunks)
-            {
-                LOG_TRACE(V_(sequence_id));
-                new_query.add_seqnos(sequence_id);
-            }
+            auto const & tmp_field = query_data.get_field(colname);
+            field->CopyFrom(tmp_field);
+            new_query.add_seqnos(seqno);
             new_query.set_querycontrol(virtdb::interface::pb::Query_Command_RESEND_CHUNK);
             query_client.send_request(new_query);
         }

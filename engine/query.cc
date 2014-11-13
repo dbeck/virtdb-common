@@ -80,6 +80,23 @@ query::column_type(column_id_t i) const
     return query_data->fields(i).desc().type();
 }
   
+virtdb::interface::pb::Field
+query::get_field(const std::string & name) const
+{
+  using namespace virtdb::interface::pb;
+  Field ret;
+  for( auto const & field : query_data->fields() )
+  {
+    if( field.name() == name )
+    {
+      ret.CopyFrom(field);
+      break;
+    }
+  }
+  return ret;
+}
+
+  
 std::string
 query::column_name_by_id(column_id_t id) const
 {
@@ -90,7 +107,8 @@ query::column_name_by_id(column_id_t id) const
             return column(item.first).name();
         }
     }
-    
+  
+    LOG_ERROR("not found" << V_(id) << V_(columns.size()));
     std::string err = std::string("Column not found with id: ") + std::to_string(id);
     THROW_(err.c_str());
 }

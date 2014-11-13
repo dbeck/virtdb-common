@@ -58,6 +58,7 @@ namespace virtdb {  namespace engine {
             virtdb::interface::pb::Field column(column_id_t i) const;
             column_id_t column_id(int i) const;
             virtdb::interface::pb::Kind column_type(column_id_t i) const;
+            virtdb::interface::pb::Field get_field(const std::string & name) const;
             std::string column_name_by_id(column_id_t id) const;
 
             // Filter

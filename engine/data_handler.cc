@@ -6,7 +6,7 @@
 
 namespace virtdb { namespace engine {
 
-data_handler::data_handler(const query& query_data, std::function<void(column_id_t, const std::list<sequence_id_t>&)> ask_for_resend) :
+data_handler::data_handler(const query& query_data, resend_function_t ask_for_resend) :
     queryid (query_data.id())
 {
     data_store = new chunk_store(query_data, ask_for_resend);
