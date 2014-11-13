@@ -38,7 +38,8 @@ void chunk_store::push(std::string name,
   
   // TODO : optimize me
   auto recvd_set = received_ids[column_id];
-  for( auto i = 0; i<current_sequence_id; ++i )
+  auto i = current_sequence_id;
+  for( i = 0; i<current_sequence_id; ++i )
   {
     if( recvd_set.count(i) == 0 )
     {
