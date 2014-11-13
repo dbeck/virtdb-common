@@ -11,7 +11,14 @@ void chunk_store::push(std::string name,
                        bool & is_complete)
 {
   auto current_sequence_id = new_data->seqno();
-  LOG_SCOPED("Received new chunk." << V_(name) << V_(new_data->name()) << V_(current_sequence_id));
+  if( current_sequence_id > max_inserted_sequence_id )
+    max_inserted_sequence_id = current_sequence_id;
+  
+  LOG_SCOPED("Received new chunk." <<
+             V_(name) <<
+             V_(new_data->name()) <<
+             V_(current_sequence_id) <<
+             V_(max_inserted_sequence_id));
   
   auto it = column_names.find(name);
   if( it == column_names.end() )
@@ -27,26 +34,18 @@ void chunk_store::push(std::string name,
   
   is_complete = data_chunk->is_complete();
   
-  auto next_it = next_chunk.find(column_id);
-  if( next_it == next_chunk.end() )
-  {
-    LOG_ERROR("missing" << V_(column_id) << "from next_chunk" << V_(next_chunk.size()));
-    THROW_("misisng column_id");
-  }
-
   mark_as_received(column_id, new_data->seqno());
   
   // TODO : optimize me
   auto recvd_set = received_ids[column_id];
-  auto i = current_sequence_id;
-  for( i = 0; i<current_sequence_id; ++i )
+  auto i = max_inserted_sequence_id;
+  for( i = 0; i<max_inserted_sequence_id; ++i )
   {
     if( recvd_set.count(i) == 0 )
     {
       ask_for_missing_chunks(name, i);
     }
   }
-  
 }
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
@@ -75,7 +74,6 @@ chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_res
     for (int i = 0; i < n_columns; i++)
     {
         column_id_t col_id = query_data.column_id(i);
-        next_chunk[col_id] = 0;
         received_ids[col_id] = std::set<sequence_id_t>();
 
         std::string colname = query_data.column(i).name();
@@ -103,7 +101,8 @@ data_chunk* chunk_store::pop()
     return front_chunk;
 }
 
-void chunk_store::ask_for_missing_chunks(std::string col_name, sequence_id_t current_sequence_id)
+void chunk_store::ask_for_missing_chunks(std::string col_name,
+                                         sequence_id_t current_sequence_id)
 {
   LOG_SCOPED(V_(col_name) << V_(current_sequence_id));
   
@@ -121,10 +120,36 @@ void chunk_store::ask_for_missing_chunks(std::string col_name, sequence_id_t cur
   }
 }
 
+void chunk_store::ask_for_missing_chunks()
+{
+  LOG_SCOPED("asking for missing");
+  std::set<column_id_t> received_columns;
+  if( data_container.size() > 0 )
+  {
+    auto * front = data_container.front();
+    front->for_each([&received_columns](column_id_t id, const column_chunk &){
+      received_columns.insert(id);
+    });
+  }
+  
+  for( auto & it : column_names )
+  {
+    // TODO : optimize me
+    auto recvd_set = received_ids[it.second];
+    auto i = max_inserted_sequence_id;
+    for( i = 0; i<max_inserted_sequence_id; ++i )
+    {
+      if( recvd_set.count(i) == 0 )
+      {
+        ask_for_missing_chunks(it.first, i);
+      }
+    }
+  }
+}
+
 void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_sequence_id)
 {
     LOG_SCOPED(V_(column_id) << V_(current_sequence_id));
-    next_chunk[column_id] = current_sequence_id+1;
   
     auto it = received_ids.find(column_id);
     if( it == received_ids.end() )
@@ -137,8 +162,8 @@ void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_
   
     LOG_TRACE("Next chunk to be waited for: " <<
               V_(column_id) <<
-              V_(next_chunk[column_id]) <<
-              V_(current_sequence_id));
+              V_(current_sequence_id) <<
+              V_(max_inserted_sequence_id) );
 }
 
 bool chunk_store::is_next_chunk_available() const
@@ -154,27 +179,6 @@ bool chunk_store::did_pop_last()
 int chunk_store::columns_count() const
 {
     return n_columns;
-}
-
-void chunk_store::ask_for_missing_chunks()
-{
-    LOG_SCOPED("asking for missing");
-    std::set<column_id_t> received_columns;
-    if( data_container.size() > 0 )
-    {
-        auto * front = data_container.front();
-        front->for_each([&received_columns](column_id_t id, const column_chunk &){
-            received_columns.insert(id);
-        });
-    }
-
-    for( auto it : column_names )
-    {
-        if( received_columns.count(it.second) == 0 )
-        {
-            ask_for_missing_chunks(it.first, next_chunk[it.second]);
-        }
-    }
 }
 
 void
@@ -198,7 +202,7 @@ chunk_store::dump_front(std::ostream & os)
 
         for( auto it : column_names )
         {
-            os << "(" << it.first << ":" << next_chunk[it.second] << ":";
+            os << "(" << it.first << ":";
 
             if( received_columns.count(it.second) == 0 )
             {

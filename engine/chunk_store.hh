@@ -18,10 +18,10 @@ namespace virtdb { namespace engine {
             const int n_columns;
             std::list<data_chunk*> data_container;
             bool popped_last_chunk = false;
-            std::map<column_id_t, sequence_id_t> next_chunk;
             resend_function_t ask_for_resend;
             sequence_id_t last_inserted_sequence_id = 0;
-
+            sequence_id_t max_inserted_sequence_id = 0;
+      
             std::map<std::string, column_id_t>  column_names;
             std::map<column_id_t, virtdb::interface::pb::Field> fields;
             std::map<column_id_t, std::set<sequence_id_t>> received_ids;

@@ -95,6 +95,8 @@ void receiver_thread::add_query(
                           V_(channel) <<
                           V_(subscription) <<
                           V_(column->name()) <<
+                          V_(column->seqno()) <<
+                          V_(column->endofdata()) <<
                           V_((int64_t)node));
               
                 if( query_id != column->queryid() )
@@ -105,6 +107,8 @@ void receiver_thread::add_query(
                               V_(channel) <<
                               V_(subscription) <<
                               V_(column->name()) <<
+                              V_(column->seqno()) <<
+                              V_(column->endofdata()) <<
                               V_((int64_t)node));
                     return;
                 }
@@ -116,6 +120,8 @@ void receiver_thread::add_query(
                               V_(channel) <<
                               V_(subscription) <<
                               V_(column->name()) <<
+                              V_(column->seqno()) <<
+                              V_(column->endofdata()) <<
                               V_((int64_t)node));
                     return;
                 }
@@ -146,6 +152,7 @@ void receiver_thread::add_query(
                      V_(colname) <<
                      V_(seqno) <<
                      V_(query_data.segment_id()));
+          
             virtdb::interface::pb::Query new_query;
             new_query.set_queryid(query_data.id());
             new_query.set_table(query_data.table_name());
