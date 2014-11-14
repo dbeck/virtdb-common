@@ -39,7 +39,7 @@ void chunk_store::push(std::string name,
   // TODO : optimize me
   auto recvd_set = received_ids[column_id];
   auto i = max_inserted_sequence_id;
-  for( i = 0; i<max_inserted_sequence_id; ++i )
+  for( i = 0; i<=max_inserted_sequence_id; ++i )
   {
     if( recvd_set.count(i) == 0 )
     {
@@ -137,7 +137,7 @@ void chunk_store::ask_for_missing_chunks()
     // TODO : optimize me
     auto recvd_set = received_ids[it.second];
     auto i = max_inserted_sequence_id;
-    for( i = 0; i<max_inserted_sequence_id; ++i )
+    for( i = 0; i<=max_inserted_sequence_id; ++i )
     {
       if( recvd_set.count(i) == 0 )
       {
