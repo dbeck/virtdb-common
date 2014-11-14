@@ -40,6 +40,7 @@ LOGGER_SRCS          := $(wildcard logger/*.cc)
 CONNECTOR_SRCS       := $(wildcard connector/*.cc)
 ENGINE_SRCS			 := $(wildcard engine/*.cc)
 DATASRC_SRCS         := $(wildcard datasrc/*.cc)
+FAULT_SRCS           := $(wildcard fault/*.cc)
 LZ4_SRCS             := lz4/lz4.c  lz4/lz4hc.c
 MURMUR3_SRCS         := murmur3/murmur3.c
 TEST_SRCS_WILDCARD   := $(wildcard test/*.cc)
@@ -51,6 +52,7 @@ LOGGER_OBJECTS     := $(patsubst %.cc,%.o,$(LOGGER_SRCS))
 CONNECTOR_OBJECTS  := $(patsubst %.cc,%.o,$(CONNECTOR_SRCS))
 ENGINE_OBJECTS     := $(patsubst %.cc,%.o,$(ENGINE_SRCS))
 DATASRC_OBJECTS    := $(patsubst %.cc,%.o,$(DATASRC_SRCS))
+FAULT_OBJECTS      := $(patsubst %.cc,%.o,$(FAULT_SRCS))
 LZ4_OBJECTS        := $(patsubst %.c,%.o,$(LZ4_SRCS))
 MURMUR3_OBJECTS    := $(patsubst %.c,%.o,$(MURMUR3_SRCS))
 TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
@@ -60,11 +62,11 @@ COMMON_LIB := libcommon.a
 
 all: $(COMMON_LIB) gtest-test
 
-gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECT) $(DATASRC_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
-	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(LDFLAGS)
+gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECT) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
+	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(LDFLAGS)
 
-$(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(UTIL_OBJECTS)
-	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
+$(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(UTIL_OBJECTS)
+	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
 
 $(PROTO_LIB):
 	@echo "building proto project in ./proto"
@@ -95,7 +97,7 @@ gtest-pkg-clean:
 	@echo "cleaning finished in gtest package"
 
 clean: gtest-pkg-clean
-	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS)
+	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS)
 	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main
 	cd ./proto; make -f proto.mk clean
 	@echo "checking for suspicious files"
