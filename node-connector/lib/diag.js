@@ -1,5 +1,7 @@
-var Diag, Log, Protocol, Variable, os,
+var Diag, Log, Protocol, Variable, argv, os,
   __slice = [].slice;
+
+argv = require('minimist')(process.argv.slice(2));
 
 Protocol = require("./protocol");
 
@@ -116,15 +118,8 @@ Diag = (function() {
   };
 
   Diag.process_name = function() {
-    var argument, _i, _len, _ref;
     if (Diag._name == null) {
-      _ref = process.argv;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        argument = _ref[_i];
-        if (argument.startsWith("name=")) {
-          Diag._name = argument.substring("name=".length, argument.length);
-        }
-      }
+      Diag._name = argv["name"];
     }
     return Diag._name;
   };
