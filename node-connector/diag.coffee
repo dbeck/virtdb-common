@@ -1,3 +1,4 @@
+argv = require('minimist')(process.argv.slice(2))
 Protocol = require "./protocol"
 os = require 'os'
 
@@ -75,12 +76,8 @@ class Diag
         @_random
 
     @process_name: =>
-        if not @_name?
-            for argument in process.argv
-                if argument.startsWith "name="
-                    @_name = argument.substring "name=".length, argument.length
-        @_name
-
+        @_name ?= argv["name"]
+        return @_name
 
     @_getProcessInfo: () =>
         Process =
