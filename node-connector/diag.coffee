@@ -1,5 +1,5 @@
-argv = require('minimist')(process.argv.slice(2))
-Protocol = require "./protocol"
+cliOptions = require('nomnom').parse()
+Protocol = require './protocol'
 os = require 'os'
 
 class Variable
@@ -76,7 +76,7 @@ class Diag
         @_random
 
     @process_name: =>
-        @_name ?= argv["name"]
+        @_name ?= cliOptions.name
         return @_name
 
     @_getProcessInfo: () =>

@@ -1,9 +1,9 @@
-var Diag, Log, Protocol, Variable, argv, os,
+var Diag, Log, Protocol, Variable, cliOptions, os,
   __slice = [].slice;
 
-argv = require('minimist')(process.argv.slice(2));
+cliOptions = require('nomnom').parse();
 
-Protocol = require("./protocol");
+Protocol = require('./protocol');
 
 os = require('os');
 
@@ -119,7 +119,7 @@ Diag = (function() {
 
   Diag.process_name = function() {
     if (Diag._name == null) {
-      Diag._name = argv["name"];
+      Diag._name = cliOptions.name;
     }
     return Diag._name;
   };
