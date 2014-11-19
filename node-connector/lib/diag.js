@@ -1,11 +1,13 @@
-var Diag, Log, Protocol, Variable, argv, os,
+var Diag, Log, Protocol, Variable, cliOptions, os, util,
   __slice = [].slice;
 
-argv = require('minimist')(process.argv.slice(2));
+cliOptions = require('nomnom').parse();
 
-Protocol = require("./protocol");
+Protocol = require('./protocol');
 
 os = require('os');
+
+util = require('util');
 
 Variable = (function() {
   function Variable(content) {
@@ -13,7 +15,9 @@ Variable = (function() {
   }
 
   Variable.prototype.toString = function() {
-    return this.content;
+    return util.inspect(this.content, {
+      depth: null
+    });
   };
 
   return Variable;
@@ -119,7 +123,7 @@ Diag = (function() {
 
   Diag.process_name = function() {
     if (Diag._name == null) {
-      Diag._name = argv["name"];
+      Diag._name = cliOptions.name;
     }
     return Diag._name;
   };
@@ -274,7 +278,7 @@ Diag = (function() {
       type = typeof argument;
       switch (type) {
         case 'object':
-          record.Data[0].Values.push(Diag._value(argument.content));
+          record.Data[0].Values.push(Diag._value(argument));
       }
     }
     record.Symbols = Diag._getNewSymbols();
