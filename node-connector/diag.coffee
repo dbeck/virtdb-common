@@ -1,12 +1,13 @@
 cliOptions = require('nomnom').parse()
 Protocol = require './protocol'
 os = require 'os'
+util = require 'util'
 
 class Variable
     constructor: (@content) ->
 
     toString: () ->
-        @content
+        util.inspect @content, {depth: null}
 
 Date::yyyymmdd = () ->
     yyyy = @getFullYear().toString()
@@ -206,7 +207,7 @@ class Diag
             type = typeof(argument)
             switch  type
                 when 'object'
-                    record.Data[0].Values.push @_value(argument.content)
+                    record.Data[0].Values.push @_value(argument)
 
         record.Symbols = @_getNewSymbols()
         record.Headers = @_getNewHeaders()

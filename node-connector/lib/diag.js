@@ -1,4 +1,4 @@
-var Diag, Log, Protocol, Variable, cliOptions, os,
+var Diag, Log, Protocol, Variable, cliOptions, os, util,
   __slice = [].slice;
 
 cliOptions = require('nomnom').parse();
@@ -7,13 +7,17 @@ Protocol = require('./protocol');
 
 os = require('os');
 
+util = require('util');
+
 Variable = (function() {
   function Variable(content) {
     this.content = content;
   }
 
   Variable.prototype.toString = function() {
-    return this.content;
+    return util.inspect(this.content, {
+      depth: null
+    });
   };
 
   return Variable;
@@ -274,7 +278,7 @@ Diag = (function() {
       type = typeof argument;
       switch (type) {
         case 'object':
-          record.Data[0].Values.push(Diag._value(argument.content));
+          record.Data[0].Values.push(Diag._value(argument));
       }
     }
     record.Symbols = Diag._getNewSymbols();
