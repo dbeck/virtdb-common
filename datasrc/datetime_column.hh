@@ -1,15 +1,18 @@
 #pragma once
 
-#include <datasrc/column.hh>
+#include <datasrc/string_column.hh>
 
 namespace virtdb { namespace datasrc {
   
-  class datetime_column : public fixed_width_column
+  class datetime_column : public string_column
   {
-    typedef fixed_width_column parent_type;
+    typedef string_column parent_type;
     
   public:
     datetime_column(size_t max_rows);
+    datetime_column(size_t max_rows, size_t max_size);
+    
+    void convert_pb();
   };
   
 }}
