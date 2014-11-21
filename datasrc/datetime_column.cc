@@ -39,7 +39,6 @@ namespace virtdb { namespace datasrc {
         
         if( !null_vals[i] && sizes[i] > 9 )
         {
-          size_t act_size = sizes[i];
           char * act_ptr  = val_ptr+offset;
           int month = 10*(act_ptr[5]-'0') + (act_ptr[6]-'0');
           int day   = 10*(act_ptr[8]-'0') + (act_ptr[9]-'0');
