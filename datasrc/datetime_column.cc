@@ -44,13 +44,53 @@ namespace virtdb { namespace datasrc {
           int month = 10*(act_ptr[5]-'0') + (act_ptr[6]-'0');
           int day   = 10*(act_ptr[8]-'0') + (act_ptr[9]-'0');
           
-          if( act_ptr[4] != '-' ||
-              act_ptr[7] != '-' ||
-              month < 1 || month > 12 ||
-              day < 1 || day > 31 )
+          static int day_counts[13] = {
+            0,  // none
+            31, // jan
+            28, // feb
+            31, // mar
+            30, // apr
+            31, // may
+            30, // jun
+            31, // jul
+            31, // aug
+            30, // sep
+            31, // oct
+            30, // nov
+            31, // dec
+          };
+          
+          if( act_ptr[4] != '-'        ||
+              act_ptr[7] != '-'        ||
+              month < 1 || month > 12  ||
+              day < 1   || day > 31 )
           {
             LOG_TRACE("not passing invalid datetime value" <<
                       V_(month) << V_(day) );
+            null_vals[i] = true;
+            sizes[i]     = 0;
+          }
+          else if( month == 2 && day == 29 )
+          {
+            bool ok = false;
+            int year = ::atoi(act_ptr);
+            if( (year % 400) == 0 )      ok = true;
+            else if( (year % 100) == 0 ) ok = false;
+            else if( (year % 4) == 0 )   ok = true;
+            if( !ok )
+            {
+              LOG_TRACE("not passing invalid datetime value" <<
+                        V_(month) << V_(day) <<
+                        "not a leap year" );
+              null_vals[i] = true;
+              sizes[i]     = 0;
+            }
+          }
+          else if( day > day_counts[month] )
+          {
+            LOG_TRACE("not passing invalid datetime value" <<
+                      V_(month) << V_(day) <<
+                      "no such day in this month" );
             null_vals[i] = true;
             sizes[i]     = 0;
           }
