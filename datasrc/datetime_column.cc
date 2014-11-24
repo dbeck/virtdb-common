@@ -73,7 +73,8 @@ namespace virtdb { namespace datasrc {
           else if( month == 2 && day == 29 )
           {
             bool ok = false;
-            if( (year % 400) == 0 )      ok = true;
+            if( year < 1600 )            ok = true;
+            else if( (year % 400) == 0 ) ok = true;
             else if( (year % 100) == 0 ) ok = false;
             else if( (year % 4) == 0 )   ok = true;
             if( !ok )
