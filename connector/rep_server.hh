@@ -50,15 +50,18 @@ namespace virtdb { namespace connector {
       
       try
       {
+        static req_item _req_itm;
+        static rep_item _rep_itm;
+        
         LOG_SCOPED("handle message" <<
                    V_(message.size()) <<
-                   V_(req_item::GetTypeName()) <<
-                   V_(rep_item::GetTypeName) <<
+                   V_(_req_itm.GetTypeName()) <<
+                   V_(_rep_itm.GetTypeName) <<
                    V_(this->server()) );
         
         LOG_TRACE("start parsing message" <<
                   V_(message.size()) <<
-                  V_(req_item::GetTypeName()));
+                  V_(_req_itm.GetTypeName()));
         
         REQ_ITEM req;
         if( req.ParseFromArray(message.data(), message.size()) )
