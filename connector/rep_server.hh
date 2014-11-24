@@ -56,8 +56,7 @@ namespace virtdb { namespace connector {
         LOG_SCOPED("handle message" <<
                    V_(message.size()) <<
                    V_(_req_itm.GetTypeName()) <<
-                   V_(_rep_itm.GetTypeName()) <<
-                   V_(this->server()) );
+                   V_(_rep_itm.GetTypeName()));
         
         LOG_TRACE("start parsing message" <<
                   V_(message.size()) <<
