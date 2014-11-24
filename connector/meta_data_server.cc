@@ -43,6 +43,49 @@ namespace virtdb { namespace connector {
     // TODO : what do we publish here ... ????
   }
   
+  meta_data_server::rep_base_type::rep_item_sptr
+  meta_data_server::get_wildcard_data()
+  {
+    rep_base_type::rep_item_sptr ret;
+    {
+      lock wcl(wildcard_cache_mtx_);
+      ret = wildcard_cache_;
+    }
+    return ret;
+  }
+  
+  void
+  meta_data_server::update_wildcard_data()
+  {
+    rep_base_type::rep_item_sptr rep{new rep_item};
+    
+    {
+      lock l(tables_mtx_);
+      for( const auto & it : tables_ )
+        
+      {
+        auto tmp_tab = rep->add_tables();
+        // selectively merge everything except fields
+        if( it.second->has_name() )
+          tmp_tab->set_name(it.second->name());
+        
+        if( it.second->has_schema() )
+          tmp_tab->set_schema(it.second->schema());
+        
+        for( auto const & c : it.second->comments() )
+          tmp_tab->add_comments()->MergeFrom(c);
+        
+        for( auto const & p : it.second->properties() )
+          tmp_tab->add_properties()->MergeFrom(p);
+      }
+    }
+    
+    {
+      lock wcl(wildcard_cache_mtx_);
+      wildcard_cache_ = rep;
+    }
+  }
+  
   void
   meta_data_server::process_replies(const rep_base_type::req_item & req,
                                     rep_base_type::send_rep_handler handler)
@@ -67,59 +110,74 @@ namespace virtdb { namespace connector {
       }
     }
     
-    rep_base_type::rep_item_sptr rep{new rep_item};
+    rep_base_type::rep_item_sptr rep;
+
+    if( req.has_schema() &&
+        req.has_name() &&
+        req.schema() == ".*" &&
+        req.name() == ".*" )
     {
-      lock l(tables_mtx_);
-      bool match_schema = (req.has_schema() && !req.schema().empty());
+      rep = get_wildcard_data();
+      LOG_INFO("returning cached wildcard metadata");
+    }
+    
+    if( !rep )
+    {
+      rep.reset(new rep_item);
       
-      std::regex table_regex{req.name(), std::regex::extended};
-      std::regex schema_regex;
-      
-      if( match_schema )
-        schema_regex.assign(req.schema(), std::regex::extended);
-      
-      bool with_fields = req.withfields();
-      
-      for( const auto & it : tables_ )
-        
       {
-        if( std::regex_match(it.second->name(),
-                             table_regex,
-                             std::regex_constants::match_any |
-                             std::regex_constants::format_sed ) )
+        lock l(tables_mtx_);
+        bool match_schema = (req.has_schema() && !req.schema().empty());
+        
+        std::regex table_regex{req.name(), std::regex::extended};
+        std::regex schema_regex;
+        
+        if( match_schema )
+          schema_regex.assign(req.schema(), std::regex::extended);
+        
+        bool with_fields = req.withfields();
+        
+        for( const auto & it : tables_ )
+          
         {
-          if( !match_schema || std::regex_match(it.second->schema(),
-                                                schema_regex,
-                                                std::regex_constants::match_any |
-                                                std::regex_constants::format_sed ) )
+          if( std::regex_match(it.second->name(),
+                               table_regex,
+                               std::regex_constants::match_any |
+                               std::regex_constants::format_sed ) )
           {
-            auto tmp_tab = rep->add_tables();
-            if( with_fields )
+            if( !match_schema || std::regex_match(it.second->schema(),
+                                                  schema_regex,
+                                                  std::regex_constants::match_any |
+                                                  std::regex_constants::format_sed ) )
             {
-              // merge everything
-              tmp_tab->MergeFrom(*(it.second));
-            }
-            else
-            {
-              // selectively merge everything except fields
-              if( it.second->has_name() )
-                tmp_tab->set_name(it.second->name());
-              
-              if( it.second->has_schema() )
-                tmp_tab->set_schema(it.second->schema());
-              
-              for( auto const & c : it.second->comments() )
-                tmp_tab->add_comments()->MergeFrom(c);
-              
-              for( auto const & p : it.second->properties() )
-                tmp_tab->add_properties()->MergeFrom(p);
+              auto tmp_tab = rep->add_tables();
+              if( with_fields )
+              {
+                // merge everything
+                tmp_tab->MergeFrom(*(it.second));
+              }
+              else
+              {
+                // selectively merge everything except fields
+                if( it.second->has_name() )
+                  tmp_tab->set_name(it.second->name());
+                
+                if( it.second->has_schema() )
+                  tmp_tab->set_schema(it.second->schema());
+                
+                for( auto const & c : it.second->comments() )
+                  tmp_tab->add_comments()->MergeFrom(c);
+                
+                for( auto const & p : it.second->properties() )
+                  tmp_tab->add_properties()->MergeFrom(p);
+              }
             }
           }
         }
-      }
-      
-      {
-        LOG_TRACE("processing" << M_(req) << M_(*rep));
+        
+        {
+          LOG_TRACE("processing" << M_(req) << M_(*rep));
+        }
       }
     }
     

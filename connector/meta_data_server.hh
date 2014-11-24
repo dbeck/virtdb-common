@@ -27,10 +27,12 @@ namespace virtdb { namespace connector {
     
     // TODO: replace map<> with a better structure, more optimal for regex search
     
-    table_map   tables_;
-    on_request  on_request_;
-    std::mutex  tables_mtx_;
-    std::mutex  watch_mtx_;
+    table_map                     tables_;
+    on_request                    on_request_;
+    rep_base_type::rep_item_sptr  wildcard_cache_;
+    std::mutex                    tables_mtx_;
+    std::mutex                    watch_mtx_;
+    std::mutex                    wildcard_cache_mtx_;
     
     void publish_meta(rep_base_type::rep_item_sptr);
     void process_replies(const rep_base_type::req_item & req,
@@ -50,6 +52,9 @@ namespace virtdb { namespace connector {
                     const std::string & name);
     void watch_requests(on_request);
     void remove_watch();
+    
+    rep_base_type::rep_item_sptr get_wildcard_data();
+    void update_wildcard_data();
   };
   
 }}
