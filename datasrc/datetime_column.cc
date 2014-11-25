@@ -36,7 +36,6 @@ namespace virtdb { namespace datasrc {
     {
       for( size_t i=0; i<n; ++i )
       {
-        
         if( !null_vals[i] && sizes[i] > 9 )
         {
           char * act_ptr  = val_ptr+offset;
