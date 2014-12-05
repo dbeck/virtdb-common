@@ -64,9 +64,9 @@
         'link_settings': {
           'ldflags':                     [
                                            '-Wl,--no-as-needed', 
-                                           '<!@(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install)',
-                                           '<!@(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install)',
-                                           '<!@(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+                                           '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install)',
+                                           '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install)',
+                                           '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
                                          ],
           'libraries':                   [
                                            '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
