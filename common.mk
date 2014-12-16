@@ -1,9 +1,13 @@
 BUILD_ROOT           := $(shell pwd)
 
-PROTOBUF_LDFLAGS     := $(shell pkg-config --libs protobuf)
-PROTOBUF_CFLAGS      := $(shell pkg-config --cflags protobuf)
-ZMQ_LDFLAGS          := $(shell pkg-config --libs libzmq)
-ZMQ_CFLAGS           := $(shell pkg-config --cflags libzmq)
+PROTOBUF_LDFLAGS     := $(shell pkg-config --libs protobuf) -L$(HOME)/protobuf-install/lib
+PROTOBUF_CFLAGS      := $(shell pkg-config --cflags protobuf) -I$(HOME)/protobuf-install/include
+ZMQ_LDFLAGS          := $(shell pkg-config --libs libzmq)  -L$(HOME)/libzmq-install/lib
+ZMQ_CFLAGS           := $(shell pkg-config --cflags libzmq) -I$(HOME)/libzmq-install/include
+SODIUM_LDFLAGS       := $(shell pkg-config --libs libsodium) -lsodium -L$(HOME)/libsodium-install/lib 
+SODIUM_CFLAGS        := $(shell pkg-config --cflags libsodium) -I$(HOME)/libsodium-install/include
+
+PROTOBUF_LDFLAGS  := $(shell pkg-config --libs protobuf)
 
 # FIXME integrate libtool better ...
 GTEST_PATH           := $(BUILD_ROOT)/gtest
@@ -20,6 +24,7 @@ LINUX_LDFLAGS =
 ifeq ($(shell uname), Linux)
 FIX_CXX_11_BUG  = -Wl,--no-as-needed
 LINUX_LDFLAGS   = -pthread
+SODIUM_LDFLAGS  += -lrt
 endif
 
 MAC_CFLAGS :=
@@ -27,8 +32,8 @@ ifeq ($(shell uname), Darwin)
 MAC_CFLAGS := -DCOMMON_MAC_BUILD
 endif
 
-CXXFLAGS += -Wall -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(MAC_CFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
-LDFLAGS += -g3 $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(GTEST_LDFLAGS)
+CXXFLAGS += -Wall -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(MAC_CFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(SODIUM_CFLAGS) $(GTEST_CFLAGS) -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq
+LDFLAGS += -g3 $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(SODIUM_LDFLAGS)  $(GTEST_LDFLAGS)
 CFLAGS += -Wall -g3 -fPIC
 
 $(info $$CFLAGS is [${CFLAGS}])
