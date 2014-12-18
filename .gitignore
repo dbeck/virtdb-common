@@ -46,3 +46,5 @@ DS_Store
 *DS_Store
 .*DS_Store
 
+# atom plugin files
+tags

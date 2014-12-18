@@ -13,19 +13,20 @@ class VirtDBConnector
     @Handlers = {}
     @Sockets = {}
     @Convert = Convert
+    @handler = null
 
     @connect: (name, connectionString) =>
-        Protocol.svcConfig connectionString, @onEndpoint
+        @handler = new Protocol.EndpointHandler connectionString, @onEndpoint
 
         endpoint =
             Endpoints: [
                 Name: name
                 SvcType: 'NONE'
             ]
-        Protocol.sendEndpoint endpoint
+        @handler.send endpoint
 
     @close: =>
-        Protocol.close()
+        @handler?.close()
 
     @onAddress: (service_type, connection_type, callback) =>
         @Handlers[service_type] ?= {}
@@ -144,6 +145,6 @@ class VirtDBConnector
                         ]
                     ]
                 ]
-            Protocol.sendEndpoint endpoint
+            @handler.send endpoint
 
 module.exports = VirtDBConnector
