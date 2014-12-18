@@ -1,28 +1,34 @@
 fs          = require 'fs'
 zmq         = require 'zmq'
-protobuf    = require 'node-protobuf'
+protobuf    = require 'virtdb-proto'
 async       = require "async"
 
-proto_service_config = new protobuf(fs.readFileSync(__dirname + '/proto/svc_config.pb.desc'))
-proto_diag           = new protobuf(fs.readFileSync(__dirname + '/proto/diag.pb.desc'))
+proto_service_config = protobuf.service_config
+proto_diag           = protobuf.diag
 
-
-class Protocol
-    @svcConfigSocket = null
-    @diag_socket = null
-    @diagAddress = null
-
-    @svcConfig = (connectionString, onEndpoint) ->
+class EndpointHandler
+    svcConfigSocket = null
+    constructor: (connectionString, onEndpoint) ->
         @svcConfigSocket = zmq.socket 'req'
         @svcConfigSocket.on 'message', (message) ->
-            endpointMessage = proto_service_config.parse message, 'virtdb.interface.pb.Endpoint'
-            for endpoint in endpointMessage.Endpoints
-                onEndpoint endpoint
-
+            try
+                endpointMessage = proto_service_config.parse message, 'virtdb.interface.pb.Endpoint'
+                for endpoint in endpointMessage.Endpoints
+                    onEndpoint endpoint
+            catch ex
+                console.log ex
         @svcConfigSocket.connect connectionString
 
-    @sendEndpoint = (endpoint) ->
+    send: (endpoint) =>
         @svcConfigSocket.send proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
+
+    close: () =>
+        @svcConfigSocket.close()
+
+class Protocol
+    @EndpointHandler = EndpointHandler
+    @diag_socket = null
+    @diagAddress = null
 
     @bindHandler = (socket, svcType, zmqType, onBound) ->
         return (err) ->
@@ -79,8 +85,5 @@ class Protocol
             ret
         else
             null
-
-    @close = () =>
-        @svcConfigSocket?.close()
 
 module.exports = Protocol

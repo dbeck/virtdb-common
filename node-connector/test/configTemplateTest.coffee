@@ -4,7 +4,7 @@ chai = require "chai"
 
 chai.should()
 
-describe "Config service helper", ->
+describe "Config service template helper", ->
     it "should convert simple template config messages with string", ->
         source =
             AppName: 'config-helper-test'
@@ -15,7 +15,7 @@ describe "Config service helper", ->
             ]
         destination =
             Name: 'config-helper-test'
-            ConfigData:
+            ConfigData: [
                 Key: ''
                 Children:[
                     Key: 'url'
@@ -33,6 +33,7 @@ describe "Config service helper", ->
                             ]
                     ]
                 ]
+            ]
         Convert.TemplateToOld(source).should.deep.equal(destination)
         Convert.TemplateToNew(Convert.TemplateToOld(source)).should.deep.equal(source)
 
@@ -46,7 +47,7 @@ describe "Config service helper", ->
             ]
         destination =
             Name: 'config-helper-test'
-            ConfigData:
+            ConfigData: [
                 Key: ''
                 Children:[
                     Key: 'url'
@@ -64,6 +65,7 @@ describe "Config service helper", ->
                             ]
                     ]
                 ]
+            ]
         Convert.TemplateToOld(source).should.deep.equal(destination)
         Convert.TemplateToNew(Convert.TemplateToOld(source)).should.deep.equal(source)
 
@@ -104,7 +106,7 @@ describe "Config service helper", ->
             ]
         destination =
             Name: 'config-helper-test'
-            ConfigData:
+            ConfigData: [
                 Key: ''
                 Children:[
                     Key: 'Postgres'
@@ -252,5 +254,6 @@ describe "Config service helper", ->
                             ]
                     ]
                 ]
+            ]
         Convert.TemplateToOld(source).should.deep.equal(destination)
         Convert.TemplateToNew(Convert.TemplateToOld(source)).should.deep.equal(source)

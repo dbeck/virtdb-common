@@ -177,7 +177,7 @@ class Convert
         ret = {}
         ret.AppName = source.Name
         ret.Config = []
-        addNodeToNew ret.Config, source.ConfigData
+        addNodeToNew ret.Config, source.ConfigData[0].Children
         return ret
 
     @ToNew: (source) =>
