@@ -50,7 +50,6 @@ namespace virtdb { namespace connector {
               }
               
             }
-            release_pub_item(std::move(tp.second));
           }
           else
           {
@@ -95,41 +94,6 @@ namespace virtdb { namespace connector {
                  pub_item_sptr item_sptr)
     {
       queue_.push(std::make_pair(channel, item_sptr));
-    }
-    
-    pub_item_sptr allocate_pub_item(const pub_item & i)
-    {
-      return allocate_pub_item_impl(i);
-    }
-    
-    pub_item_sptr allocate_pub_item()
-    {
-      return allocate_pub_item_impl();
-    }
-    
-    void release_pub_item(pub_item_sptr && i)
-    {
-      release_pub_item_impl(std::move(i));
-    }
-    
-  protected:
-    virtual pub_item_sptr allocate_pub_item_impl()
-    {
-      // this is the place to recycle pointers if really wanted
-      pub_item_sptr ret{new ITEM};
-      return ret;
-    }
-
-    virtual pub_item_sptr allocate_pub_item_impl(const pub_item & i)
-    {
-      // this is the place to recycle pointers if really wanted
-      pub_item_sptr ret{new ITEM(i)};
-      return ret;
-    }
-    
-    virtual void release_pub_item_impl(pub_item_sptr && i)
-    {
-      // make sure, refcount is 0 if recycled ...
     }
     
   private:

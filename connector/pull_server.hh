@@ -15,7 +15,8 @@ namespace virtdb { namespace connector {
   class pull_server : public server_base
   {
   public:
-    typedef std::shared_ptr<ITEM>                pull_item_sptr;
+    typedef ITEM                                 pull_item;
+    typedef std::shared_ptr<pull_item>           pull_item_sptr;
     typedef std::function<void(pull_item_sptr)>  pull_handler;
     
   private:
@@ -41,7 +42,7 @@ namespace virtdb { namespace connector {
       
       try
       {
-        auto i = allocate_pull_item();
+        auto i = pull_item_sptr{new pull_item};
         if( i->ParseFromArray(message.data(), message.size()) )
         {
           queue_.push(std::move(i));
@@ -72,7 +73,6 @@ namespace virtdb { namespace connector {
         {
           h_(it);
         }
-        release_pull_item(std::move(it));
       }
       catch(const std::exception & e)
       {
@@ -128,30 +128,7 @@ namespace virtdb { namespace connector {
     {
       worker_.rethrow_error();
     }
-    
-    pull_item_sptr allocate_pull_item()
-    {
-      return allocate_pull_item_impl();
-    }
-    
-    void release_pull_item(pull_item_sptr && i)
-    {
-      release_pull_item_impl(std::move(i));
-    }
-    
-  protected:
-    virtual pull_item_sptr allocate_pull_item_impl()
-    {
-      // this is the place to recycle pointers if really wanted
-      pull_item_sptr ret{new ITEM};
-      return ret;
-    }
-    
-    virtual void release_pull_item_impl(pull_item_sptr && i)
-    {
-      // make sure, refcount is 0 if recycled ...
-    }
-    
+        
   private:
     pull_server() = delete;
     pull_server(const pull_server & other)  = delete;

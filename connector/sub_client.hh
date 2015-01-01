@@ -86,7 +86,7 @@ namespace virtdb { namespace connector {
           if( !socket_.get().recv(&message) )
             return true;
 
-          auto i = allocate_sub_item();
+          auto i = sub_item_sptr{new sub_item};
           if( i->ParseFromArray(message.data(), message.size()) )
           {
             queue_.push(std::move(std::make_pair(subscription,i)));
@@ -309,30 +309,7 @@ namespace virtdb { namespace connector {
     {
       socket_.wait_valid();
     }
-    
-    sub_item_sptr allocate_sub_item()
-    {
-      return allocate_sub_item_impl();
-    }
-    
-    void release_sub_item(sub_item_sptr && i)
-    {
-      release_pull_item_impl(std::move(i));
-    }
-    
-  protected:
-    virtual sub_item_sptr allocate_sub_item_impl()
-    {
-      // this is the place to recycle pointers if really wanted
-      sub_item_sptr ret{new SUB_ITEM};
-      return ret;
-    }
-    
-    virtual void release_sub_item_impl(sub_item_sptr && i)
-    {
-      // make sure, refcount is 0 if recycled ...
-    }
-    
+      
   private:
     sub_client() = delete;
     sub_client(const sub_client & other)  = delete;
