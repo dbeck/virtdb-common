@@ -6,9 +6,9 @@
     'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none/)',
     'has_sodium':         '<!(./file_exists.sh <(sodium_libdir))',
     'common_ldflagsx':  [
-                          '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install)',
-                          '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install)',
-                          '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+                          '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install /usr/local/lib)',
+                          '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install /usr/local/lib)',
+                          '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install /usr/local/lib)',
                         ],
     'common_libsx':     [
                           '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
