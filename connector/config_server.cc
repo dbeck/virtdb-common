@@ -107,5 +107,5 @@ namespace virtdb { namespace connector {
     return additional_hosts_;
   }
   
-  config_server::~config_server() { }
+  config_server::~config_server() {}
 }}

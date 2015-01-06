@@ -18,9 +18,7 @@ namespace virtdb { namespace connector {
   {
   }
   
-  config_client::~config_client()
-  {
-  }
+  config_client::~config_client() {}
   
   endpoint_client &
   config_client::get_endpoint_client()
