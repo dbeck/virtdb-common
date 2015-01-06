@@ -16,6 +16,10 @@ namespace virtdb { namespace util {
   
   timer_service::~timer_service()
   {
+    {
+      lock l(mtx_);
+      condvar_.notify_all();
+    }
     worker_.stop();
   }
   
