@@ -39,9 +39,7 @@ namespace virtdb { namespace util {
     bool worker_function();
 
   public:
-    timer_service(size_t n_retries_on_exception=10,
-                  bool die_on_exception=true,
-                  uint64_t wakeup_freq_ms=30000);
+    timer_service(uint64_t wakeup_freq_ms=30000);
     ~timer_service();
     
     void schedule(const time_point_t & when,

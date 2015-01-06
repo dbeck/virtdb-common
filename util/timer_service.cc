@@ -3,13 +3,10 @@
 
 namespace virtdb { namespace util {
   
-  timer_service::timer_service(size_t n_retries_on_exception,
-                               bool die_on_exception,
-                               uint64_t wakeup_freq_ms)
+  timer_service::timer_service(uint64_t wakeup_freq_ms)
   : wakeup_freq_ms_(wakeup_freq_ms),
     worker_(std::bind(&timer_service::worker_function, this),
-            n_retries_on_exception,
-            die_on_exception)
+            /*we shall catch all exceptions*/ 10,false)
   {
     worker_.start();
   }

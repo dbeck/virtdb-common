@@ -5,13 +5,11 @@ using namespace virtdb::test;
 TEST_F(ColumnClientTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(ColumnServerTest, ImplementMe) { EXPECT_TRUE(false); }
 
-TEST_F(ConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(ConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
 
 TEST_F(DbConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(DbConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
 
-TEST_F(EndpointClientTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(EndpointServerTest, ImplementMe) { EXPECT_TRUE(false); }
 
 TEST_F(IpDiscoveryClientTest, ImplementMe) { EXPECT_TRUE(false); }
@@ -34,3 +32,10 @@ TEST_F(QueryServerTest, ImplementMe) { EXPECT_TRUE(false); }
 
 TEST_F(ReqClientTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(RepServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(ConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(EndpointClientTest, ImplementMe)
+{
+  EXPECT_TRUE(false);
+}

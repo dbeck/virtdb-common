@@ -87,16 +87,14 @@ namespace virtdb { namespace connector {
     
   public:
     pull_server(config_client & cfg_client,
-                pull_handler h,
-                size_t n_retries_on_exception=10,
-                bool die_on_exception=true)
+                pull_handler h)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PULL),
       worker_(std::bind(&pull_server::worker_function,
                         this),
-              n_retries_on_exception,
-              die_on_exception),
+              /* catch exception and ignore request */
+              10, false),
       queue_(1,std::bind(&pull_server::process_function,
                          this,
                          std::placeholders::_1)),

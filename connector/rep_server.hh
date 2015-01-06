@@ -152,16 +152,14 @@ namespace virtdb { namespace connector {
   public:
     rep_server(config_client & cfg_client,
                rep_handler handler,
-               on_reply on_rep,
-               size_t n_retries_on_exception=10,
-               bool die_on_exception=true)
+               on_reply on_rep)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_REP),
       worker_(std::bind(&rep_server::worker_function,
                         this),
-              n_retries_on_exception,
-              die_on_exception),
+              /*catch exception and ignore request*/
+              10, false),
       rep_handler_(handler),
       on_reply_(on_rep)
     {

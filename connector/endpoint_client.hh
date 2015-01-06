@@ -39,9 +39,7 @@ namespace virtdb { namespace connector {
     
   public:
     endpoint_client(const std::string & svc_config_ep,
-                    const std::string & service_name,
-                    size_t n_retries_on_exception=10,
-                    bool die_on_exception=true);
+                    const std::string & service_name);
     ~endpoint_client();
     
     void watch(interface::pb::ServiceType, monitor);
