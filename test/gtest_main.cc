@@ -17,6 +17,8 @@ unsigned short default_cfgsvc_mock_port = CFG_SVC_MOCK_PORT;
 unsigned short default_cfgsvc_mock_port = 55441;
 #endif
 
+std::string global_mock_ep{"tcp://127.0.0.1:"};
+
 void print_error(const char * str)
 {
   std::cerr << str;
@@ -28,7 +30,7 @@ int main(int argc, char **argv)
   // child process
   const char * progname = "./cfgsvc_mock";
   // mock config service EP
-  std::string mock_ep{"tcp://127.0.0.1:"};
+  std::string & mock_ep = global_mock_ep;
   mock_ep += std::to_string(default_cfgsvc_mock_port);
 
   pid_t pid = fork();

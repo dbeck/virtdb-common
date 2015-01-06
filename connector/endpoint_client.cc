@@ -193,6 +193,11 @@ namespace virtdb { namespace connector {
   endpoint_client::handle_endpoint_data(const interface::pb::EndpointData & ep)
   {
     LOG_TRACE("handle endpoint data" << M_(ep) << V_((int)ep.svctype()) );
+    if( ep.svctype() == interface::pb::ServiceType::NONE )
+    {
+      return;
+    }
+
     std::lock_guard<std::mutex> lock(mtx_);
     {
       // run monitors first
@@ -267,6 +272,12 @@ namespace virtdb { namespace connector {
                                 const interface::pb::EndpointData & ep)
   {
     LOG_TRACE("run monitior for" << M_(ep) << V_((int)ep.svctype()));
+    if( ep.svctype() == interface::pb::ServiceType::NONE )
+    {
+      // ignore this service type and save others time too
+      // by returning false here
+      return false;
+    }
 
     bool ret = true;
     
