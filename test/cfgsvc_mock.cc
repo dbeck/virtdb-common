@@ -40,13 +40,22 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
+    bool stop = false;
+    if( argc > 2 && std::string{"stop"} == argv[2] )
+    {
+      stop = true;
+    }
+    
+    std::string service_ep{argv[1]};
+    
+    if( !stop )
     {
       log_sink::socket_sptr  dummy_socket;
       log_sink::sptr         sink_stderr{new log_sink{dummy_socket}};
     
       LOG_SCOPED("end server block");
       {
-        endpoint_server     ep_srv(argv[1], "config-service");
+        endpoint_server     ep_srv(service_ep, "config-service");
         endpoint_client     ep_clnt(ep_srv.local_ep(), ep_srv.name());
         config_client       cfg_clnt(ep_clnt, "config-service");
         config_server       cfg_srv(cfg_clnt, ep_srv);
@@ -62,7 +71,6 @@ int main(int argc, char ** argv)
                         {
                           i = 10000;
                         }
-                        return true;
                       });
         
         for( ; i<20*60; ++i )
@@ -71,6 +79,23 @@ int main(int argc, char ** argv)
         }
         LOG_TRACE("stopping mock service");
       }
+    }
+    else
+    {
+      endpoint_client ep_clnt(service_ep,  "STOP");
+      
+      pb::EndpointData ep_data;
+      {
+        ep_data.set_name("STOP");
+        ep_data.set_svctype(pb::ServiceType::OTHER);
+        
+        auto conn = ep_data.add_connections();
+        conn->add_address("invalid address");
+        conn->set_type(pb::ConnectionType::REQ_REP);
+        
+        ep_clnt.register_endpoint(ep_data);
+      }
+
     }
   }
   catch (const std::exception & e)

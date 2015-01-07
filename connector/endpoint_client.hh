@@ -16,7 +16,7 @@ namespace virtdb { namespace connector {
   class endpoint_client final
   {
   public:
-    typedef std::function<bool(const interface::pb::EndpointData &)> monitor;
+    typedef std::function<void(const interface::pb::EndpointData &)> monitor;
     
   private:
     typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data> ep_data_set;
@@ -33,7 +33,7 @@ namespace virtdb { namespace connector {
     util::async_worker   worker_;
     std::mutex           mtx_;
     
-    bool fire_monitor(monitor &, const interface::pb::EndpointData & ep);
+    void fire_monitor(monitor &, const interface::pb::EndpointData & ep);
     bool worker_function();
     void handle_endpoint_data(const interface::pb::EndpointData & ep);
     
@@ -46,7 +46,7 @@ namespace virtdb { namespace connector {
     void remove_watches(interface::pb::ServiceType);
     void remove_watches();
     void register_endpoint(const interface::pb::EndpointData &,
-                           monitor m=[](const interface::pb::EndpointData &){return true;});
+                           monitor m=[](const interface::pb::EndpointData &){return;});
     const std::string & name() const;
     const std::string & service_ep() const;
     void cleanup();

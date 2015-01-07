@@ -34,7 +34,7 @@ namespace virtdb { namespace connector {
     mutable std::mutex                           sockets_mtx_;
 
     bool worker_function();
-    bool on_endpoint_data(const interface::pb::EndpointData & ep);
+    void on_endpoint_data(const interface::pb::EndpointData & ep);
 
   public:
     log_record_client(endpoint_client & ep_client,

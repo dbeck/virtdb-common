@@ -51,7 +51,10 @@ TEST_F(BarrierTest, BarrierReady)
     EXPECT_FALSE( this->barrier_.ready() );
     auto & b = this->barrier_;
     threads.push_back(std::thread{[&b,&flag](){
-      b.wait();
+      if( b.wait_for(100) == false )
+      {
+        b.wait();
+      }
       ++flag;
     }});
     // all threads are waiting

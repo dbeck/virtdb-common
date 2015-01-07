@@ -1,6 +1,7 @@
 #include "barrier.hh"
 #include "constants.hh"
 #include <cassert>
+#include <chrono>
 
 using namespace virtdb::util;
 
@@ -48,6 +49,40 @@ barrier::wait()
                    );
   }
 }
+
+bool
+barrier::wait_for(unsigned int timeout_ms)
+{
+  {
+    // register ourself as waiting
+    lock l(mutex_);
+    ++nwaiting_;
+    cond_.notify_all();
+  }
+  
+  using namespace std::chrono;
+  typedef std::chrono::steady_clock::time_point time_point_t;
+  time_point_t now = steady_clock::now();
+  time_point_t max_wait = now + milliseconds{timeout_ms};
+  
+  while( true )
+  {
+    lock l(mutex_);
+    
+    // enough threads are waiting, barrier is done
+    // it is late to check timeout condition here, because other threads
+    // had already been released
+    if( nwaiting_ >= nthreads_ )
+      return true;
+    
+    if( cond_.wait_until(l, max_wait) == std::cv_status::timeout )
+    {
+      --nwaiting_;
+      return false;
+    }
+  }
+}
+
 
 bool
 barrier::ready()

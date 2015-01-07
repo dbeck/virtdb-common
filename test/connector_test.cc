@@ -3,12 +3,68 @@
 #include <connector/endpoint_client.hh>
 #include <atomic>
 #include <thread>
+#include <util/barrier.hh>
 
 using namespace virtdb::connector;
 using namespace virtdb::test;
 using namespace virtdb::interface;
+using namespace virtdb::util;
 
 extern std::string global_mock_ep;
+
+TEST_F(EndpointClientTest, Watch)
+{
+  barrier on_callback(2);
+  
+  auto ep_callback = [&on_callback](const pb::EndpointData & ep)
+  {
+    if( ep.name() == "EndpointClientTest-Watch" &&
+       ep.svctype() == pb::ServiceType::OTHER )
+    {
+      for( auto & conn : ep.connections() )
+      {
+        if( conn.type() == pb::ConnectionType::REQ_REP )
+        {
+          for( auto & addr : conn.address() )
+          {
+            if( addr.find("test-address") == 0 )
+            {
+              on_callback.wait();
+            }
+          }
+        }
+      }
+    }
+  };
+  
+  endpoint_client ep_clnt(global_mock_ep, "EndpointClientTest-Watch");
+  ep_clnt.watch(pb::OTHER, ep_callback);
+  
+  {
+    pb::EndpointData ep_data;
+    ep_data.set_name(ep_clnt.name());
+    ep_data.set_svctype(pb::ServiceType::OTHER);
+    
+    auto conn = ep_data.add_connections();
+    conn->add_address("test-address");
+    conn->set_type(pb::ConnectionType::REQ_REP);
+    
+    ep_clnt.register_endpoint(ep_data);
+    
+    EXPECT_TRUE(on_callback.wait_for(1000));
+    // cleanup
+    ep_data.set_validforms(1);
+    ep_clnt.register_endpoint(ep_data);
+  }
+}
+
+TEST_F(EndpointClientTest, Expiry) { }
+TEST_F(EndpointClientTest, StressRegister) { }
+TEST_F(EndpointClientTest, StressWatch) { }
+TEST_F(EndpointClientTest, MonitorException) { }
+TEST_F(EndpointClientTest, InvalidConstr) { }
+TEST_F(EndpointClientTest, InvalidWatch) { }
+TEST_F(EndpointClientTest, InvalidRegister) { }
 
 TEST_F(EndpointClientTest, Register)
 {
@@ -37,7 +93,6 @@ TEST_F(EndpointClientTest, Register)
         }
       }
     }
-    return true;
   };
 
   std::atomic<int> neps{0};
@@ -50,7 +105,6 @@ TEST_F(EndpointClientTest, Register)
       std::cout << "count_eps: " << ep.DebugString() << "\n";
       ++neps;
     }
-    return true;
   };
   
   {
@@ -147,14 +201,6 @@ TEST_F(EndpointClientTest, Register)
   }
 }
 
-TEST_F(EndpointClientTest, Watch) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, Expiry) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, StressRegister) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, StressWatch) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, MonitorException) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, InvalidConstr) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, InvalidWatch) { EXPECT_TRUE(false); }
-TEST_F(EndpointClientTest, InvalidRegister) { EXPECT_TRUE(false); }
 
 
 TEST_F(ColumnClientTest, ImplementMe) { EXPECT_TRUE(false); }

@@ -191,6 +191,7 @@ namespace virtdb { namespace connector {
                   to_remove.set_name(exp_svc_name);
                   to_remove.set_svctype(exp_svc_type);
                   endpoints_.erase(to_remove);
+                  LOG_INFO("Endpoint expired" << M_(to_remove));
                 }
               }
               // non-periodic check it is

@@ -51,9 +51,7 @@ namespace virtdb { namespace connector {
                     // TODO : revise this later : only one subscription is allowed
                     ep_sub_socket_.connect(conn.address(ii).c_str());
                     ep_sub_socket_.setsockopt(ZMQ_SUBSCRIBE, "*", 0);
-
-                    // telling that we are done and don't want more addresses
-                    return false;
+                    return;
                   }
                   catch (const std::exception & e)
                   {
@@ -68,7 +66,6 @@ namespace virtdb { namespace connector {
                 }
               }
             }
-            return true;
           });
     
     pb::EndpointData ep_data;
@@ -118,8 +115,7 @@ namespace virtdb { namespace connector {
       {
         try
         {
-          if( run_monitor )
-            run_monitor = m(peers.endpoints(i));
+          m(peers.endpoints(i));
         }
         catch( const std::exception & e)
         {
@@ -261,13 +257,13 @@ namespace virtdb { namespace connector {
       {
         if( ep.svctype() == st )
         {
-          if( !fire_monitor(m, ep) ) break;
+          fire_monitor(m, ep);
         }
       }
     }
   }
 
-  bool
+  void
   endpoint_client::fire_monitor(monitor & m,
                                 const interface::pb::EndpointData & ep)
   {
@@ -275,15 +271,12 @@ namespace virtdb { namespace connector {
     if( ep.svctype() == interface::pb::ServiceType::NONE )
     {
       // ignore this service type and save others time too
-      // by returning false here
-      return false;
+      // by returning here
     }
-
-    bool ret = true;
     
     try
     {
-      ret = m(ep);
+      m(ep);
     }
     catch( const std::exception & e )
     {
@@ -294,7 +287,6 @@ namespace virtdb { namespace connector {
     {
       LOG_ERROR("caught unknown exception");
     }
-    return ret;
   }
   
   endpoint_client::~endpoint_client()
