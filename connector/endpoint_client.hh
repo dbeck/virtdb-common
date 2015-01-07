@@ -5,6 +5,7 @@
 #include <svc_config.pb.h>
 #include <util/compare_messages.hh>
 #include <util/async_worker.hh>
+#include <util/active_queue.hh>
 #include <map>
 #include <vector>
 #include <set>
@@ -22,20 +23,24 @@ namespace virtdb { namespace connector {
     typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data> ep_data_set;
     typedef std::vector<monitor> monitor_vector;
     typedef std::map<interface::pb::ServiceType, monitor_vector> monitor_map;
+    typedef interface::pb::EndpointData ep_data_item;
+    typedef util::active_queue<ep_data_item,util::DEFAULT_TIMEOUT_MS> notification_queue_t;
 
-    std::string          service_ep_;
-    std::string          name_;
-    zmq::context_t       zmqctx_;
-    zmq::socket_t        ep_req_socket_;
-    zmq::socket_t        ep_sub_socket_;
-    ep_data_set          endpoints_;
-    monitor_map          monitors_;
-    util::async_worker   worker_;
-    std::mutex           mtx_;
+    std::string            service_ep_;
+    std::string            name_;
+    zmq::context_t         zmqctx_;
+    zmq::socket_t          ep_req_socket_;
+    zmq::socket_t          ep_sub_socket_;
+    ep_data_set            endpoints_;
+    monitor_map            monitors_;
+    util::async_worker     worker_;
+    notification_queue_t   queue_;
+    mutable std::mutex     mtx_;
     
     void fire_monitor(monitor &, const interface::pb::EndpointData & ep);
     bool worker_function();
     void handle_endpoint_data(const interface::pb::EndpointData & ep);
+    void async_handle_data(ep_data_item);
     
   public:
     endpoint_client(const std::string & svc_config_ep,

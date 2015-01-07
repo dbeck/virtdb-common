@@ -86,6 +86,19 @@ TEST_F(FlexAllocTest, DummyTest)
   // TODO : FlexAllocTest
 }
 
+TEST_F(AsyncWorkerTest, DestroyWithoutStart)
+{
+  auto fun = [](void) {
+    throw std::logic_error("hello");
+    return true;
+  };
+  
+  {
+    async_worker worker{fun,0,false};
+  }
+}
+
+
 TEST_F(AsyncWorkerTest, CatchThreadException)
 {
   auto fun = [](void) {

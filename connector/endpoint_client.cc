@@ -29,10 +29,25 @@ namespace virtdb { namespace connector {
     worker_(std::bind(&endpoint_client::worker_function,this),
             /* the preferred way is to rethrow exceptions if any on the other
                thread, rather then die */
-            10, false)
+            10, false),
+    queue_(1,std::bind(&endpoint_client::async_handle_data,
+                       this,
+                       std::placeholders::_1))
   {
+    if( svc_config_ep.empty() ) { THROW_("config service endpoint is empty"); }
+    if( service_name.empty() )  { THROW_("service name is empty"); }
+
     process_info::set_app_name(name_);
-    ep_req_socket_.connect(svc_config_ep.c_str());
+
+    try
+    {
+      ep_req_socket_.connect(svc_config_ep.c_str());
+    }
+    catch(const std::exception & e)
+    {
+      LOG_ERROR("exception during connect to" << V_(svc_config_ep) << E_(e));
+      THROW_("std::exception: failed to connect to endpoint service");
+    }
     
     // setup a monitor so handle_endpoint_data will connect
     // the sub socket when we receive one
@@ -85,7 +100,6 @@ namespace virtdb { namespace connector {
     ep_data_ptr->MergeFrom(ep_data);
 
     int ep_size = ep.ByteSize();
-    bool run_monitor = true;
     
     if( ep_size > 0 )
     {
@@ -119,16 +133,31 @@ namespace virtdb { namespace connector {
         }
         catch( const std::exception & e)
         {
-          LOG_ERROR("exception caught" << E_(e));
-          run_monitor = false;
+          LOG_ERROR("exception caught" << E_(e) << "when processing" << M_(ep_data));
         }
         catch( ... )
         {
-          LOG_ERROR("unknown exception caught");
-          run_monitor = false;
+          LOG_ERROR("unknown exception caught" << "when processing" << M_(ep_data));
         }
-        handle_endpoint_data(peers.endpoints(i));
+        queue_.push(peers.endpoints(i));
       }
+    }
+  }
+  
+  void
+  endpoint_client::async_handle_data(ep_data_item ep)
+  {
+    try
+    {
+      handle_endpoint_data(ep);
+    }
+    catch( const std::exception & e )
+    {
+      LOG_ERROR("caught exception" << E_(e) << "while processing" << M_(ep));
+    }
+    catch( ... )
+    {
+      LOG_ERROR("caught unknown exception while processing" << M_(ep));
     }
   }
   
@@ -175,7 +204,9 @@ namespace virtdb { namespace connector {
         }
         
         for( int i=0; i<peers.endpoints_size(); ++i )
-          handle_endpoint_data(peers.endpoints(i));
+        {
+          queue_.push(peers.endpoints(i));
+        }
       }
       else
       {
@@ -280,8 +311,7 @@ namespace virtdb { namespace connector {
     }
     catch( const std::exception & e )
     {
-      std::string text{e.what()};
-      LOG_ERROR("caught exception" << V_(text));
+      LOG_ERROR("caught exception" << E_(e));
     }
     catch( ... )
     {
@@ -292,6 +322,7 @@ namespace virtdb { namespace connector {
   endpoint_client::~endpoint_client()
   {
     worker_.stop();
+    queue_.stop();
   }
   
   void
@@ -299,6 +330,7 @@ namespace virtdb { namespace connector {
   {
     remove_watches();
     worker_.stop();
+    queue_.stop();
   }
   
   void
