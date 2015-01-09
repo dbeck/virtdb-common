@@ -13,6 +13,35 @@ using namespace virtdb::util;
 
 extern std::string global_mock_ep;
 
+TEST_F(EndpointClientTest, StressWatch)
+{
+  const char * name = "EndpointClientTest-Watch";
+  endpoint_client ep_clnt(global_mock_ep, name);
+
+  auto watch = [](const pb::EndpointData & ep) {};
+
+  for( int i=0; i<300; ++i )
+    ep_clnt.watch(pb::ServiceType::OTHER, watch);
+  
+  for( int i=0; i<200; ++i )
+  {
+    pb::EndpointData ep_data;
+    ep_data.set_name(ep_clnt.name());
+    ep_data.set_svctype(pb::ServiceType::OTHER);
+    
+    auto conn = ep_data.add_connections();
+    conn->add_address("test-address");
+    conn->set_type(pb::ConnectionType::REQ_REP);
+    
+    // very short lifetime for this endpoint
+    ep_data.set_validforms(100);
+    ep_clnt.register_endpoint(ep_data);
+  }
+  
+  for( int i=0; i<300; ++i )
+    ep_clnt.watch(pb::ServiceType::OTHER, watch);
+}
+
 TEST_F(EndpointClientTest, StressRegister)
 {
   const char * name = "EndpointClientTest-StressRegister";
@@ -39,10 +68,6 @@ TEST_F(EndpointClientTest, StressRegister)
       ep_clnt.register_endpoint(ep_data);
     }
   }
-}
-
-TEST_F(EndpointClientTest, StressWatch)
-{
 }
 
 TEST_F(EndpointClientTest, InvalidRegister)
