@@ -69,7 +69,7 @@ int main(int argc, char ** argv)
                         LOG_TRACE("received message" << V_(ep.name()) << M_(ep));
                         if( ep.name() == "STOP" )
                         {
-                          i = 10000;
+                          i += 10000;
                         }
                       });
         
