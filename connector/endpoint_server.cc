@@ -207,8 +207,7 @@ namespace virtdb { namespace connector {
     {
       // ParseFromArray may throw exceptions here but we don't care
       // of it does
-      std::string exception_text{e.what()};
-      LOG_ERROR("couldn't parse message" << exception_text);
+      LOG_ERROR("couldn't parse message" << E_(e));
     }
     catch( ... )
     {

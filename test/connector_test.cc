@@ -13,6 +13,86 @@ using namespace virtdb::util;
 
 extern std::string global_mock_ep;
 
+TEST_F(EndpointClientTest, StressRegister)
+{
+  const char * name = "EndpointClientTest-StressRegister";
+  
+  endpoint_client ep_clnt(global_mock_ep, name);
+  pb::EndpointData ep_data;
+  
+  ep_data.set_svctype(pb::ServiceType::OTHER);
+  auto conn = ep_data.add_connections();
+  conn->add_address("test-address");
+  conn->set_type(pb::ConnectionType::REQ_REP);
+ 
+  for( int ms=1; ms<1025; ms = ms*2 )
+  {
+    ep_data.set_validforms(ms);
+    
+    for( int i=0; i<20; ++i )
+    {
+      std::string name_tmp{name};
+      name_tmp += std::to_string(ms) + "-" + std::to_string(i);
+      
+      ep_data.set_name(name_tmp);
+      
+      ep_clnt.register_endpoint(ep_data);
+    }
+  }
+}
+
+TEST_F(EndpointClientTest, StressWatch)
+{
+}
+
+TEST_F(EndpointClientTest, InvalidRegister)
+{
+  const char * name = "EndpointClientTest-InvalidRegister";
+  
+  endpoint_client ep_clnt(global_mock_ep, name);
+
+  pb::EndpointData ep_data;
+  // empty EndpointData
+  EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
+
+  // missing name
+  ep_data.set_validforms(1);
+  EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
+  
+  // missing connection type
+  ep_data.set_name(ep_clnt.name());
+  ep_data.set_svctype(pb::ServiceType::OTHER);
+  auto conn = ep_data.add_connections();
+  conn->add_address("test-address");
+  EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
+}
+
+TEST_F(EndpointClientTest, InvalidWatch)
+{
+  const char * name = "EndpointClientTest-InvalidWatch";
+  
+  endpoint_client ep_clnt(global_mock_ep, name);
+  std::function<void(const pb::EndpointData &)> empty_watch;
+  
+  EXPECT_THROW(ep_clnt.watch(pb::ServiceType::OTHER, empty_watch), virtdb::util::exception);
+  
+  {
+    pb::EndpointData ep_data;
+    ep_data.set_name(ep_clnt.name());
+    ep_data.set_svctype(pb::ServiceType::OTHER);
+    
+    auto conn = ep_data.add_connections();
+    conn->add_address("test-address");
+    conn->set_type(pb::ConnectionType::REQ_REP);
+    
+    // very short lifetime for this endpoint
+    ep_data.set_validforms(1);
+    
+    // throw in the synchronous monitor
+    EXPECT_THROW(ep_clnt.register_endpoint(ep_data, empty_watch), virtdb::util::exception);
+  }
+}
+
 TEST_F(EndpointClientTest, InvalidConstr)
 {
   auto invalid_svc_config_ep = []() {
@@ -24,20 +104,12 @@ TEST_F(EndpointClientTest, InvalidConstr)
     endpoint_client ep_clnt("tcp://0.0.0.0:0", "");
   };
   EXPECT_THROW(invalid_service_name(), virtdb::util::exception);
-
+  
   auto malformed_ep = []() {
     endpoint_client ep_clnt("invalid ep", "xxx");
   };
   EXPECT_THROW(malformed_ep(), virtdb::util::exception);
-
 }
-
-TEST_F(EndpointClientTest, InvalidWatch) { }
-TEST_F(EndpointClientTest, InvalidRegister) { }
-
-
-TEST_F(EndpointClientTest, StressRegister){}
-TEST_F(EndpointClientTest, StressWatch) { }
 
 TEST_F(EndpointClientTest, Watch)
 {
@@ -179,6 +251,16 @@ TEST_F(EndpointClientTest, MonitorException)
     // throw in the asynchronous monitor
     throw_exc = true;
     ep_clnt.register_endpoint(ep_data);
+    
+    // very short lifetime for this endpoint
+    // for cleanup purposes
+    ep_data.set_validforms(1);
+    throw_exc = false;
+    ep_clnt.remove_watches();
+    ep_clnt.register_endpoint(ep_data);
+    
+    // give a chance for the cleanup to remove the endpoint garbage
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 

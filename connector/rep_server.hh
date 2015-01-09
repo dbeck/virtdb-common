@@ -138,8 +138,7 @@ namespace virtdb { namespace connector {
       }
       catch (const std::exception & e)
       {
-        std::string text{e.what()};
-        LOG_ERROR("couldn't parse message. exception" << V_(text));
+        LOG_ERROR("couldn't parse message. exception" << E_(e));
       }
       catch( ... )
       {

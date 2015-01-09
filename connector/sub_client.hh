@@ -101,16 +101,14 @@ namespace virtdb { namespace connector {
       }
       catch (const zmq::error_t & e)
       {
-        std::string text{e.what()};
-        LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
+        LOG_ERROR("zmq::poll failed with exception" << E_(e) << "delaying subscription loop");
         lock l(sockets_mtx_);
         socket_.disconnect_all();
         return true;
       }
       catch (const std::exception & e)
       {
-        std::string exception_text{e.what()};
-        LOG_ERROR("couldn't parse message" << exception_text);
+        LOG_ERROR("couldn't parse message" << E_(e));
       }
       catch( ... )
       {
