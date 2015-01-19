@@ -4,17 +4,20 @@
 #include <connector.hh>
 
 namespace virtdb { namespace test {
+
+  class EndpointClientTest : public ::testing::Test { };
+  class ServerBaseTest : public ::testing::Test { };
+  class ConfigClientTest : public ::testing::Test { };
+
   
   class ColumnClientTest : public ::testing::Test { };
   class ColumnServerTest : public ::testing::Test { };
 
-  class ConfigClientTest : public ::testing::Test { };
   class ConfigServerTest : public ::testing::Test { };
   
   class DbConfigClientTest : public ::testing::Test { };
   class DbConfigServerTest : public ::testing::Test { };
   
-  class EndpointClientTest : public ::testing::Test { };
   class EndpointServerTest : public ::testing::Test { };
   
   class IpDiscoveryClientTest : public ::testing::Test { };

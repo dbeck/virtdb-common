@@ -17,6 +17,15 @@ namespace virtdb { namespace util {
     typedef std::set<std::string>   endpoint_set;
     typedef std::set<std::string>   host_set;
     
+    struct endpoint_info
+    {
+      std::string endpoint_;
+      std::string host_;
+      int         port_;
+      
+      endpoint_info() : port_(-1) {}
+    };
+    
   private:
     typedef std::mutex              mtx;
     typedef std::unique_lock<mtx>   lock;
@@ -38,7 +47,7 @@ namespace virtdb { namespace util {
     ~zmq_socket_wrapper();
     
     zmq::socket_t & get();
-    void bind(const char *addr);
+    endpoint_info bind(const char *addr);
     void batch_tcp_bind(const host_set & hosts);
     void connect(const char * addr);
     void reconnect(const char * addr);

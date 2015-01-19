@@ -141,6 +141,15 @@ TEST_F(QueryServerTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(ReqClientTest, ImplementMe) { EXPECT_TRUE(false); }
 TEST_F(RepServerTest, ImplementMe) { EXPECT_TRUE(false); }
 
+TEST_F(ServerBaseTest, ConstuctHostSet)
+{
+  const char * name = "ServerBaseTest-ConstuctHostSet";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "config-service");
+
+  server_base bs(cfg_clnt);
+  auto const & host_set{bs.hosts()};  
+}
 
 TEST_F(EndpointClientTest, StressWatch)
 {
