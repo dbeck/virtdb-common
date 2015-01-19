@@ -52,6 +52,11 @@ namespace virtdb { namespace connector {
     void remove_watches();
     void register_endpoint(const interface::pb::EndpointData &,
                            monitor m=[](const interface::pb::EndpointData &){return;});
+    
+    bool get(const std::string & ep_name,
+             interface::pb::ServiceType st,
+             interface::pb::EndpointData & result) const;
+             
     const std::string & name() const;
     const std::string & service_ep() const;
     void cleanup();

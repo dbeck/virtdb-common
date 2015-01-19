@@ -355,6 +355,26 @@ namespace virtdb { namespace connector {
       }
     }
   }
+  
+  bool
+  endpoint_client::get(const std::string & ep_name,
+                       interface::pb::ServiceType st,
+                       interface::pb::EndpointData & result) const
+  {
+    interface::pb::EndpointData dt;
+    dt.set_name(ep_name);
+    dt.set_svctype(st);
+    {
+      std::lock_guard<std::mutex> lock(mtx_);
+      auto it = endpoints_.find(dt);
+      if( it != endpoints_.end() )
+      {
+        result = *it;
+        return true;
+      }
+    }
+    return false;
+  }
 
   void
   endpoint_client::fire_monitor(monitor & m,

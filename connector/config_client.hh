@@ -32,5 +32,19 @@ namespace virtdb { namespace connector {
     
     void cleanup();
     void rethrow_error();
+    
+    // req_client base has:
+    // --------------------
+    // bool send_request(const req_item & req,
+    //                  std::function<bool(const rep_item & rep)> cb,
+    //                  unsigned long timeout_ms,
+    //                  std::function<void(void)> on_timeout=[]{})
+    
+    // sub_client base has:
+    // --------------------
+    // void watch(const std::string & subscription,
+    //            sub_monitor m);
+    // void remove_watches();
+    // void remove_watch(const std::string & subscription);
   };
 }}

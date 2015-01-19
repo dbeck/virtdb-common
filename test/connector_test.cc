@@ -13,9 +13,138 @@ using namespace virtdb::util;
 
 extern std::string global_mock_ep;
 
+#if 0
+// req_client base has:
+// --------------------
+// bool send_request(const req_item & req,
+//                  std::function<bool(const rep_item & rep)> cb,
+//                  unsigned long timeout_ms,
+//                  std::function<void(void)> on_timeout=[]{})
+
+// sub_client base has:
+// --------------------
+// void watch(const std::string & subscription,
+//            sub_monitor m);
+// void remove_watches();
+// void remove_watch(const std::string & subscription);
+#endif
+
+
+TEST_F(ConfigClientTest, RemoveNonexistentWatches)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-RemoveNonexistentWatches";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "config-service");
+  
+  // this is OK:
+  cfg_clnt.remove_watches();
+}
+
+TEST_F(ConfigClientTest, DoubleCleanupRethrow)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-DoubleCleanupRethrow";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "config-service");
+  
+  // this sequence is valid, rethrow should throw excpetions here
+  cfg_clnt.cleanup();
+  cfg_clnt.rethrow_error();
+  cfg_clnt.cleanup();
+  cfg_clnt.rethrow_error();
+}
+
+TEST_F(ConfigClientTest, TripleRethrow)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-TripleRethrow";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "config-service");
+  
+  // rethrow should survive this without exception or crash
+  cfg_clnt.rethrow_error();
+  cfg_clnt.rethrow_error();
+  cfg_clnt.rethrow_error();
+}
+
+TEST_F(ConfigClientTest, TripleCleanup)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-TripleCleanup";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "config-service");
+
+  // cleanup should survive this without exception or crash
+  cfg_clnt.cleanup();
+  cfg_clnt.cleanup();
+  cfg_clnt.cleanup();
+}
+
+TEST_F(ConfigClientTest, BadServiceNameToConnect)
+{
+  // this should succeed without exception and error
+  const char * name = "ConfigClientTest-BadServiceNameToConnect";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "nope-config-service");
+  
+  // this should fail because no such service exists
+  EXPECT_FALSE(cfg_clnt.wait_valid_sub(200));
+  EXPECT_FALSE(cfg_clnt.wait_valid_req(200));
+}
+
+TEST_F(ConfigClientTest, SimpleConnect)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-ConnectOnly";
+  endpoint_client   ep_clnt(global_mock_ep, name);
+  config_client     cfg_clnt(ep_clnt, "config-service");
+  
+  // this should succeed assuming the mock service is running
+  EXPECT_TRUE(cfg_clnt.wait_valid_sub(200));
+  EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
+}
+
+TEST_F(ConfigClientTest, CheckReqChannel) { EXPECT_TRUE(false); }
+TEST_F(ConfigClientTest, CheckSubChannel) { EXPECT_TRUE(false); }
+
+
+
+TEST_F(ColumnClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ColumnServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(ConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(DbConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(DbConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(EndpointServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(IpDiscoveryClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(IpDiscoveryServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(LogRecordClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(LogRecordServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(MetaDataClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(MetaDataServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(SubClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(PubServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(PushClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(PullServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(QueryClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(QueryServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+TEST_F(ReqClientTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(RepServerTest, ImplementMe) { EXPECT_TRUE(false); }
+
+
 TEST_F(EndpointClientTest, StressWatch)
 {
-  const char * name = "EndpointClientTest-Watch";
+  const char * name = "EndpointClientTest-StressWatch";
   endpoint_client ep_clnt(global_mock_ep, name);
 
   auto watch = [](const pb::EndpointData & ep) {};
@@ -33,13 +162,33 @@ TEST_F(EndpointClientTest, StressWatch)
     conn->add_address("test-address");
     conn->set_type(pb::ConnectionType::REQ_REP);
     
-    // very short lifetime for this endpoint
-    ep_data.set_validforms(100);
+    // long lifetime for this endpoint
+    ep_data.set_validforms(10000);
     ep_clnt.register_endpoint(ep_data);
+  }
+  
+  {
+    pb::EndpointData result;
+    EXPECT_TRUE(ep_clnt.get(ep_clnt.name(),pb::ServiceType::OTHER,result));
   }
   
   for( int i=0; i<300; ++i )
     ep_clnt.watch(pb::ServiceType::OTHER, watch);
+  
+  {
+    pb::EndpointData ep_data;
+    ep_data.set_name(ep_clnt.name());
+    ep_data.set_svctype(pb::ServiceType::OTHER);
+    
+    auto conn = ep_data.add_connections();
+    conn->add_address("test-address");
+    conn->set_type(pb::ConnectionType::REQ_REP);
+    
+    // very short lifetime for this endpoint to cleanuo
+    ep_data.set_validforms(1);
+    ep_clnt.register_endpoint(ep_data);
+    
+  }
 }
 
 TEST_F(EndpointClientTest, StressRegister)
@@ -84,12 +233,22 @@ TEST_F(EndpointClientTest, InvalidRegister)
   ep_data.set_validforms(1);
   EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
   
+  {
+    pb::EndpointData result;
+    EXPECT_FALSE(ep_clnt.get(ep_data.name(),pb::ServiceType::OTHER,result));
+  }
+  
   // missing connection type
   ep_data.set_name(ep_clnt.name());
   ep_data.set_svctype(pb::ServiceType::OTHER);
   auto conn = ep_data.add_connections();
   conn->add_address("test-address");
   EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
+  
+  {
+    pb::EndpointData result;
+    EXPECT_FALSE(ep_clnt.get(ep_data.name(),pb::ServiceType::OTHER,result));
+  }
 }
 
 TEST_F(EndpointClientTest, InvalidWatch)
@@ -176,11 +335,20 @@ TEST_F(EndpointClientTest, Watch)
     ep_clnt.register_endpoint(ep_data);
 
     // the async callback should fire and release the barrier
-    EXPECT_TRUE(on_callback.wait_for(100));
+    EXPECT_TRUE(on_callback.wait_for(200));
+
+    // check client cache
+    {
+      pb::EndpointData result;
+      EXPECT_TRUE(ep_clnt.get(ep_data.name(),pb::ServiceType::OTHER,result));
+    }
     
     // cleanup
     ep_data.set_validforms(1);
     ep_clnt.register_endpoint(ep_data);
+    
+    // give a bit of time for expiry
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
@@ -424,38 +592,4 @@ TEST_F(EndpointClientTest, Register)
   }
 }
 
-
-
-TEST_F(ColumnClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(ColumnServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(ConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(DbConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(DbConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(EndpointServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(IpDiscoveryClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(IpDiscoveryServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(LogRecordClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(LogRecordServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(MetaDataClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(MetaDataServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(SubClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(PubServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(PushClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(PullServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(QueryClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(QueryServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(ReqClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(RepServerTest, ImplementMe) { EXPECT_TRUE(false); }
-
-TEST_F(ConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
 
