@@ -95,10 +95,45 @@ namespace virtdb { namespace util {
     return socket_;
   }
   
+  bool
+  zmq_socket_wrapper::batch_ep_rebind(const endpoint_set & eps)
+  {
+    bool ret = (eps.size() > 0);
+    for( auto const & ep : eps )
+    {
+      try
+      {
+        bind(ep.c_str());
+      }
+      catch (const std::exception & e)
+      {
+        // ignore errors, only log them
+        LOG_ERROR("exception caught:" << E_(e) << "while trying to bind to" << V_(ep));
+        ret = false;
+      }
+    }
+    return ret;
+  }
+
   void
   zmq_socket_wrapper::batch_tcp_bind(const host_set & hosts)
   {
-    for( auto const & host : hosts )
+    host_set tmp;
+    for( auto const & h : hosts )
+    {
+      if( h == "0.0.0.0" || h == "*" )
+      {
+        // add my ips
+        net::string_vector my_ips{net::get_own_ips(true)};
+        tmp.insert(my_ips.begin(), my_ips.end());
+      }
+      else
+      {
+        tmp.insert(h);
+      }
+    }
+    
+    for( auto const & host : tmp )
     {
       std::ostringstream os;
       if( host.empty() ) continue;
@@ -110,11 +145,11 @@ namespace virtdb { namespace util {
       
       try
       {
-        bind(os.str().c_str());
+        auto ret = bind(os.str().c_str());
       }
       catch (const std::exception & e)
       {
-        // ignore errors
+        // ignore errors, only log them
         std::string text{e.what()};
         std::string endpoint{os.str()};
         LOG_ERROR("exception caught" << V_(text) << "while trying to bind to" << V_(endpoint));
@@ -122,11 +157,15 @@ namespace virtdb { namespace util {
     }
   }
   
-  void
+  zmq_socket_wrapper::endpoint_info
   zmq_socket_wrapper::bind (const char *addr)
   {
-    if( !addr ) return;
+    endpoint_info ret;
+    if( !addr ) return ret;
     
+    // try to bind first. all machinery below from this point
+    // is for determining our IP and Port in case of wildcard
+    // bind()s
     socket_.bind(addr);
     set_valid();
     
@@ -170,8 +209,9 @@ namespace virtdb { namespace util {
             }
             else
             {
-              own_ips = net::get_own_ips(true);
+              own_ips = net::get_own_ips(false);
             }
+            
             for( auto const & ip : own_ips )
             {
               std::ostringstream os;
@@ -184,6 +224,10 @@ namespace virtdb { namespace util {
                 os << "tcp://" << ip << ':' << last_zmq_port;
               }
               endpoints_.insert(os.str());
+              
+              ret.host_ = ip;
+              ret.port_ = last_zmq_port;
+              ret.endpoint_ = os.str();
             }
           }
         }
@@ -192,7 +236,9 @@ namespace virtdb { namespace util {
     else
     {
       endpoints_.insert(addr);
+      ret.endpoint_ = addr;
     }
+    return ret;
   }
   
   void

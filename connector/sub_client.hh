@@ -86,7 +86,7 @@ namespace virtdb { namespace connector {
           if( !socket_.get().recv(&message) )
             return true;
 
-          auto i = allocate_sub_item();
+          auto i = sub_item_sptr{new sub_item};
           if( i->ParseFromArray(message.data(), message.size()) )
           {
             queue_.push(std::move(std::make_pair(subscription,i)));
@@ -101,16 +101,14 @@ namespace virtdb { namespace connector {
       }
       catch (const zmq::error_t & e)
       {
-        std::string text{e.what()};
-        LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
+        LOG_ERROR("zmq::poll failed with exception" << E_(e) << "delaying subscription loop");
         lock l(sockets_mtx_);
         socket_.disconnect_all();
         return true;
       }
       catch (const std::exception & e)
       {
-        std::string exception_text{e.what()};
-        LOG_ERROR("couldn't parse message" << exception_text);
+        LOG_ERROR("couldn't parse message" << E_(e));
       }
       catch( ... )
       {
@@ -166,7 +164,6 @@ namespace virtdb { namespace connector {
       // this machinery makes sure we reconnect whenever the endpoint changes
       ep_clnt.watch(service_type, [this](const interface::pb::EndpointData & ep) {
         
-        bool no_change = true;
         std::string server_name = this->server();
         if( ep.name() == server_name )
         {
@@ -184,7 +181,6 @@ namespace virtdb { namespace connector {
                     LOG_INFO("connecting to" << V_(server_name) <<  V_(addr));
                     lock l(sockets_mtx_);
                     socket_.reconnect(addr.c_str());
-                    no_change = false;
                     break;
                   }
                   catch( const std::exception & e )
@@ -203,7 +199,6 @@ namespace virtdb { namespace connector {
             }
           }
         }
-        return no_change;
       });
       
       worker_.start();
@@ -309,30 +304,7 @@ namespace virtdb { namespace connector {
     {
       socket_.wait_valid();
     }
-    
-    sub_item_sptr allocate_sub_item()
-    {
-      return allocate_sub_item_impl();
-    }
-    
-    void release_sub_item(sub_item_sptr && i)
-    {
-      release_pull_item_impl(std::move(i));
-    }
-    
-  protected:
-    virtual sub_item_sptr allocate_sub_item_impl()
-    {
-      // this is the place to recycle pointers if really wanted
-      sub_item_sptr ret{new SUB_ITEM};
-      return ret;
-    }
-    
-    virtual void release_sub_item_impl(sub_item_sptr && i)
-    {
-      // make sure, refcount is 0 if recycled ...
-    }
-    
+      
   private:
     sub_client() = delete;
     sub_client(const sub_client & other)  = delete;

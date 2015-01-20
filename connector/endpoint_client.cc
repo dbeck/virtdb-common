@@ -20,20 +20,34 @@ namespace virtdb { namespace connector {
   const std::string & endpoint_client::service_ep() const { return name_; }
   
   endpoint_client::endpoint_client(const std::string & svc_config_ep,
-                                   const std::string & service_name,
-                                   size_t n_retries_on_exception,
-                                   bool die_on_exception)
+                                   const std::string & service_name)
   : service_ep_(svc_config_ep),
     name_(service_name),
     zmqctx_(1),
     ep_req_socket_(zmqctx_, ZMQ_REQ),
     ep_sub_socket_(zmqctx_,ZMQ_SUB),
     worker_(std::bind(&endpoint_client::worker_function,this),
-            n_retries_on_exception,
-            die_on_exception)
+            /* the preferred way is to rethrow exceptions if any on the other
+               thread, rather then die */
+            10, false),
+    queue_(1,std::bind(&endpoint_client::async_handle_data,
+                       this,
+                       std::placeholders::_1))
   {
+    if( svc_config_ep.empty() ) { THROW_("config service endpoint is empty"); }
+    if( service_name.empty() )  { THROW_("service name is empty"); }
+
     process_info::set_app_name(name_);
-    ep_req_socket_.connect(svc_config_ep.c_str());
+
+    try
+    {
+      ep_req_socket_.connect(svc_config_ep.c_str());
+    }
+    catch(const std::exception & e)
+    {
+      LOG_ERROR("exception during connect to" << V_(svc_config_ep) << E_(e));
+      THROW_("std::exception: failed to connect to endpoint service");
+    }
     
     // setup a monitor so handle_endpoint_data will connect
     // the sub socket when we receive one
@@ -45,31 +59,32 @@ namespace virtdb { namespace connector {
               auto conn = ep.connections(i);
               if( conn.type() == pb::ConnectionType::PUB_SUB )
               {
-                for( int ii=0; ii<conn.address_size(); ++ii )
+                if( !ep_sub_socket_.connected_to(conn.address().begin(),
+                                          conn.address().end()) )
                 {
-                  try
+                  for( int ii=0; ii<conn.address_size(); ++ii )
                   {
-                    // TODO : revise this later : only one subscription is allowed
-                    ep_sub_socket_.connect(conn.address(ii).c_str());
-                    ep_sub_socket_.setsockopt(ZMQ_SUBSCRIBE, "*", 0);
-
-                    // telling that we are done and don't want more addresses
-                    return false;
-                  }
-                  catch (const std::exception & e)
-                  {
-                    std::string text{e.what()};
-                    LOG_ERROR("exception caught" << V_(text));
-                  }
-                  catch (...)
-                  {
-                    LOG_ERROR("unknown exception caught");
-                    // ignore connection failure
+                    try
+                    {
+                      // TODO : revise this later : only one subscription is allowed
+                      ep_sub_socket_.connect(conn.address(ii).c_str());
+                      ep_sub_socket_.get().setsockopt(ZMQ_SUBSCRIBE, "*", 0);
+                      return;
+                    }
+                    catch (const std::exception & e)
+                    {
+                      std::string text{e.what()};
+                      LOG_ERROR("exception caught" << V_(text));
+                    }
+                    catch (...)
+                    {
+                      LOG_ERROR("unknown exception caught");
+                      // ignore connection failure
+                    }
                   }
                 }
               }
             }
-            return true;
           });
     
     pb::EndpointData ep_data;
@@ -84,24 +99,60 @@ namespace virtdb { namespace connector {
   endpoint_client::register_endpoint(const interface::pb::EndpointData & ep_data,
                                      monitor m)
   {
+    if( !m ) { THROW_("invalid monitor in endpoint client"); }
+    if( ep_data.ByteSize() <= 0 )   { THROW_("empty EndpointData"); }
+    if( !ep_data.IsInitialized() )  { THROW_("ep_data is not initialized"); }
+    if( !ep_data.has_name() )       { THROW_("missing name from ep_data"); }
+    
     pb::Endpoint ep;
     auto ep_data_ptr = ep.add_endpoints();
-    ep_data_ptr->MergeFrom(ep_data);
+    
+    if( !ep_data_ptr ) { THROW_("cannot add new ep_data to endpoint set"); }
+
+    try
+    {
+      ep_data_ptr->MergeFrom(ep_data);
+    }
+    catch (const std::exception & e)
+    {
+      LOG_ERROR("Failed to merge" << M_(ep_data) << E_(e));
+      THROW_("couldn't merge EdpointData");
+    }
 
     int ep_size = ep.ByteSize();
-    bool run_monitor = true;
     
     if( ep_size > 0 )
     {
       flex_alloc<char, 256> buffer(ep_size);
-      bool serialized = ep.SerializeToArray(buffer.get(), ep_size);
-      if( !serialized )
+      bool serialized = false;
+      
+      try
       {
-        THROW_("Couldn't serialize endpoint data");
+        serialized = ep.SerializeToArray(buffer.get(), ep_size);
       }
-      ep_req_socket_.send( buffer.get(), ep_size );
+      catch (const std::exception & e)
+      {
+        LOG_ERROR("Failed to serialize" << M_(ep) << E_(e));
+        serialized = false;
+      }
+      
+      if( !serialized ) { THROW_("Couldn't serialize endpoint data"); }
+      
       zmq::message_t msg;
-      ep_req_socket_.recv(&msg);
+      bool message_sent = false;
+      try
+      {
+        message_sent = ep_req_socket_.send( buffer.get(), ep_size );
+      }
+      catch (const std::exception & e)
+      {
+        LOG_ERROR("Failed to send" << M_(ep) << E_(e));
+        message_sent = false;
+      }
+      
+      if( !message_sent ) { THROW_("Couldn't send enpoint message"); }
+      
+      ep_req_socket_.get().recv(&msg);
       
       if( !msg.data() || !msg.size() )
       {
@@ -119,43 +170,64 @@ namespace virtdb { namespace connector {
       {
         try
         {
-          if( run_monitor )
-            run_monitor = m(peers.endpoints(i));
+          m(peers.endpoints(i));
         }
         catch( const std::exception & e)
         {
-          LOG_ERROR("exception caught" << E_(e));
-          run_monitor = false;
+          LOG_ERROR("exception caught" << E_(e) << "when processing" << M_(ep_data));
         }
         catch( ... )
         {
-          LOG_ERROR("unknown exception caught");
-          run_monitor = false;
+          LOG_ERROR("unknown exception caught" << "when processing" << M_(ep_data));
         }
-        handle_endpoint_data(peers.endpoints(i));
+        queue_.push(peers.endpoints(i));
       }
+    }
+    else
+    {
+      THROW_("empty endpoint data");
+    }
+  }
+  
+  void
+  endpoint_client::async_handle_data(ep_data_item ep)
+  {
+    try
+    {
+      handle_endpoint_data(ep);
+    }
+    catch( const std::exception & e )
+    {
+      LOG_ERROR("caught exception" << E_(e) << "while processing" << M_(ep));
+    }
+    catch( ... )
+    {
+      LOG_ERROR("caught unknown exception while processing" << M_(ep));
     }
   }
   
   bool
   endpoint_client::worker_function()
   {
-    if( !ep_sub_socket_.connected() )
+    try
     {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-    else
-    {
-      zmq::pollitem_t poll_item{ ep_sub_socket_, 0, ZMQ_POLLIN, 0 };
-      if( zmq::poll(&poll_item, 1, DEFAULT_TIMEOUT_MS) == -1 ||
-         !(poll_item.revents & ZMQ_POLLIN) )
-      {
+      if( !ep_sub_socket_.wait_valid(util::DEFAULT_TIMEOUT_MS) )
         return true;
-      }
       
+      if( !ep_sub_socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
+        return true;
+    }
+    catch (const zmq::error_t & e)
+    {
+      LOG_ERROR("zmq::poll failed with exception" << E_(e) << "delaying subscription loop");
+      return true;
+    }
+    
+    try
+    {
       zmq::message_t msg;
 
-      if( ep_sub_socket_.recv(&msg) )
+      if( ep_sub_socket_.get().recv(&msg) )
       {
         if( !msg.data() || !msg.size() )
         {
@@ -168,7 +240,7 @@ namespace virtdb { namespace connector {
         const char * msg_ptr = (const char *)msg.data();
         if( msg.more() && msg_ptr[0] >= '0' && msg_ptr[0] <= '9' )
         {
-          ep_sub_socket_.recv(&msg);
+          ep_sub_socket_.get().recv(&msg);
         }
         
         pb::Endpoint peers;
@@ -180,12 +252,27 @@ namespace virtdb { namespace connector {
         }
         
         for( int i=0; i<peers.endpoints_size(); ++i )
-          handle_endpoint_data(peers.endpoints(i));
+        {
+          queue_.push(peers.endpoints(i));
+        }
       }
       else
       {
         LOG_ERROR("ep_sub_socket_.recv() failed");
       }
+    }
+    catch (const zmq::error_t & e)
+    {
+      LOG_ERROR("zmq::poll failed with exception" << E_(e) << "delaying subscription loop");
+      return true;
+    }
+    catch (const std::exception & e)
+    {
+      LOG_ERROR("couldn't parse message" << E_(e));
+    }
+    catch( ... )
+    {
+      LOG_ERROR("unknown exception");
     }
     return true;
   }
@@ -194,6 +281,11 @@ namespace virtdb { namespace connector {
   endpoint_client::handle_endpoint_data(const interface::pb::EndpointData & ep)
   {
     LOG_TRACE("handle endpoint data" << M_(ep) << V_((int)ep.svctype()) );
+    if( ep.svctype() == interface::pb::ServiceType::NONE )
+    {
+      return;
+    }
+
     std::lock_guard<std::mutex> lock(mtx_);
     {
       // run monitors first
@@ -239,6 +331,7 @@ namespace virtdb { namespace connector {
   endpoint_client::watch(interface::pb::ServiceType st,
                          monitor m)
   {
+    if( !m ) { THROW_("invalid monitor in endpoint client"); }
     LOG_TRACE("start watching" << V_((int)st));
     std::lock_guard<std::mutex> lock(mtx_);
     {
@@ -257,39 +350,61 @@ namespace virtdb { namespace connector {
       {
         if( ep.svctype() == st )
         {
-          if( !fire_monitor(m, ep) ) break;
+          fire_monitor(m, ep);
         }
       }
     }
   }
-
+  
   bool
+  endpoint_client::get(const std::string & ep_name,
+                       interface::pb::ServiceType st,
+                       interface::pb::EndpointData & result) const
+  {
+    interface::pb::EndpointData dt;
+    dt.set_name(ep_name);
+    dt.set_svctype(st);
+    {
+      std::lock_guard<std::mutex> lock(mtx_);
+      auto it = endpoints_.find(dt);
+      if( it != endpoints_.end() )
+      {
+        result = *it;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void
   endpoint_client::fire_monitor(monitor & m,
                                 const interface::pb::EndpointData & ep)
   {
     LOG_TRACE("run monitior for" << M_(ep) << V_((int)ep.svctype()));
-
-    bool ret = true;
+    if( ep.svctype() == interface::pb::ServiceType::NONE )
+    {
+      // ignore this service type and save others time too
+      // by returning here
+    }
     
     try
     {
-      ret = m(ep);
+      m(ep);
     }
     catch( const std::exception & e )
     {
-      std::string text{e.what()};
-      LOG_ERROR("caught exception" << V_(text));
+      LOG_ERROR("caught exception" << E_(e));
     }
     catch( ... )
     {
       LOG_ERROR("caught unknown exception");
     }
-    return ret;
   }
   
   endpoint_client::~endpoint_client()
   {
     worker_.stop();
+    queue_.stop();
   }
   
   void
@@ -297,6 +412,7 @@ namespace virtdb { namespace connector {
   {
     remove_watches();
     worker_.stop();
+    queue_.stop();
   }
   
   void

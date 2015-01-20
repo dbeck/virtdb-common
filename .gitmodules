@@ -8,8 +8,8 @@
 	branch = master
 [submodule "proto"]
 	path = proto
-	url = https://github.com/starschema/virtdb-proto.git
-	branch = master
+	url = https://github.com/dbeck/virtdb-proto.git
+	branch = refactor-cleanup-2015-01
 [submodule "lz4"]
 	path = lz4
 	url = https://github.com/starschema/lz4.git

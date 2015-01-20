@@ -47,14 +47,10 @@ namespace virtdb { namespace connector {
   }
   
   log_record_client::log_record_client(endpoint_client & ep_client,
-                                       const std::string & server_name,
-                                       size_t n_retries_on_exception,
-                                       bool die_on_exception)
+                                       const std::string & server_name)
   : req_base_type(ep_client, server_name),
     sub_base_type(ep_client,
-                  server_name,
-                  n_retries_on_exception,
-                  die_on_exception),
+                  server_name),
     zmqctx_(1),
     logger_push_socket_(new util::zmq_socket_wrapper(zmqctx_,ZMQ_PUSH)),
     log_sink_sptr_(new log_sink(logger_push_socket_))
@@ -63,27 +59,24 @@ namespace virtdb { namespace connector {
     
     ep_client.watch(pb::ServiceType::LOG_RECORD,
                     [this](const pb::EndpointData & ep) {
-                      return this->on_endpoint_data(ep);
+                      this->on_endpoint_data(ep);
                     });
   }
   
-  bool
+  void
   log_record_client::on_endpoint_data(const interface::pb::EndpointData & ep)
   {
-    bool no_change = true;
-    
     std::function<bool(util::zmq_socket_wrapper & sock,
                        const std::string & addr)> connect_socket =
     {
-      [this,&no_change](util::zmq_socket_wrapper & sock,
+      [this](util::zmq_socket_wrapper & sock,
                         const std::string & addr)
       {
-        bool ret = false;
         try
         {
           lock l(sockets_mtx_);
           sock.reconnect(addr.c_str());
-          ret = true;
+          return true;
         }
         catch( const std::exception & e )
         {
@@ -94,7 +87,7 @@ namespace virtdb { namespace connector {
         {
           LOG_ERROR("unknown exception in connect_socket lambda function");
         }
-        return ret;
+        return false;
       }
     };
     
@@ -113,14 +106,12 @@ namespace virtdb { namespace connector {
             {
               log_sink_sptr_.reset(new log_sink(logger_push_socket_));
               LOG_TRACE("logger configured" << V_(conn.address(ii)));
-              no_change = false;
               break;
             }
           }
         }
       } // end PUSH_PULL
     }
-    return no_change;
   }
   
   log_record_client::~log_record_client()

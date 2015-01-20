@@ -18,9 +18,7 @@ namespace virtdb { namespace connector {
     
   public:
     column_client(endpoint_client & ep_client,
-                  const std::string & server_name,
-                  size_t n_retries_on_exception=10,
-                  bool die_on_exception=true);
+                  const std::string & server_name);
     ~column_client();
     
     void cleanup();

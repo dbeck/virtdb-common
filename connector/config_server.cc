@@ -37,8 +37,10 @@ namespace virtdb { namespace connector {
                             std::placeholders::_2),
                   std::bind(&config_server::publish_config,
                             this,
-                            std::placeholders::_1)),
-    pub_base_type(cfg_client),
+                            std::placeholders::_1),
+                  pb::ServiceType::CONFIG),
+    pub_base_type(cfg_client,
+                  pb::ServiceType::CONFIG),
     additional_hosts_(endpoint_hosts(ep_server))
   {
     // setting up our own endpoints
@@ -80,7 +82,7 @@ namespace virtdb { namespace connector {
     
     if( cfg_it != configs_.end() && !request.configdata_size() )
     {
-      ret = allocate_pub_item(cfg_it->second);
+      ret = rep_item_sptr{new rep_base_type::rep_item(cfg_it->second)};
     }
     
     if( request.configdata_size() )
@@ -95,7 +97,7 @@ namespace virtdb { namespace connector {
     if( !ret )
     {
       // send back the original request
-      ret = allocate_pub_item(request);
+      ret = rep_item_sptr{new rep_base_type::rep_item(request)};
     }
     
     handler(ret,false);
@@ -107,5 +109,5 @@ namespace virtdb { namespace connector {
     return additional_hosts_;
   }
   
-  config_server::~config_server() { }
+  config_server::~config_server() {}
 }}

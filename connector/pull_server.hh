@@ -15,7 +15,8 @@ namespace virtdb { namespace connector {
   class pull_server : public server_base
   {
   public:
-    typedef std::shared_ptr<ITEM>                pull_item_sptr;
+    typedef ITEM                                 pull_item;
+    typedef std::shared_ptr<pull_item>           pull_item_sptr;
     typedef std::function<void(pull_item_sptr)>  pull_handler;
     
   private:
@@ -41,7 +42,7 @@ namespace virtdb { namespace connector {
       
       try
       {
-        auto i = allocate_pull_item();
+        auto i = pull_item_sptr{new pull_item};
         if( i->ParseFromArray(message.data(), message.size()) )
         {
           queue_.push(std::move(i));
@@ -53,8 +54,7 @@ namespace virtdb { namespace connector {
       }
       catch (const std::exception & e)
       {
-        std::string exception_text{e.what()};
-        LOG_ERROR("couldn't parse message" << exception_text);
+        LOG_ERROR("couldn't parse message" << E_(e));
       }
       catch( ... )
       {
@@ -72,7 +72,6 @@ namespace virtdb { namespace connector {
         {
           h_(it);
         }
-        release_pull_item(std::move(it));
       }
       catch(const std::exception & e)
       {
@@ -88,21 +87,39 @@ namespace virtdb { namespace connector {
   public:
     pull_server(config_client & cfg_client,
                 pull_handler h,
-                size_t n_retries_on_exception=10,
-                bool die_on_exception=true)
+                interface::pb::ServiceType st)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PULL),
       worker_(std::bind(&pull_server::worker_function,
                         this),
-              n_retries_on_exception,
-              die_on_exception),
+              /* catch exception and ignore request.
+                 users expected to check exceptions by calling
+                 rethrow_error(). */
+              10, false),
       queue_(1,std::bind(&pull_server::process_function,
                          this,
                          std::placeholders::_1)),
       h_(h)
     {
-      socket_.batch_tcp_bind(hosts());
+      // save endpoint_client ref
+      endpoint_client & ep_client{cfg_client.get_endpoint_client()};
+      
+      // save endpoint_set ref
+      util::zmq_socket_wrapper::endpoint_set
+      ep_set{registered_endpoints(ep_client,
+                                  st,
+                                  interface::pb::ConnectionType::PUSH_PULL)};
+      
+      if( !socket_.batch_ep_rebind(ep_set) )
+      {
+        socket_.batch_tcp_bind(hosts());
+      }
+      else
+      {
+        LOG_TRACE("rebound to previous endpoint addresses");
+      }
+      
       worker_.start();
       
       // saving endpoint where we are bound to
@@ -128,30 +145,7 @@ namespace virtdb { namespace connector {
     {
       worker_.rethrow_error();
     }
-    
-    pull_item_sptr allocate_pull_item()
-    {
-      return allocate_pull_item_impl();
-    }
-    
-    void release_pull_item(pull_item_sptr && i)
-    {
-      release_pull_item_impl(std::move(i));
-    }
-    
-  protected:
-    virtual pull_item_sptr allocate_pull_item_impl()
-    {
-      // this is the place to recycle pointers if really wanted
-      pull_item_sptr ret{new ITEM};
-      return ret;
-    }
-    
-    virtual void release_pull_item_impl(pull_item_sptr && i)
-    {
-      // make sure, refcount is 0 if recycled ...
-    }
-    
+        
   private:
     pull_server() = delete;
     pull_server(const pull_server & other)  = delete;

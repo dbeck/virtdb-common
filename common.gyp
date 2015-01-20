@@ -6,9 +6,9 @@
     'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none/)',
     'has_sodium':         '<!(./file_exists.sh <(sodium_libdir))',
     'common_ldflagsx':  [
-                          '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install)',
-                          '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install)',
-                          '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+                          '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install /usr/local/lib)',
+                          '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install /usr/local/lib)',
+                          '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install /usr/local/lib)',
                         ],
     'common_libsx':     [
                           '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
@@ -280,10 +280,7 @@
                              'common_with_faults',
                            ],
       'include_dirs':      [ './gtest/include/', ],
-      'cflags': [
-        '-std=c++11',
-        '-Wall',
-      ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [
                              'test/gtest_main.cc',
                              'test/value_type_test.cc',   'test/value_type_test.hh',
@@ -294,6 +291,18 @@
                              'test/engine_test.cc',       'test/engine_test.hh',
                              'test/fault_test.cc',        'test/fault_test.hh',
                            ],
+    },
+    {
+      'target_name':       'cfgsvc_mock',
+      'type':              'executable',
+      'dependencies':      [
+                             'proto/proto.gyp:*',
+                             'gtest/gyp/gtest.gyp:gtest_lib',
+                             'common',
+                           ],
+      'include_dirs':      [ './gtest/include/', ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
+      'sources':           [ 'test/cfgsvc_mock.cc', ],
     },
     {
       'target_name':       'murmur3',

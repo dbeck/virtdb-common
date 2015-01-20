@@ -138,8 +138,7 @@ namespace virtdb { namespace connector {
       }
       catch (const std::exception & e)
       {
-        std::string text{e.what()};
-        LOG_ERROR("couldn't parse message. exception" << V_(text));
+        LOG_ERROR("couldn't parse message. exception" << E_(e));
       }
       catch( ... )
       {
@@ -153,19 +152,37 @@ namespace virtdb { namespace connector {
     rep_server(config_client & cfg_client,
                rep_handler handler,
                on_reply on_rep,
-               size_t n_retries_on_exception=10,
-               bool die_on_exception=true)
+               interface::pb::ServiceType st)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_REP),
       worker_(std::bind(&rep_server::worker_function,
                         this),
-              n_retries_on_exception,
-              die_on_exception),
+              /* catch exception and ignore request.
+                 users are expected to check exceptions by calling
+                 rethrow_error() */
+              10, false),
       rep_handler_(handler),
       on_reply_(on_rep)
     {
-      socket_.batch_tcp_bind(hosts());
+      // save endpoint_client ref
+      endpoint_client & ep_client{cfg_client.get_endpoint_client()};
+      
+      // save endpoint_set ref
+      util::zmq_socket_wrapper::endpoint_set
+      ep_set{registered_endpoints(ep_client,
+                                  st,
+                                  interface::pb::ConnectionType::REQ_REP)};
+      
+      if( !socket_.batch_ep_rebind(ep_set) )
+      {
+        socket_.batch_tcp_bind(hosts());
+      }
+      else
+      {
+        LOG_TRACE("rebound to previous endpoint addresses");
+      }
+      
       worker_.start();
       
       // saving endpoint where we are bound to

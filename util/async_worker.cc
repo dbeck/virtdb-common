@@ -11,6 +11,7 @@ namespace virtdb { namespace util {
     start_barrier_{2},
     stop_barrier_{2},
     stop_{false},
+    started_{false},
     thread_{std::bind(&async_worker::entry,this)},
     n_retries_on_exception_{n_retries_on_exception},
     die_on_exception_{die_on_exception}
