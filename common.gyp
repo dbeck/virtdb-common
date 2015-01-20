@@ -275,8 +275,8 @@
       'type':              'executable',
       'defines':           [ 'INJECT_FAULTS', ],
       'dependencies':      [
-                             'proto/proto.gyp:*',
                              'gtest/gyp/gtest.gyp:gtest_lib',
+                             'proto/proto.gyp:*',
                              'common_with_faults',
                            ],
       'include_dirs':      [ './gtest/include/', ],
@@ -296,8 +296,8 @@
       'target_name':       'cfgsvc_mock',
       'type':              'executable',
       'dependencies':      [
-                             'proto/proto.gyp:*',
                              'gtest/gyp/gtest.gyp:gtest_lib',
+                             'proto/proto.gyp:*',
                              'common',
                            ],
       'include_dirs':      [ './gtest/include/', ],
