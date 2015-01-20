@@ -24,6 +24,7 @@ namespace virtdb { namespace util {
     barrier(unsigned int nthreads);
     ~barrier();
     void wait();
+    bool wait_for(unsigned int timeout_ms);
     bool ready();
     void reset();
   };

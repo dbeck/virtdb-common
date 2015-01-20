@@ -33,7 +33,7 @@ namespace virtdb { namespace util {
   public:
     async_worker(std::function<bool(void)> worker,
                  size_t n_retries_on_exception=10,
-                 bool die_on_exception=true);
+                 bool die_on_exception=false);
     ~async_worker();
     void stop();
     void start();

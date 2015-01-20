@@ -14,8 +14,7 @@ namespace virtdb { namespace connector {
   {
   public:
     typedef std::set<std::string> endpoint_set;
-    ip_discovery_server(size_t n_retries_on_exception=10,
-                        bool die_on_exception=true);
+    ip_discovery_server();
     ~ip_discovery_server();
     
     void cleanup();

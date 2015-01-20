@@ -168,8 +168,7 @@ namespace virtdb { namespace util {
           }
           catch( const std::exception & e )
           {
-            std::string exception_text(e.what());
-            LOG_ERROR("exception caught: " << exception_text);
+            LOG_ERROR("exception caught: " << E_(e));
           }
           catch(...)
           {

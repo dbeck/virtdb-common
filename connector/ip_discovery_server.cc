@@ -44,11 +44,11 @@ namespace virtdb { namespace connector {
     }
   }
   
-  ip_discovery_server::ip_discovery_server(size_t n_retries_on_exception,
-                                           bool die_on_exception)
+  ip_discovery_server::ip_discovery_server()
   : worker_(std::bind(&ip_discovery_server::handle_requests,this),
-            n_retries_on_exception,
-            die_on_exception),
+            /* the preferred way is to rethrow exceptions if any on the other
+               thread, rather then die */
+            10, false),
     fd_ipv4_(-1),
     fd_ipv6_(-1)
   {

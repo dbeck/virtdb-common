@@ -19,8 +19,10 @@ namespace virtdb { namespace connector {
                             std::placeholders::_2),
                   std::bind(&meta_data_server::publish_meta,
                             this,
-                            std::placeholders::_1)),
-    pub_base_type(cfg_client)
+                            std::placeholders::_1),
+                  pb::ServiceType::META_DATA),
+    pub_base_type(cfg_client,
+                  pb::ServiceType::META_DATA)
   {
     pb::EndpointData ep_data;
     {

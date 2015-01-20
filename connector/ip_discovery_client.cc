@@ -178,6 +178,7 @@ namespace virtdb { namespace connector {
     std::promise<endpoint_vector> ip_discovery_promise;
     std::future<endpoint_vector>  ip_discovery_data{ip_discovery_promise.get_future()};
     
+    // TODO, FIXME : promise, future 
     ep_clnt.watch(pb::ServiceType::IP_DISCOVERY,
                   [&ip_discovery_promise](const pb::EndpointData & ep) {
                     //
@@ -199,12 +200,6 @@ namespace virtdb { namespace connector {
                     {
                       // we don't need more IP_DISCOVERY endpoints
                       ip_discovery_promise.set_value(result);
-                      return false;
-                    }
-                    else
-                    {
-                      // continue iterating over IP_DISCOVERY endpoints
-                      return true;
                     }
                   });
     
