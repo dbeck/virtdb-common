@@ -48,7 +48,7 @@ DATASRC_SRCS         := $(wildcard datasrc/*.cc)
 FAULT_SRCS           := $(wildcard fault/*.cc)
 LZ4_SRCS             := lz4/lz4.c  lz4/lz4hc.c
 MURMUR3_SRCS         := murmur3/murmur3.c
-TEST_SRCS_WILDCARD   := $(wildcard test/*.cc)
+TEST_SRCS_WILDCARD   := $(wildcard test/*_test.cc) test/gtest_main.cc
 TEST_EXCLUDES        := test/gtest_main.cc
 TEST_SRCS            := $(filter-out $(TEST_EXCLUDES),$(TEST_SRCS_WILDCARD))
 
