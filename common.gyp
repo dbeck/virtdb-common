@@ -5,12 +5,14 @@
     'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
     'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none/)',
     'has_sodium':         '<!(./file_exists.sh <(sodium_libdir))',
-    'common_ldflagsx':  [
+    'common_ldflags':   [
                           '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install /usr/local/lib)',
                           '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install /usr/local/lib)',
                           '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install /usr/local/lib)',
+                          '-Lgtest/libs',
+                          '-Lgtest/libs/.lib',
                         ],
-    'common_libsx':     [
+    'common_libs':      [
                           '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
                           '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)" )',
                           '<(sodium_lib)',
@@ -138,7 +140,7 @@
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
           'OTHER_LDFLAGS':    [
                                 '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
-                                '<@(common_ldflagsx)',
+                                '<@(common_ldflags)',
                               ],
           'OTHER_CFLAGS':     [ '-I<!(pwd)/', '-I<!(pwd)/cppzmq/', ],
         },
@@ -149,10 +151,10 @@
         'link_settings': {
           'ldflags':          [
                                 '-Wl,--no-as-needed', 
-                                '<@(common_ldflagsx)',
+                                '<@(common_ldflags)',
                               ],
           'libraries':        [
-                                '<@(common_libsx)',
+                                '<@(common_libs)',
                                 '-lrt',
                               ],
         },
@@ -188,10 +190,10 @@
             'include_dirs':       [ '.', ],
             'link_settings': {
               'ldflags':          [
-                                    '<@(common_ldflagsx)',
+                                    '<@(common_ldflags)',
                                   ],
               'libraries':        [
-                                    '<@(common_libsx)',
+                                    '<@(common_libs)',
                                     '-lrt',
                                   ],
             },
@@ -243,10 +245,10 @@
             'include_dirs':       [ '.', ],
             'link_settings': {
               'ldflags':          [
-                                    '<@(common_ldflagsx)',
+                                    '<@(common_ldflags)',
                                   ],
               'libraries':        [
-                                    '<@(common_libsx)',
+                                    '<@(common_libs)',
                                     '-lrt',
                                   ],
             },
