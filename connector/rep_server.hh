@@ -166,7 +166,7 @@ namespace virtdb { namespace connector {
       on_reply_(on_rep)
     {
       // save endpoint_client ref
-      endpoint_client & ep_client{cfg_client.get_endpoint_client()};
+      endpoint_client & ep_client = cfg_client.get_endpoint_client();
       
       // save endpoint_set ref
       util::zmq_socket_wrapper::endpoint_set

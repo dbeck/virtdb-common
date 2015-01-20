@@ -84,7 +84,7 @@ namespace virtdb { namespace connector {
                          std::placeholders::_1))
     {
       // save endpoint_client ref
-      endpoint_client & ep_client{cfg_client.get_endpoint_client()};
+      endpoint_client & ep_client = cfg_client.get_endpoint_client();
       
       // save endpoint_set ref
       util::zmq_socket_wrapper::endpoint_set
