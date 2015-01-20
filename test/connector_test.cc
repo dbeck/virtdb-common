@@ -148,7 +148,7 @@ TEST_F(ServerBaseTest, ConstuctHostSet)
   config_client     cfg_clnt(ep_clnt, "config-service");
 
   server_base bs(cfg_clnt);
-  auto const & host_set{bs.hosts()};  
+  auto const & host_set{bs.hosts()};
 }
 
 TEST_F(EndpointClientTest, StressWatch)

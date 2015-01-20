@@ -9,7 +9,8 @@ namespace virtdb { namespace connector {
   : pull_base_type(cfg_client,
                    std::bind(&query_server::handler_function,
                              this,
-                             std::placeholders::_1))
+                             std::placeholders::_1),
+                   pb::ServiceType::QUERY)
   {
     pb::EndpointData ep_data;
     

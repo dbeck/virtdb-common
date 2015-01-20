@@ -22,6 +22,28 @@ namespace virtdb { namespace connector {
     hosts_.insert(ip_discovery_client::get_ip(cfg_client.get_endpoint_client()));
   }
   
+  util::zmq_socket_wrapper::endpoint_set
+  server_base::registered_endpoints(endpoint_client & ep_client,
+                                    interface::pb::ServiceType st,
+                                    interface::pb::ConnectionType ct) const
+  {
+    interface::pb::EndpointData ep_data;
+    util::zmq_socket_wrapper::endpoint_set ret;
+    
+    if( ep_client.get(name(), st, ep_data) )
+    {
+      for( auto const & c : ep_data.connections() )
+      {
+        if( c.type() == ct )
+        {
+          ret.insert(c.address().begin(), c.address().end());
+        }
+      }
+    }
+    
+    return ret;
+  }
+  
   interface::pb::Connection &
   server_base::conn()
   {

@@ -86,20 +86,40 @@ namespace virtdb { namespace connector {
     
   public:
     pull_server(config_client & cfg_client,
-                pull_handler h)
+                pull_handler h,
+                interface::pb::ServiceType st)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PULL),
       worker_(std::bind(&pull_server::worker_function,
                         this),
-              /* catch exception and ignore request */
+              /* catch exception and ignore request.
+                 users expected to check exceptions by calling
+                 rethrow_error(). */
               10, false),
       queue_(1,std::bind(&pull_server::process_function,
                          this,
                          std::placeholders::_1)),
       h_(h)
     {
-      socket_.batch_tcp_bind(hosts());
+      // save endpoint_client ref
+      endpoint_client & ep_client{cfg_client.get_endpoint_client()};
+      
+      // save endpoint_set ref
+      util::zmq_socket_wrapper::endpoint_set
+      ep_set{registered_endpoints(ep_client,
+                                  st,
+                                  interface::pb::ConnectionType::PUSH_PULL)};
+      
+      if( !socket_.batch_ep_rebind(ep_set) )
+      {
+        socket_.batch_tcp_bind(hosts());
+      }
+      else
+      {
+        LOG_TRACE("rebound to previous endpoint addresses");
+      }
+      
       worker_.start();
       
       // saving endpoint where we are bound to

@@ -49,6 +49,7 @@ namespace virtdb { namespace util {
     zmq::socket_t & get();
     endpoint_info bind(const char *addr);
     void batch_tcp_bind(const host_set & hosts);
+    bool batch_ep_rebind(const endpoint_set & eps);
     void connect(const char * addr);
     void reconnect(const char * addr);
     void disconnect_all();

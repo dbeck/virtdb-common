@@ -37,8 +37,10 @@ namespace virtdb { namespace connector {
                             std::placeholders::_2),
                   std::bind(&config_server::publish_config,
                             this,
-                            std::placeholders::_1)),
-    pub_base_type(cfg_client),
+                            std::placeholders::_1),
+                  pb::ServiceType::CONFIG),
+    pub_base_type(cfg_client,
+                  pb::ServiceType::CONFIG),
     additional_hosts_(endpoint_hosts(ep_server))
   {
     // setting up our own endpoints

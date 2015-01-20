@@ -74,7 +74,8 @@ namespace virtdb { namespace connector {
     }
     
   public:
-    pub_server(config_client & cfg_client)
+    pub_server(config_client & cfg_client,
+               interface::pb::ServiceType st)
     : server_base(cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PUB),
@@ -82,7 +83,23 @@ namespace virtdb { namespace connector {
                          this,
                          std::placeholders::_1))
     {
-      socket_.batch_tcp_bind(hosts());
+      // save endpoint_client ref
+      endpoint_client & ep_client{cfg_client.get_endpoint_client()};
+      
+      // save endpoint_set ref
+      util::zmq_socket_wrapper::endpoint_set
+        ep_set{registered_endpoints(ep_client,
+                                    st,
+                                    interface::pb::ConnectionType::PUB_SUB)};
+      
+      if( !socket_.batch_ep_rebind(ep_set) )
+      {
+        socket_.batch_tcp_bind(hosts());
+      }
+      else
+      {
+        LOG_TRACE("rebound to previous endpoint addresses");
+      }
       
       // saving endpoint where we are bound to
       conn().set_type(interface::pb::ConnectionType::PUB_SUB);
