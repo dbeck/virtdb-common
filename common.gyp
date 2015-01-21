@@ -9,8 +9,6 @@
                           '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install /usr/local/lib)',
                           '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install /usr/local/lib)',
                           '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install /usr/local/lib)',
-                          '-Lgtest/libs',
-                          '-Lgtest/libs/.lib',
                         ],
     'common_libs':      [
                           '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
@@ -281,6 +279,12 @@
                              'proto/proto.gyp:*',
                              'common_with_faults',
                            ],
+      'export_dependent_settings':
+                           [
+                             'gtest/gyp/gtest.gyp:gtest_lib',
+                             'proto/proto.gyp:*',
+                             'common_with_faults',
+                           ],
       'include_dirs':      [ './gtest/include/', ],
       'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [
@@ -298,7 +302,6 @@
       'target_name':       'cfgsvc_mock',
       'type':              'executable',
       'dependencies':      [
-                             'gtest/gyp/gtest.gyp:gtest_lib',
                              'proto/proto.gyp:*',
                              'common',
                            ],
