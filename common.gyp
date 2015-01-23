@@ -86,6 +86,9 @@
                           'engine/util.hh',
                           # fault injection
                           'fault/injector.cc',           'fault/injector.hh',
+                          # cache db sources
+                          'cachedb/block_id.cc',         'cachedb/block_id.hh',
+                          'cachedb/store.cc',            'cachedb/store.hh',
                         ],
   },
   'target_defaults': {
