@@ -299,6 +299,7 @@
                              'test/datasrc_test.cc',      'test/datasrc_test.hh',
                              'test/engine_test.cc',       'test/engine_test.hh',
                              'test/fault_test.cc',        'test/fault_test.hh',
+                             'test/cachedb_test.cc',      'test/cachedb_test.hh',
                            ],
     },
     {
