@@ -7,14 +7,17 @@ LZL="-L$XP/out/Release -L$XP/out/Debug"
 ALI="$SNI $LZI"
 ALL="$SNL $LZL"
 
+MF=$MAKEFLAGS
+unset MAKEFLAGS
 rm -f rocksdb/make_config.mk
 echo XP=$XP
 cd $XP/rocksdb
 echo $PWD
 echo "CFLAGS=\"$ALI\" CXXFLAGS=\"$ALI\" LDFLAGS=\"$ALL\" make static_lib"
-CFLAGS="$ALI" CXXFLAGS="$ALI" LDFLAGS="$ALL" make static_lib
+CFLAGS="$ALI" CXXFLAGS="$ALI" LDFLAGS="$ALL" make static_lib 
 RET=$?
 cd $XP
+export MAKEFLAGS=$MF
 
 exit $RET
 

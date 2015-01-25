@@ -117,8 +117,8 @@
     'include_dirs': [
       '<!(pwd)',
       './',
-      '<(DEPTH)/cppzmq/',
-      '<(DEPTH)/proto/',
+      './cppzmq/',
+      './proto/',
       '/usr/local/include/',
       '/usr/include/',
       '<!@(pkg-config --variable=includedir protobuf libzmq)',
@@ -170,7 +170,7 @@
       'target_name':       'lz4',
       'type':              'static_library',
       'direct_dependent_settings': {
-        'include_dirs': [ '<(DEPTH)/lz4/lib', ],
+        'include_dirs': [ './lz4/lib', ],
       },
       'sources':           [
                              'lz4/lib/lz4.c',
@@ -185,15 +185,13 @@
       'dependencies':      [ 'lz4', ],
       'sources':           [ 'snappy/snappy.h', ],
       'variables': {
-        'snappy_lib':      '<(DEPTH)/snappy/.libs/libsnappy.a',
-        'snappy_include':  '-I<(DEPTH)/snappy',
-        'snappy_ldflags':  '-L<(DEPTH)/snapy',
+        'snappy_lib':      './snappy/.libs/libsnappy.a',
       },
       'actions': [ {
         'action_name':   'snappy_build',
         'inputs':        [ 'snappy/Makefile.am', ],
         'outputs':       [ '<(snappy_lib)', ],
-        'action':        [ '<(DEPTH)/build-snappy.sh',  ],
+        'action':        [ './build-snappy.sh',  ],
       },],
     },
     {
@@ -202,15 +200,15 @@
       'dependencies': [ 'lz4', 'snappy', ],
       'export_dependent_settings':
                       [ 'lz4', 'snappy', ],
-      'sources':      [ 'rocksdb/include/rocksdb/db.h', 'rocksdb/Makefile', ],
+      'sources':      [ 'rocksdb/include/rocksdb/db.h', 'rocksdb/db/c.cc', ],
       'variables': {
-        'rocksdb_lib': '<(DEPTH)/rocksdb/librocksdb.a',
+        'rocksdb_lib': './rocksdb/librocksdb.a',
       },
       'actions': [ {
         'action_name':  'rocksdb_build',
-        'inputs':     [ 'rocksdb/Makefile', ],
+        'inputs':     [ 'rocksdb/db/c.cc', ],
         'outputs':    [ '<(rocksdb_lib)', ],
-        'action':     [ '<(DEPTH)/build-rocksdb.sh', ],
+        'action':     [ './build-rocksdb.sh', ],
       } ],
     },
     {
