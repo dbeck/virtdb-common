@@ -7,7 +7,7 @@
 #include <util/exception.hh>
 #include <util/flex_alloc.hh>
 #include <logger.hh>
-#include <lz4/lz4.h>
+#include <lz4/lib/lz4.h>
 
 namespace virtdb { namespace datasrc {
 

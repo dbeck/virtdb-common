@@ -117,8 +117,8 @@
     'include_dirs': [
       '<!(pwd)',
       './',
-      './cppzmq/',
-      './proto/',
+      '<(DEPTH)/cppzmq/',
+      '<(DEPTH)/proto/',
       '/usr/local/include/',
       '/usr/include/',
       '<!@(pkg-config --variable=includedir protobuf libzmq)',
@@ -169,11 +169,14 @@
     {
       'target_name':       'lz4',
       'type':              'static_library',
+      'direct_dependent_settings': {
+        'include_dirs': [ '<(DEPTH)/lz4/lib', ],
+      },
       'sources':           [
-                             'lz4/lz4.c',
-                             'lz4/lz4.h',
-                             'lz4/lz4hc.c',
-                             'lz4/lz4hc.h',
+                             'lz4/lib/lz4.c',
+                             'lz4/lib/lz4.h',
+                             'lz4/lib/lz4hc.c',
+                             'lz4/lib/lz4hc.h',
                            ],
     },
     {
