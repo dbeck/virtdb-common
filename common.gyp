@@ -15,6 +15,12 @@
                           '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)" )',
                           '<(sodium_lib)',
                         ],
+    'cachedb_sources':
+                        [
+                          # cache db sources
+                          'cachedb/block_id.cc',         'cachedb/block_id.hh',
+                          'cachedb/store.cc',            'cachedb/store.hh',
+                        ],
     'common_sources' :  [
                           # generic utils
                           'util.hh',                  'util/constants.hh',
@@ -86,9 +92,6 @@
                           'engine/util.hh',
                           # fault injection
                           'fault/injector.cc',           'fault/injector.hh',
-                          # cache db sources
-                          'cachedb/block_id.cc',         'cachedb/block_id.hh',
-                          'cachedb/store.cc',            'cachedb/store.hh',
                         ],
   },
   'target_defaults': {
@@ -174,6 +177,23 @@
                            ],
     },
     {
+      'target_name':       'snappy',
+      'type':              'none',
+      'dependencies':      [ 'lz4', ],
+      'sources':           [ 'snappy/snappy.h', ],
+      'variables': {
+        'snappy_lib':      '<(DEPTH)/snappy/.libs/libsnappy.a',
+        'snappy_include':  '-I<(DEPTH)/snappy',
+        'snappy_ldflags':  '-L<(DEPTH)/snapy',
+      },
+      'actions': [ {
+        'action_name':   'snappy_build',
+        'inputs':        [ 'snappy/Makefile.am', ],
+        'outputs':       [ '<(snappy_lib)', ],
+        'action':        [ '<(DEPTH)/build-snappy.sh',  ],
+      },],
+    },
+    {
       'conditions': [
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
@@ -190,32 +210,18 @@
             'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', ],
             'include_dirs':       [ '.', ],
             'link_settings': {
-              'ldflags':          [
-                                    '<@(common_ldflags)',
-                                  ],
-              'libraries':        [
-                                    '<@(common_libs)',
-                                    '-lrt',
-                                  ],
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ '<@(common_libs)', '-lrt', ],
             },
           },
         },],
       ],
       'target_name':       'common',
       'type':              'static_library',
-      'dependencies':      [
-                             'lz4',
-                              'proto/proto.gyp:*',
-                           ],
+      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
       'export_dependent_settings':
-                           [
-                             'lz4',
-                             'proto/proto.gyp:*',
-                           ],
-      'cflags': [
-        '-std=c++11',
-        '-Wall',
-      ],
+                           [ 'lz4', 'proto/proto.gyp:*', ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [ '<@(common_sources)', ],
     },
     {
@@ -223,12 +229,7 @@
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [
-                                    'USING_COMMON_LIB',
-                                    'COMMON_MAC_BUILD',
-                                    # compile with faults:
-                                    'INJECT_FAULTS',
-                                  ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'INJECT_FAULTS', ],
             'include_dirs':       [ '<(common_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -237,41 +238,86 @@
         },],
         ['OS=="linux"', {
           'direct_dependent_settings': {
-            'defines':            [
-                                    'USING_COMMON_LIB',
-                                    'COMMON_LINUX_BUILD',
-                                    # compile with faults:
-                                    'INJECT_FAULTS', 
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', 'INJECT_FAULTS', 
                                   ],
             'include_dirs':       [ '.', ],
             'link_settings': {
-              'ldflags':          [
-                                    '<@(common_ldflags)',
-                                  ],
-              'libraries':        [
-                                    '<@(common_libs)',
-                                    '-lrt',
-                                  ],
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ '<@(common_libs)', '-lrt', ],
             },
           },
         },],
       ],
       'target_name':       'common_with_faults',
       'type':              'static_library',
-      'dependencies':      [
-                             'lz4',
-                             'proto/proto.gyp:*',
-                           ],
+      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
       'export_dependent_settings':
-                           [
-                             'lz4',
-                             'proto/proto.gyp:*',
-                           ],
-      'cflags': [
-        '-std=c++11',
-        '-Wall',
-      ],
+                           [ 'lz4', 'proto/proto.gyp:*', ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [ '<@(common_sources)', ],
+    },
+    {
+      'conditions': [
+        ['OS=="mac"', {
+          'variables':  { 'cachedb_root':  '<!(pwd)/../', },
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', ],
+            'include_dirs':       [ '<(cachedb_root)/', ],
+            'xcode_settings': {
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_LINUX_BUILD', ],
+            'include_dirs':       [ '.', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ '<@(common_libs)', '-lrt', ],
+            },
+          },
+        },],
+      ],
+      'target_name':       'cachedb',
+      'type':              'static_library',
+      'dependencies':      [ 'common', 'lz4', ],
+      'export_dependent_settings':
+                           [ 'common', 'lz4', ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
+      'sources':           [ '<@(cachedb_sources)', ],
+    },
+    {
+      'conditions': [
+        ['OS=="mac"', {
+          'variables':  { 'cachedb_root':  '<!(pwd)/../', },
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'INJECT_FAULTS', ],
+            'include_dirs':       [ '<(cachedb_root)/', ], # TODO: check this
+            'xcode_settings': {
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_LINUX_BUILD', 'INJECT_FAULTS', 
+                                  ],
+            'include_dirs':       [ '.', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ '<@(common_libs)', '-lrt', ],
+            },
+          },
+        },],
+      ],
+      'target_name':       'cachedb_with_faults',
+      'type':              'static_library',
+      'dependencies':      [ 'common', 'lz4', ],
+      'export_dependent_settings':
+                           [ 'common', 'lz4', ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
+      'sources':           [ '<@(cachedb_sources)', ],
     },
     {
       'target_name':       'gtest_main',
