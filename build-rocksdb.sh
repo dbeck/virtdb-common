@@ -1,17 +1,20 @@
 #!/bin/sh
 XP=$PWD
-SNI="-I$PWD/snappy"
-LZI="-I$PWD/lz4/lib"
-SNL="-L$PWD/snappy/.libs"
-LZL="-L$PWD/out/Release -L$PWD/out/Debug"
+SNI="-I$XP/snappy"
+LZI="-I$XP/lz4/lib"
+SNL="-L$XP/snappy/.libs"
+LZL="-L$XP/out/Release -L$XP/out/Debug"
 ALI="$SNI $LZI"
 ALL="$SNL $LZL"
 
-pushd rocksdb
-rm -f make_config.mk
+rm -f rocksdb/make_config.mk
+echo XP=$XP
+cd $XP/rocksdb
+echo $PWD
+echo "CFLAGS=\"$ALI\" CXXFLAGS=\"$ALI\" LDFLAGS=\"$ALL\" make static_lib"
 CFLAGS="$ALI" CXXFLAGS="$ALI" LDFLAGS="$ALL" make static_lib
 RET=$?
-popd
+cd $XP
 
 exit $RET
 
