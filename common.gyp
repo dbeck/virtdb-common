@@ -197,6 +197,23 @@
       },],
     },
     {
+      'target_name':  'rocksdb',
+      'type':         'none',
+      'dependencies': [ 'lz4', 'snappy', ],
+      'export_dependent_settings':
+                      [ 'lz4', 'snappy', ],
+      'sources':      [ 'rocksdb/include/rocksdb/db.h', 'rocksdb/Makefile', ],
+      'variables': {
+        'rocksdb_lib': '<(DEPTH)/rocksdb/librocksdb.a',
+      },
+      'actions': [ {
+        'action_name':  'rocksdb_build',
+        'inputs':     [ 'rocksdb/Makefile', ],
+        'outputs':    [ '<(rocksdb_lib)', ],
+        'action':     [ '<(DEPTH)/build-rocksdb.sh', ],
+      } ],
+    },
+    {
       'conditions': [
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
@@ -284,9 +301,9 @@
       ],
       'target_name':       'cachedb',
       'type':              'static_library',
-      'dependencies':      [ 'common', 'lz4', ],
+      'dependencies':      [ 'common', 'rocksdb', ],
       'export_dependent_settings':
-                           [ 'common', 'lz4', ],
+                           [ 'common', 'rocksdb', ],
       'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [ '<@(cachedb_sources)', ],
     },
@@ -316,9 +333,9 @@
       ],
       'target_name':       'cachedb_with_faults',
       'type':              'static_library',
-      'dependencies':      [ 'common', 'lz4', ],
+      'dependencies':      [ 'common', 'rocksdb', ],
       'export_dependent_settings':
-                           [ 'common', 'lz4', ],
+                           [ 'common', 'rocksdb', ],
       'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [ '<@(cachedb_sources)', ],
     },
