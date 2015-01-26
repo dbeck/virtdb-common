@@ -4,7 +4,8 @@ SNI="-I$XP/snappy"
 LZI="-I$XP/lz4/lib"
 SNL="-L$XP/snappy/.libs"
 LZL="-L$XP/out/Release -L$XP/out/Debug"
-ALI="$SNI $LZI"
+FKI="-I$XP/fake-includes"
+ALI="$SNI $LZI $FKI"
 ALL="$SNL $LZL"
 
 MF=$MAKEFLAGS

@@ -201,8 +201,6 @@
               'OTHER_LDFLAGS':    [
                                     './rocksdb/librocksdb.a',
                                     './snappy/.libs/libsnappy.a',
-                                    '-lbz2',
-                                    '-lz',
                                   ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
