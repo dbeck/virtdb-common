@@ -172,7 +172,7 @@
           'direct_dependent_settings': {
             'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', ],
             'xcode_settings': {
-              'OTHER_LDFLAGS':    [ './lz4/lib/liblz4.a', ],
+              'OTHER_LDFLAGS':    [ '<!(pwd)/lz4/lib/liblz4.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
           },
@@ -217,7 +217,7 @@
                              'lz4/lib/xxhash.c',
                              'lz4/lib/xxhash.h',
                            ],
-        'outputs':         [ './lz4/lib/liblz4.a', ],
+        'outputs':         [ 'lz4/lib/liblz4.a', ],
         'action':          [ 'make', '-C', 'lz4/lib', 'liblz4', ],
       },],
     },
@@ -227,7 +227,7 @@
           'direct_dependent_settings': {
             'defines':            [ 'USING_SNAPPY_LIB', 'SNAPPY_MAC_BUILD', ],
             'xcode_settings': {
-              'OTHER_LDFLAGS':    [ './snappy/.libs/libsnappy.a', ],
+              'OTHER_LDFLAGS':    [ '<!(pwd)/snappy/.libs/libsnappy.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
           },
@@ -261,7 +261,7 @@
           'direct_dependent_settings': {
             'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', ],
             'xcode_settings': {
-              'OTHER_LDFLAGS':    [ './rocksdb/librocksdb.a', ],
+              'OTHER_LDFLAGS':    [ '<!(pwd)/rocksdb/librocksdb.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
           },
