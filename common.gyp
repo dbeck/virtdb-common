@@ -167,8 +167,29 @@
   },
   'targets' : [
     {
+      'conditions': [
+        ['OS=="mac"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', ],
+            'xcode_settings': {
+              'OTHER_LDFLAGS':    [ './lz4/lib/liblz4.a', ],
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_LZ4_LIB', 'LZ4_LINUX_BUILD', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ './lz4/lib/liblz4.a', ],
+            },
+          },
+        },],
+      ],
       'target_name':       'lz4',
-      'type':              'static_library',
+      'type':              'none',
+      'hard_dependency':   1,
       'direct_dependent_settings': {
         'include_dirs': [ './lz4/lib', ],
       },
@@ -177,11 +198,53 @@
                              'lz4/lib/lz4.h',
                              'lz4/lib/lz4hc.c',
                              'lz4/lib/lz4hc.h',
+                             'lz4/lib/lz4frame.c',
+                             'lz4/lib/lz4frame.h',
+                             'lz4/lib/lz4frame_static.h',
+                             'lz4/lib/xxhash.c',
+                             'lz4/lib/xxhash.h',
                            ],
+      'actions': [ {
+        'action_name':     'lz4_build',
+        'inputs':          [
+                             'lz4/lib/lz4.c',
+                             'lz4/lib/lz4.h',
+                             'lz4/lib/lz4hc.c',
+                             'lz4/lib/lz4hc.h',
+                             'lz4/lib/lz4frame.c',
+                             'lz4/lib/lz4frame.h',
+                             'lz4/lib/lz4frame_static.h',
+                             'lz4/lib/xxhash.c',
+                             'lz4/lib/xxhash.h',
+                           ],
+        'outputs':         [ './lz4/lib/liblz4.a', ],
+        'action':          [ 'make', '-C', 'lz4/lib', 'liblz4', ],
+      },],
     },
     {
+      'conditions': [
+        ['OS=="mac"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_SNAPPY_LIB', 'SNAPPY_MAC_BUILD', ],
+            'xcode_settings': {
+              'OTHER_LDFLAGS':    [ './snappy/.libs/libsnappy.a', ],
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_SNAPPY_LIB', 'SNAPPY_LINUX_BUILD', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ './snappy/.libs/libsnappy.a', ],
+            },
+          },
+        },],
+      ],
       'target_name':       'snappy',
       'type':              'none',
+      'hard_dependency':   1,
       'dependencies':      [ 'lz4', ],
       'sources':           [ 'snappy/snappy.h', ],
       'variables':         { 'snappy_lib': './snappy/.libs/libsnappy.a', },
@@ -198,10 +261,7 @@
           'direct_dependent_settings': {
             'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', ],
             'xcode_settings': {
-              'OTHER_LDFLAGS':    [
-                                    './rocksdb/librocksdb.a',
-                                    './snappy/.libs/libsnappy.a',
-                                  ],
+              'OTHER_LDFLAGS':    [ './rocksdb/librocksdb.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
             },
           },
@@ -216,11 +276,12 @@
           },
         },],
       ],
-      'target_name':  'rocksdb',
-      'type':         'none',
+      'target_name':       'rocksdb',
+      'type':              'none',
+      'hard_dependency':   1,
       'dependencies':               [ 'lz4', 'snappy', ],
-      'export_dependent_settings':  [ 'lz4', 'snappy', ],
       'direct_dependent_settings':  { 'include_dirs': [ './rocksdb/include', ], },
+      'export_dependent_settings':  [ 'lz4', 'snappy', ],
       'sources':      [
                         'rocksdb/db/c.cc',
                         'rocksdb/include/rocksdb/db.h',
@@ -230,6 +291,7 @@
                         'rocksdb/include/rocksdb/slice_transform.h',
                         'rocksdb/include/utilities/backupable_db.h',
                         'rocksdb/utilities/backupable/backupable_db.cc',
+                        'rocksdb/table/block_based_table_builder.cc',
                       ],
       'variables': {
         'rocksdb_lib': './rocksdb/librocksdb.a',
@@ -381,6 +443,7 @@
       'type':              'executable',
       'defines':           [ 'INJECT_FAULTS', ],
       'dependencies':      [
+                             'rocksdb',
                              'gtest/gyp/gtest.gyp:gtest_lib',
                              'proto/proto.gyp:*',
                              'cachedb_with_faults',
@@ -388,8 +451,10 @@
                            ],
       'export_dependent_settings':
                            [
+                             'rocksdb',
                              'gtest/gyp/gtest.gyp:gtest_lib',
                              'proto/proto.gyp:*',
+                             'cachedb_with_faults',
                              'common_with_faults',
                            ],
       'include_dirs':      [ './gtest/include/', ],
