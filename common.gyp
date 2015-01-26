@@ -184,9 +184,7 @@
       'type':              'none',
       'dependencies':      [ 'lz4', ],
       'sources':           [ 'snappy/snappy.h', ],
-      'variables': {
-        'snappy_lib':      './snappy/.libs/libsnappy.a',
-      },
+      'variables':         { 'snappy_lib': './snappy/.libs/libsnappy.a', },
       'actions': [ {
         'action_name':   'snappy_build',
         'inputs':        [ 'snappy/Makefile.am', ],
@@ -195,18 +193,61 @@
       },],
     },
     {
+      'conditions': [
+        ['OS=="mac"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', ],
+            'xcode_settings': {
+              'OTHER_LDFLAGS':    [
+                                    './rocksdb/librocksdb.a',
+                                    './snappy/.libs/libsnappy.a',
+                                    '-lbz2',
+                                    '-lz',
+                                  ],
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_LINUX_BUILD', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ './rocksdb/librocksdb.a', ],
+            },
+          },
+        },],
+      ],
       'target_name':  'rocksdb',
       'type':         'none',
-      'dependencies': [ 'lz4', 'snappy', ],
-      'export_dependent_settings':
-                      [ 'lz4', 'snappy', ],
-      'sources':      [ 'rocksdb/include/rocksdb/db.h', 'rocksdb/db/c.cc', ],
+      'dependencies':               [ 'lz4', 'snappy', ],
+      'export_dependent_settings':  [ 'lz4', 'snappy', ],
+      'direct_dependent_settings':  { 'include_dirs': [ './rocksdb/include', ], },
+      'sources':      [
+                        'rocksdb/db/c.cc',
+                        'rocksdb/include/rocksdb/db.h',
+                        'rocksdb/include/rocksdb/env.h',
+                        'rocksdb/include/rocksdb/cache.h',
+                        'rocksdb/include/rocksdb/filter_policy.h',
+                        'rocksdb/include/rocksdb/slice_transform.h',
+                        'rocksdb/include/utilities/backupable_db.h',
+                        'rocksdb/utilities/backupable/backupable_db.cc',
+                      ],
       'variables': {
         'rocksdb_lib': './rocksdb/librocksdb.a',
       },
       'actions': [ {
         'action_name':  'rocksdb_build',
-        'inputs':     [ 'rocksdb/db/c.cc', ],
+        'inputs':     [
+                        'rocksdb/db/c.cc',
+                        'rocksdb/include/rocksdb/db.h',
+                        'rocksdb/include/rocksdb/env.h',
+                        'rocksdb/include/rocksdb/cache.h',
+                        'rocksdb/include/rocksdb/filter_policy.h',
+                        'rocksdb/include/rocksdb/slice_transform.h',
+                        'rocksdb/include/utilities/backupable_db.h',
+                        'rocksdb/utilities/backupable/backupable_db.cc',
+                      ],
         'outputs':    [ '<(rocksdb_lib)', ],
         'action':     [ './build-rocksdb.sh', ],
       } ],
@@ -344,6 +385,7 @@
       'dependencies':      [
                              'gtest/gyp/gtest.gyp:gtest_lib',
                              'proto/proto.gyp:*',
+                             'cachedb_with_faults',
                              'common_with_faults',
                            ],
       'export_dependent_settings':
