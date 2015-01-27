@@ -46,10 +46,10 @@ CONNECTOR_SRCS       := $(wildcard connector/*.cc)
 ENGINE_SRCS			 := $(wildcard engine/*.cc)
 DATASRC_SRCS         := $(wildcard datasrc/*.cc)
 FAULT_SRCS           := $(wildcard fault/*.cc)
-LZ4_SRCS             := lz4/lz4.c  lz4/lz4hc.c
+LZ4_SRCS             := lz4/lib/lz4.c lz4/lib/lz4hc.c lz4/lib/lz4frame.c lz4/lib/xxhash.c
 MURMUR3_SRCS         := murmur3/murmur3.c
 TEST_SRCS_WILDCARD   := $(wildcard test/*_test.cc) test/gtest_main.cc
-TEST_EXCLUDES        := test/gtest_main.cc
+TEST_EXCLUDES        := test/gtest_main.cc 
 TEST_SRCS            := $(filter-out $(TEST_EXCLUDES),$(TEST_SRCS_WILDCARD))
 
 UTIL_OBJECTS       := $(patsubst %.cc,%.o,$(UTIL_SRCS))
@@ -62,10 +62,11 @@ LZ4_OBJECTS        := $(patsubst %.c,%.o,$(LZ4_SRCS))
 MURMUR3_OBJECTS    := $(patsubst %.c,%.o,$(MURMUR3_SRCS))
 TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
 
-PROTO_LIB := proto/libproto.a
+PROTO_LIB  := proto/libproto.a
 COMMON_LIB := libcommon.a
 
-all: $(COMMON_LIB) gtest-test
+# all: $(COMMON_LIB) # gtest-test
+all: $(COMMON_LIB)
 
 gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECT) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
 	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(LDFLAGS)
