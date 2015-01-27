@@ -169,7 +169,7 @@
     {
       'conditions': [
         ['OS=="mac"', {
-          'direct_dependent_settings': {
+          'all_dependent_settings': {
             'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', ],
             'xcode_settings': {
               'OTHER_LDFLAGS':    [ '<!(pwd)/lz4/lib/liblz4.a', ],
@@ -178,7 +178,7 @@
           },
         },],
         ['OS=="linux"', {
-          'direct_dependent_settings': {
+          'all_dependent_settings': {
             'defines':            [ 'USING_LZ4_LIB', 'LZ4_LINUX_BUILD', ],
             'link_settings': {
               'ldflags':          [ '<@(common_ldflags)', ],
@@ -194,31 +194,23 @@
         'include_dirs': [ './lz4/lib', ],
       },
       'sources':           [
-                             'lz4/lib/lz4.c',
-                             'lz4/lib/lz4.h',
-                             'lz4/lib/lz4hc.c',
-                             'lz4/lib/lz4hc.h',
-                             'lz4/lib/lz4frame.c',
-                             'lz4/lib/lz4frame.h',
+                             'lz4/lib/lz4.c',        'lz4/lib/lz4.h',
+                             'lz4/lib/lz4hc.c',      'lz4/lib/lz4hc.h',
+                             'lz4/lib/lz4frame.c',   'lz4/lib/lz4frame.h',
+                             'lz4/lib/xxhash.c',     'lz4/lib/xxhash.h',
                              'lz4/lib/lz4frame_static.h',
-                             'lz4/lib/xxhash.c',
-                             'lz4/lib/xxhash.h',
                            ],
       'actions': [ {
         'action_name':     'lz4_build',
         'inputs':          [
-                             'lz4/lib/lz4.c',
-                             'lz4/lib/lz4.h',
-                             'lz4/lib/lz4hc.c',
-                             'lz4/lib/lz4hc.h',
-                             'lz4/lib/lz4frame.c',
-                             'lz4/lib/lz4frame.h',
+                             'lz4/lib/lz4.c',        'lz4/lib/lz4.h',
+                             'lz4/lib/lz4hc.c',      'lz4/lib/lz4hc.h',
+                             'lz4/lib/lz4frame.c',   'lz4/lib/lz4frame.h',
+                             'lz4/lib/xxhash.c',     'lz4/lib/xxhash.h',
                              'lz4/lib/lz4frame_static.h',
-                             'lz4/lib/xxhash.c',
-                             'lz4/lib/xxhash.h',
                            ],
-        'outputs':         [ 'lz4/lib/liblz4.a', ],
-        'action':          [ 'make', '-C', 'lz4/lib', 'liblz4', ],
+        'outputs':         [ './lz4/lib/liblz4.a', ],
+        'action':          [ './build-lz4.sh', ],
       },],
     },
     {
@@ -245,13 +237,11 @@
       'target_name':       'snappy',
       'type':              'none',
       'hard_dependency':   1,
-      'dependencies':      [ 'lz4', ],
-      'sources':           [ 'snappy/snappy.h', ],
-      'variables':         { 'snappy_lib': './snappy/.libs/libsnappy.a', },
+      'sources':           [ 'snappy/snappy.cc', 'snappy/snappy.h', ],
       'actions': [ {
         'action_name':   'snappy_build',
-        'inputs':        [ 'snappy/Makefile.am', ],
-        'outputs':       [ '<(snappy_lib)', ],
+        'inputs':        [ 'snappy/snappy.cc', 'snappy/snappy.h', 'snappy/Makefile.am', ],
+        'outputs':       [ './snappy/.libs/libsnappy.a', ],
         'action':        [ './build-snappy.sh',  ],
       },],
     },
@@ -278,7 +268,6 @@
       ],
       'target_name':       'rocksdb',
       'type':              'none',
-      'hard_dependency':   1,
       'dependencies':               [ 'lz4', 'snappy', ],
       'direct_dependent_settings':  { 'include_dirs': [ './rocksdb/include', ], },
       'export_dependent_settings':  [ 'lz4', 'snappy', ],
@@ -337,6 +326,7 @@
       ],
       'target_name':       'common',
       'type':              'static_library',
+      'hard_dependency':   1,
       'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
       'export_dependent_settings':
                            [ 'lz4', 'proto/proto.gyp:*', ],
@@ -474,10 +464,7 @@
     {
       'target_name':       'cfgsvc_mock',
       'type':              'executable',
-      'dependencies':      [
-                             'proto/proto.gyp:*',
-                             'common',
-                           ],
+      'dependencies':      [ 'common', 'proto/proto.gyp:*', ],
       'include_dirs':      [ './gtest/include/', ],
       'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [ 'test/cfgsvc_mock.cc', ],
@@ -485,10 +472,7 @@
     {
       'target_name':       'murmur3',
       'type':              'static_library',
-      'sources':           [
-                             'murmur3/murmur3.c',
-                             'murmur3/murmur3.h',
-                           ],
+      'sources':           [ 'murmur3/murmur3.c', 'murmur3/murmur3.h', ],
     },
   ],
 }
