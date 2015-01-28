@@ -18,8 +18,12 @@
     'cachedb_sources':
                         [
                           # cache db sources
-                          'cachedb/block_id.cc',         'cachedb/block_id.hh',
                           'cachedb/store.cc',            'cachedb/store.hh',
+                        ],
+    'dsproxy_sources':  [
+                          'dsproxy/column_proxy.cc',   'dsproxy/column_proxy.hh',
+                          'dsproxy/meta_proxy.cc',     'dsproxy/meta_proxy.hh',
+                          'dsproxy/query_proxy.cc',    'dsproxy/query_proxy.hh',
                         ],
     'common_sources' :  [
                           # generic utils
@@ -98,17 +102,17 @@
     'default_configuration': 'Debug',
     'configurations': {
       'Debug': {
-        'defines':  ['DEBUG', '_DEBUG', ],
-        'cflags':   ['-O0', '-g3', ],
-        'ldflags':  ['-g3', ],
+        'defines':  [ 'DEBUG', '_DEBUG', ],
+        'cflags':   [ '-O0', '-g3', ],
+        'ldflags':  [ '-g3', ],
         'xcode_settings': {
           'OTHER_CFLAGS':  [ '-O0', '-g3', ],
           'OTHER_LDFLAGS': [ '-g3', ],
         },
       },
       'Release': {
-        'defines': ['NDEBUG', 'RELEASE', ],
-        'cflags': ['-O3', ],
+        'defines':  [ 'NDEBUG', 'RELEASE', ],
+        'cflags':   [ '-O3', ],
         'xcode_settings': {
           'OTHER_LDFLAGS': [ '-O3', ],
         },
@@ -190,9 +194,7 @@
       'target_name':       'lz4',
       'type':              'none',
       'hard_dependency':   1,
-      'direct_dependent_settings': {
-        'include_dirs': [ './lz4/lib', ],
-      },
+      'direct_dependent_settings': { 'include_dirs': [ './lz4/lib', ], },
       'sources':           [
                              'lz4/lib/lz4.c',        'lz4/lib/lz4.h',
                              'lz4/lib/lz4hc.c',      'lz4/lib/lz4hc.h',
@@ -234,9 +236,9 @@
           },
         },],
       ],
-      'target_name':       'snappy',
-      'type':              'none',
-      'hard_dependency':   1,
+      'target_name':         'snappy',
+      'type':                'none',
+      'hard_dependency':      1,
       'sources':           [ 'snappy/snappy.cc', 'snappy/snappy.h', ],
       'actions': [ {
         'action_name':   'snappy_build',
@@ -266,8 +268,8 @@
           },
         },],
       ],
-      'target_name':       'rocksdb',
-      'type':              'none',
+      'target_name':                  'rocksdb',
+      'type':                         'none',
       'dependencies':               [ 'lz4', 'snappy', ],
       'direct_dependent_settings':  { 'include_dirs': [ './rocksdb/include', ], },
       'export_dependent_settings':  [ 'lz4', 'snappy', ],
@@ -324,14 +326,13 @@
           },
         },],
       ],
-      'target_name':       'common',
-      'type':              'static_library',
-      'hard_dependency':   1,
-      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
-      'export_dependent_settings':
-                           [ 'lz4', 'proto/proto.gyp:*', ],
-      'cflags':            [ '-std=c++11', '-Wall', ],
-      'sources':           [ '<@(common_sources)', ],
+      'target_name':                   'common',
+      'type':                          'static_library',
+      'hard_dependency':                1,
+      'dependencies':                [ 'lz4', 'proto/proto.gyp:*', ],
+      'export_dependent_settings':   [ 'lz4', 'proto/proto.gyp:*', ],
+      'cflags':                      [ '-std=c++11', '-Wall', ],
+      'sources':                     [ '<@(common_sources)', ],
     },
     {
       'conditions': [
@@ -347,8 +348,7 @@
         },],
         ['OS=="linux"', {
           'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', 'INJECT_FAULTS', 
-                                  ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_LINUX_BUILD', 'INJECT_FAULTS', ],
             'include_dirs':       [ '.', ],
             'link_settings': {
               'ldflags':          [ '<@(common_ldflags)', ],
@@ -357,13 +357,12 @@
           },
         },],
       ],
-      'target_name':       'common_with_faults',
-      'type':              'static_library',
-      'dependencies':      [ 'lz4', 'proto/proto.gyp:*', ],
-      'export_dependent_settings':
-                           [ 'lz4', 'proto/proto.gyp:*', ],
-      'cflags':            [ '-std=c++11', '-Wall', ],
-      'sources':           [ '<@(common_sources)', ],
+      'target_name':                   'common_with_faults',
+      'type':                          'static_library',
+      'dependencies':                [ 'lz4', 'proto/proto.gyp:*', ],
+      'export_dependent_settings':   [ 'lz4', 'proto/proto.gyp:*', ],
+      'cflags':                      [ '-std=c++11', '-Wall', ],
+      'sources':                     [ '<@(common_sources)', ],
     },
     {
       'conditions': [
@@ -388,13 +387,12 @@
           },
         },],
       ],
-      'target_name':       'cachedb',
-      'type':              'static_library',
-      'dependencies':      [ 'common', 'rocksdb', ],
-      'export_dependent_settings':
-                           [ 'common', 'rocksdb', ],
-      'cflags':            [ '-std=c++11', '-Wall', ],
-      'sources':           [ '<@(cachedb_sources)', ],
+      'target_name':                   'cachedb',
+      'type':                          'static_library',
+      'dependencies':                [ 'common', 'rocksdb', ],
+      'export_dependent_settings':   [ 'common', 'rocksdb', ],
+      'cflags':                      [ '-std=c++11', '-Wall', ],
+      'sources':                     [ '<@(cachedb_sources)', ],
     },
     {
       'conditions': [
@@ -410,8 +408,7 @@
         },],
         ['OS=="linux"', {
           'direct_dependent_settings': {
-            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_LINUX_BUILD', 'INJECT_FAULTS', 
-                                  ],
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_LINUX_BUILD', 'INJECT_FAULTS', ],
             'include_dirs':       [ '.', ],
             'link_settings': {
               'ldflags':          [ '<@(common_ldflags)', ],
@@ -420,13 +417,72 @@
           },
         },],
       ],
-      'target_name':       'cachedb_with_faults',
-      'type':              'static_library',
-      'dependencies':      [ 'common', 'rocksdb', ],
-      'export_dependent_settings':
-                           [ 'common', 'rocksdb', ],
-      'cflags':            [ '-std=c++11', '-Wall', ],
-      'sources':           [ '<@(cachedb_sources)', ],
+      'target_name':                   'cachedb_with_faults',
+      'type':                          'static_library',
+      'dependencies':                [ 'common', 'rocksdb', ],
+      'export_dependent_settings':   [ 'common', 'rocksdb', ],
+      'cflags':                      [ '-std=c++11', '-Wall', ],
+      'sources':                     [ '<@(cachedb_sources)', ],
+    },
+    {
+      'conditions': [
+        ['OS=="mac"', {
+          'variables':  { 'dsproxy_root':  '<!(pwd)/../', },
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', ],
+            'include_dirs':       [ '<(dsproxy_root)/', ],
+            'xcode_settings': {
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_LINUX_BUILD', ],
+            'include_dirs':       [ '.', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ '<@(common_libs)', '-lrt', ],
+            },
+          },
+        },],
+      ],
+      'target_name':                   'dsproxy',
+      'type':                          'static_library',
+      'dependencies':                [ 'common', ],
+      'export_dependent_settings':   [ 'common', ],
+      'cflags':                      [ '-std=c++11', '-Wall', ],
+      'sources':                     [ '<@(dsproxy_sources)', ],
+    },
+    {
+      'conditions': [
+        ['OS=="mac"', {
+          'variables':  { 'dsproxy_root':  '<!(pwd)/../', },
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'INJECT_FAULTS', ],
+            'include_dirs':       [ '<(dsproxy_root)/', ],
+            'xcode_settings': {
+              'OTHER_CFLAGS':     [ '-std=c++11', ],
+            },
+          },
+        },],
+        ['OS=="linux"', {
+          'direct_dependent_settings': {
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_LINUX_BUILD', 'INJECT_FAULTS', ],
+            'include_dirs':       [ '.', ],
+            'link_settings': {
+              'ldflags':          [ '<@(common_ldflags)', ],
+              'libraries':        [ '<@(common_libs)', '-lrt', ],
+            },
+          },
+        },],
+      ],
+      'target_name':                 'dsproxy_with_faults',
+      'type':                        'static_library',
+      'dependencies':              [ 'common', ],
+      'export_dependent_settings': [ 'common', ],
+      'cflags':                    [ '-std=c++11', '-Wall', ],
+      'sources':                   [ '<@(dsproxy_sources)', ],
     },
     {
       'target_name':       'gtest_main',
@@ -436,6 +492,7 @@
                              'rocksdb',
                              'gtest/gyp/gtest.gyp:gtest_lib',
                              'proto/proto.gyp:*',
+                             'dsproxy_with_faults',
                              'cachedb_with_faults',
                              'common_with_faults',
                            ],
