@@ -19,6 +19,8 @@
                         [
                           # cache db sources
                           'cachedb/store.cc',            'cachedb/store.hh',
+                          'cachedb/hash_util.cc',        'cachedb/hash_util.hh',
+                          'cachedb/dbid.cc',             'cachedb/dbid.hh',
                         ],
     'dsproxy_sources':  [
                           'dsproxy/column_proxy.cc',   'dsproxy/column_proxy.hh',

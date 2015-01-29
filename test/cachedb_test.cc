@@ -1,9 +1,13 @@
 #include "cachedb_test.hh"
 #include <rocksdb/db.h>
+#include <cachedb/store.hh>
+#include <cachedb/dbid.hh>
+#include <cachedb/hash_util.hh>
 #include <memory>
 #include <iostream>
 
 using namespace virtdb::test;
+using namespace virtdb::cachedb;
 using namespace rocksdb;
 
 TEST_F(CachedbStoreTest, SimpleRocksDb)
@@ -33,5 +37,45 @@ TEST_F(CachedbStoreTest, SimpleRocksDb)
   {
     std::cerr << "failed to open rocks DB";
   }
-  
 }
+
+TEST_F(CachedbDbIdTest, GenColumnId)
+{
+}
+
+TEST_F(CachedbDbIdTest, GenConfigId)
+{
+}
+
+TEST_F(CachedbDbIdTest, GenEndpointId)
+{
+}
+
+TEST_F(CachedbHashUtilTest, HashQuery)
+{
+}
+
+TEST_F(CachedbHashUtilTest, HashField)
+{
+}
+
+TEST_F(CachedbHashUtilTest, HashString)
+{
+  std::string hello;
+  EXPECT_TRUE(hash_util::hash_string("hello", hello));
+  EXPECT_FALSE(hello.empty());
+  EXPECT_EQ(16, hello.size());
+
+  {
+    std::string tmp;
+    EXPECT_TRUE(hash_util::hash_string("hello", tmp));
+    EXPECT_EQ(tmp, hello);
+  }
+
+  {
+    std::string tmp;
+    EXPECT_TRUE(hash_util::hash_string("hello1", tmp));
+    EXPECT_NE(tmp, hello);
+  }
+}
+
