@@ -105,9 +105,8 @@ TEST_F(ConfigClientTest, SimpleConnect)
   EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
 }
 
-TEST_F(ConfigClientTest, CheckReqChannel) { EXPECT_TRUE(false); }
-TEST_F(ConfigClientTest, CheckSubChannel) { EXPECT_TRUE(false); }
-
+TEST_F(ConfigClientTest, ImplementMe_CheckReqChannel) { EXPECT_TRUE(false); }
+TEST_F(ConfigClientTest, ImplementMe_CheckSubChannel) { EXPECT_TRUE(false); }
 
 
 TEST_F(ColumnClientTest, ImplementMe) { EXPECT_TRUE(false); }

@@ -25,7 +25,7 @@ namespace virtdb { namespace cachedb {
     
     for( int i=0; i<16; ++i )
     {
-      result[i] = hex_vals[(hashed >> i) & 0x0f];
+      result[i] = hex_vals[(hashed >> (i*4)) & 0x0f];
     }
     res = result;
   }
@@ -74,6 +74,10 @@ namespace virtdb { namespace cachedb {
                          in.table().size()) != XXH_OK)
           throw 't';
       }
+      else
+      {
+        throw 'x';
+      }
       
       if( in.filter_size() > 0 )
       {
@@ -112,7 +116,7 @@ namespace virtdb { namespace cachedb {
       ret = false;
     }
     
-    return false;
+    return ret;
   }
   
   bool
@@ -143,6 +147,10 @@ namespace virtdb { namespace cachedb {
                          q_in.table().size()) != XXH_OK)
           throw 't';
       }
+      else
+      {
+        throw 'x';
+      }
       
       {
         int byte_size = field_in.ByteSize();
@@ -154,6 +162,10 @@ namespace virtdb { namespace cachedb {
                            buffer.get(),
                            byte_size ) != XXH_OK )
             throw 'f';
+        }
+        else
+        {
+          throw 'y';
         }
       }
       

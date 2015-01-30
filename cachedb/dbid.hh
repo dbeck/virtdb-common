@@ -28,7 +28,8 @@ namespace virtdb { namespace cachedb {
     dbid & operator=(const dbid &) = delete;
     
   public:
-    typedef std::chrono::steady_clock::time_point time_point;
+    typedef std::chrono::system_clock  clock;
+    typedef clock::time_point          time_point;
 
     // generate based on Query
     dbid(const interface::pb::Query & q,
@@ -38,10 +39,12 @@ namespace virtdb { namespace cachedb {
          std::string flags = "");
     
     // generate based on Config
-    dbid(const interface::pb::Config & cfg);
+    dbid(const interface::pb::Config & cfg,
+         std::string flags = "");
     
     // generate based on EndpointData
-    dbid(const interface::pb::EndpointData & ep);
+    dbid(const interface::pb::EndpointData & ep,
+         std::string flags = "");
     
     const std::string & genkey();
     
@@ -49,5 +52,10 @@ namespace virtdb { namespace cachedb {
     
     static void convert_date(const time_point & tp,
                              std::string & out);
+    
+    static void date_now(std::string & out);
+    
+    static void convert_flags(const std::string & in,
+                              std::string & out);
   };
 }}

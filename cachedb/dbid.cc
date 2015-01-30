@@ -2,64 +2,91 @@
 #include "hash_util.hh"
 #include <util/exception.hh>
 #include <logger.hh>
+#include <iomanip>
+#include <strstream>
 
 namespace virtdb { namespace cachedb {
-
-#if 0
-  //             / - column -           / - config -    / - endpoint -    /
-  //    16 = 16  / h64(Table+Query)     / @Config       / @Endpoint       /
-  // +  14 = 30  / DT                   / DT or 99YY    / DT or 99YY      /
-  // +  12 = 42  / h64(Tab+Fld+Typ)     / h64(Name)     / h64(Name)       /
-  // +  16 = 58  / Block id             / 0             / Service Type    /
-  // +   6 = 64  / Max 6 flags          / ""            / ""              /
   
-  std::string  objid_;      // 16 : hash or @string
-  std::string  date_time_;  // 14 : YYYYMMDDHHMMSS
-  std::string  sub_a_;      // 12 : hex hash64 - 4 byte
-  std::string  sub_b_;      // 16 : uint64 hex
-  std::string  flags_;      //  6 : unique char set
+  const std::string &
+  dbid::genkey()
+  {
+    std::ostringstream os;
+    os << objid_
+       << date_time_
+       << std::string(sub_a_.begin(), sub_a_.begin()+12)
+       << sub_b_
+       << flags_;
+    key_ = os.str();
+    return key_;
+  }
   
-  std::string  key_; // result key
-#endif
+  void dbid::date_now(std::string & out)
+  {
+    time_point tp = std::chrono::system_clock::now();
+    convert_date(tp, out);
+  }
   
   void dbid::convert_date(const time_point & tp,
                           std::string & out)
   {
+    std::time_t  t = std::chrono::system_clock::to_time_t( tp );
+    std::tm     tm = *std::localtime(&t);
+    std::ostringstream os;
+    os << std::put_time(&tm, "%Y%m%d%H%M%S");
+    out = os.str();
+  }
+  
+  void
+  dbid::convert_flags(const std::string & in,
+                      std::string & out)
+  {
+    std::set<char> tmp_flags;
+    for( char c : in )
+    {
+      tmp_flags.insert(c);
+      if( tmp_flags.size() == 6 )
+        break;
+    }
+    
+    static const char spaces[7] = "      ";
+    
+    std::string tmp_string{tmp_flags.begin(), tmp_flags.end()};
+    tmp_string += spaces;
+    out.assign(tmp_string.begin(), tmp_string.begin()+6);
   }
   
   // generate based on EndpointData
-  dbid::dbid(const interface::pb::EndpointData & ep)
+  dbid::dbid(const interface::pb::EndpointData & ep,
+             std::string flags)
   {
     if( !ep.has_name() )
     {
       THROW_("cfg has no name");
     }
-    
-    objid_ = "@Config";
-    
-    time_point tp = std::chrono::steady_clock::now();
-    convert_date(tp, date_time_);
+    objid_ = "@Endpoint       ";
+    date_now(date_time_);
     
     if( !hash_util::hash_string(ep.name(), sub_a_) )
     {
-      THROW_("failed to hash cgfg name");
+      THROW_("failed to hash endpoint name");
     }
     
-    hash_util::hex(0, sub_b_);
+    hash_util::hex(ep.svctype(), sub_b_);
+    
+    convert_flags(flags, flags_);
   }
   
   // generate based on Config
-  dbid::dbid(const interface::pb::Config & cfg)
+  dbid::dbid(const interface::pb::Config & cfg,
+             std::string flags)
   {
     if( !cfg.has_name() )
     {
       THROW_("cfg has no name");
     }
     
-    objid_ = "@Config";
-    
-    time_point tp = std::chrono::steady_clock::now();
-    convert_date(tp, date_time_);
+    objid_ = "@Config         ";
+    date_now(date_time_);
     
     if( !hash_util::hash_string(cfg.name(), sub_a_) )
     {
@@ -67,6 +94,8 @@ namespace virtdb { namespace cachedb {
     }
     
     hash_util::hex(0, sub_b_);
+    
+    convert_flags(flags, flags_);
   }
   
   // generate based on Query
@@ -98,12 +127,6 @@ namespace virtdb { namespace cachedb {
     
     hash_util::hex(block_id, sub_b_);
     
-    flags_ = flags;
-  }
-  
-  const std::string &
-  dbid::genkey()
-  {
-    return key_;
+    convert_flags(flags, flags_);
   }
 }}

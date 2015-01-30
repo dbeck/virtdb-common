@@ -18,7 +18,7 @@ namespace virtdb { namespace cachedb {
     std::unique_ptr<impl> impl_;
     
   public:
-    typedef std::chrono::steady_clock::time_point   time_point;
+    typedef std::chrono::system_clock::time_point   time_point;
     
     // column data
     typedef std::shared_ptr<interface::pb::Column>  column_sptr;
