@@ -25,7 +25,7 @@ namespace virtdb { namespace cachedb {
     
     for( int i=0; i<16; ++i )
     {
-      result[i] = hex_vals[(hashed >> (i*4)) & 0x0f];
+      result[i] = hex_vals[(hashed >> ((15-i)*4)) & 0x0f];
     }
     res = result;
   }

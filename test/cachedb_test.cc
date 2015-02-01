@@ -175,13 +175,13 @@ TEST_F(CachedbHashUtilTest, HexFun)
   hash_util::hex(1, v1);
   EXPECT_FALSE(v1.empty());
   EXPECT_EQ(16, v1.size());
-  EXPECT_EQ(v1,"1000000000000000");
+  EXPECT_EQ(v1,"0000000000000001");
 
   std::string v2;
   hash_util::hex(0x1000200030004000, v2);
   EXPECT_FALSE(v2.empty());
   EXPECT_EQ(16, v2.size());
-  EXPECT_EQ(v2,"0004000300020001");
+  EXPECT_EQ(v2,"1000200030004000");
 }
 
 TEST_F(CachedbHashUtilTest, HashQuery)

@@ -18,14 +18,15 @@ namespace virtdb { namespace cachedb {
     std::unique_ptr<impl> impl_;
     
   public:
-    typedef std::chrono::system_clock::time_point   time_point;
+    typedef std::chrono::system_clock   clock;
+    typedef clock::time_point           time_point;
     
     // column data
     typedef std::shared_ptr<interface::pb::Column>  column_sptr;
     typedef std::function<column_sptr(void)>        column_allocator;
     typedef std::function<bool(column_sptr)>        column_handler;
 
-    bool add_column(const interface::pb::Query & query,
+    void add_column(const interface::pb::Query & query,
                     const time_point query_start_time,
                     const interface::pb::Column & column);
     
@@ -64,6 +65,8 @@ namespace virtdb { namespace cachedb {
     
     store(size_t expiry_seconds);
     virtual ~store();
+    
+    static size_t expiry_secs_to_prefix_len(size_t expiry_seconds);
     
   };
 }}
