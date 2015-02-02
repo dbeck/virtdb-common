@@ -3,12 +3,12 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "query_proxy.hh"
+#include "query_dispatcher.hh"
 
 namespace virtdb { namespace dsproxy {
   
   bool
-  query_proxy::reconnect()
+  query_dispatcher::reconnect()
   {
     std::string server;
     {
@@ -28,7 +28,7 @@ namespace virtdb { namespace dsproxy {
   }
   
   bool
-  query_proxy::reconnect(const std::string & server)
+  query_dispatcher::reconnect(const std::string & server)
   {
     {
       std::unique_lock<std::mutex> l(mtx_);
@@ -51,28 +51,35 @@ namespace virtdb { namespace dsproxy {
   }
   
   void
-  query_proxy::watch_new_queries(on_new_query m)
+  query_dispatcher::watch_new_queries(on_new_query m)
   {
     std::unique_lock<std::mutex> l(mtx_);
     on_new_query_ = m;
   }
   
   void
-  query_proxy::watch_disconnect(on_disconnect m)
+  query_dispatcher::watch_new_segments(on_new_segment m)
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    on_new_segment_ = m;
+  }
+  
+  void
+  query_dispatcher::watch_disconnect(on_disconnect m)
   {
     std::unique_lock<std::mutex> l(mtx_);
     on_disconnect_ = m;
   }
   
   void
-  query_proxy::watch_resend_chunk(on_resend_chunk m)
+  query_dispatcher::watch_resend_chunk(on_resend_chunk m)
   {
     std::unique_lock<std::mutex> l(mtx_);
     on_resend_chunk_ = m;
   }
   
   void
-  query_proxy::remove_watch()
+  query_dispatcher::remove_watch()
   {
     std::unique_lock<std::mutex> l(mtx_);
     on_new_query empty;
@@ -80,7 +87,7 @@ namespace virtdb { namespace dsproxy {
   }
   
   void
-  query_proxy::handle_query(connector::query_server::query_sptr q)
+  query_dispatcher::handle_query(connector::query_server::query_sptr q)
   {
     if( !q )
     {
@@ -91,18 +98,24 @@ namespace virtdb { namespace dsproxy {
     bool new_query     = false;
     bool cmd_query     = false;
     bool stop_query    = false;
+    bool new_segment   = false;
     bool resend_chunk  = false;
     
     on_new_query      new_handler_copy;
+    on_new_segment    segment_handler_copy;
     on_resend_chunk   resend_chunk_copy;
     {
       // create a query entry even if we won't be able to handle it
       std::unique_lock<std::mutex> l(mtx_);
-      // TODO : FIXME
-      new_handler_copy = on_new_query_;
-      new_query = true;
-      
-      if( q->has_querycontrol() )
+      auto it = query_map_.find(q->queryid());
+      if( it == query_map_.end() )
+      {
+        auto rit = query_map_.insert(std::make_pair(q->queryid(),string_set()));
+        it = rit.first;
+        new_query = true;
+        new_handler_copy = on_new_query_;
+      }
+      else if( q->has_querycontrol() )
       {
         cmd_query = true;
         if( q->querycontrol() == interface::pb::Query::STOP )
@@ -117,6 +130,23 @@ namespace virtdb { namespace dsproxy {
             resend_chunk_copy = on_resend_chunk_;
           }
         }
+      }
+      
+      // save segment id if given
+      if( q->has_segmentid() && it->second.count(q->segmentid()) == 0 )
+      {
+        it->second.insert(q->segmentid());
+        LOG_INFO("stored" << V_(q->segmentid()) << "for" << V_(q->queryid()));
+        new_segment = true;
+        segment_handler_copy = on_new_segment_;
+      }
+      
+      // prepare stopped map too
+      auto sit = stopped_map_.find(q->queryid());
+      if( sit == stopped_map_.end() )
+      {
+        auto rit = stopped_map_.insert(std::make_pair(q->queryid(),string_set()));
+        it = rit.first;
       }
     }
     
@@ -133,6 +163,23 @@ namespace virtdb { namespace dsproxy {
       client_copy = client_sptr_;
     }
     
+    // call new segment handler
+    if( new_segment && segment_handler_copy )
+    {
+      try
+      {
+        segment_handler_copy(q->queryid(), q->segmentid());
+      }
+      catch (const std::exception & e)
+      {
+        LOG_ERROR("exception caught" << E_(e));
+      }
+      catch (...)
+      {
+        LOG_ERROR("unknown exception caught");
+      }
+    }
+
     // call new query handler before we pass this query over
     // so channel subscription can go before data
     if( new_query && new_handler_copy )
@@ -166,7 +213,44 @@ namespace virtdb { namespace dsproxy {
     {
       if( stop_query )
       {
-        client_copy->send_request(*q);
+        bool skip_send = false;
+        size_t stopped_count = 0;
+        size_t segment_count = 0;
+        {
+          std::unique_lock<std::mutex> l(mtx_);
+          stopped_map_[q->queryid()].insert(q->segmentid());
+          stopped_count = stopped_map_[q->queryid()].size();
+          segment_count = query_map_[q->queryid()].size();
+          
+          if( stopped_count == segment_count )
+          {
+            for( auto const & s : query_map_[q->queryid()] )
+            {
+              if( stopped_map_[q->queryid()].count(s) == 0 )
+              {
+                skip_send = true;
+                break;
+              }
+            }
+          }
+          else
+          {
+            skip_send = true;
+          }
+        }
+        
+        if( !skip_send )
+        {
+          client_copy->send_request(*q);
+        }
+        else
+        {
+          LOG_INFO("delay sending STOP message until all segmenst say so" <<
+                   V_(q->queryid()) <<
+                   V_(q->segmentid()) <<
+                   V_(stopped_count) <<
+                   V_(segment_count) );
+        }
       }
       else if( resend_chunk && resend_chunk_copy )
       {
@@ -188,6 +272,7 @@ namespace virtdb { namespace dsproxy {
           }
           
           sent = resend_chunk_copy(q->queryid(),
+                                   q->segmentid(),
                                    columns,
                                    seqnos);
         }
@@ -217,8 +302,61 @@ namespace virtdb { namespace dsproxy {
                 V_(q->queryid()));
     }
   }
-    
-  query_proxy::query_proxy(connector::config_client & cfg_clnt)
+  
+  query_dispatcher::string_set
+  query_dispatcher::query_segments(const std::string & query_id) const
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    auto const it = query_map_.find(query_id);
+    if( it != query_map_.end() )
+      return it->second;
+    else
+      return string_set();
+  }
+  
+  size_t
+  query_dispatcher::query_count() const
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    return query_map_.size();
+  }
+  
+  void
+  query_dispatcher::remove_segments(const std::string & query_id,
+                               const string_set & segments)
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    {
+      auto it = query_map_.find(query_id);
+      if( it != query_map_.end() )
+      {
+        for( const auto & s : segments )
+        {
+          it->second.erase(s);
+        }
+      }
+    }
+    {
+      auto it = stopped_map_.find(query_id);
+      if( it != stopped_map_.end() )
+      {
+        for( const auto & s : segments )
+        {
+          it->second.erase(s);
+        }
+      }
+    }
+  }
+  
+  void
+  query_dispatcher::remove_query(const std::string & query_id)
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    query_map_.erase(query_id);
+    stopped_map_.erase(query_id);
+  }
+  
+  query_dispatcher::query_dispatcher(connector::config_client & cfg_clnt)
   : server_(cfg_clnt),
     ep_client_(&(cfg_clnt.get_endpoint_client()))
   {
@@ -239,7 +377,7 @@ namespace virtdb { namespace dsproxy {
     });
   }
   
-  query_proxy::~query_proxy()
+  query_dispatcher::~query_dispatcher()
   {
     server_.remove_watches();
   }

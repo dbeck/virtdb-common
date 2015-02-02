@@ -3,14 +3,14 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "column_proxy.hh"
+#include "column_dispatcher.hh"
 #include <fault/injector.hh>
 #include <sstream>
 
 namespace virtdb { namespace dsproxy {
   
   void
-  column_proxy::add_to_message_cache(const std::string & channel_id,
+  column_dispatcher::add_to_message_cache(const std::string & channel_id,
                                      const std::string & col_name,
                                      uint64_t block_id,
                                      data_sptr dta)
@@ -35,11 +35,12 @@ namespace virtdb { namespace dsproxy {
   }
   
   bool
-  column_proxy::resend_message(const std::string & query_id,
+  column_dispatcher::resend_message(const std::string & query_id,
+                               const std::string & segment_id,
                                const std::string & col_name,
                                uint64_t block_id)
   {
-    std::string channel_id  = query_id;
+    std::string channel_id  = query_id + " " + segment_id;
     std::string message_key = channel_id + " " + col_name;
     
     message_id id = std::make_tuple(message_key, block_id);
@@ -50,6 +51,7 @@ namespace virtdb { namespace dsproxy {
       {
         LOG_INFO("cannot resend chunk. not in the cache" <<
                  V_(query_id) <<
+                 V_(segment_id) <<
                  V_(block_id));
         
         {
@@ -77,6 +79,7 @@ namespace virtdb { namespace dsproxy {
           
           LOG_INFO("missing block info" <<
                    V_(query_id) <<
+                   V_(segment_id) <<
                    V_(min) <<
                    V_(max) <<
                    V_(os.str()));
@@ -90,6 +93,7 @@ namespace virtdb { namespace dsproxy {
           server_.publish(channel_id, it->second);
           LOG_INFO("re-sending data block" <<
                    V_(query_id) <<
+                   V_(segment_id) <<
                    V_(col_name) <<
                    V_(block_id) <<
                    V_(it->second->name()));
@@ -98,6 +102,7 @@ namespace virtdb { namespace dsproxy {
         {
           LOG_INFO("not re-sending data block due to fault injection" <<
                    V_(query_id) <<
+                   V_(segment_id) <<
                    V_(col_name) <<
                    V_(block_id) <<
                    V_(it->second->name()));
@@ -108,7 +113,7 @@ namespace virtdb { namespace dsproxy {
   }
   
   void
-  column_proxy::subscribe_query(const std::string & query_id)
+  column_dispatcher::subscribe_query(const std::string & query_id)
   {
     using namespace virtdb::interface;
     std::unique_lock<std::mutex> l(mtx_);
@@ -144,7 +149,7 @@ namespace virtdb { namespace dsproxy {
   }
   
   void
-  column_proxy::unsubscribe_query(const std::string & query_id)
+  column_dispatcher::unsubscribe_query(const std::string & query_id)
   {
     using namespace virtdb::interface;
     std::unique_lock<std::mutex> l(mtx_);
@@ -167,7 +172,7 @@ namespace virtdb { namespace dsproxy {
   }
   
   bool
-  column_proxy::reconnect()
+  column_dispatcher::reconnect()
   {
     std::string server;
     {
@@ -187,14 +192,14 @@ namespace virtdb { namespace dsproxy {
   }
   
   void
-  column_proxy::watch_disconnect(on_disconnect m)
+  column_dispatcher::watch_disconnect(on_disconnect m)
   {
     std::unique_lock<std::mutex> l(mtx_);
     on_disconnect_ = m;
   }
   
   bool
-  column_proxy::reconnect(const std::string & server)
+  column_dispatcher::reconnect(const std::string & server)
   {
     using namespace virtdb::interface;
     
@@ -219,19 +224,72 @@ namespace virtdb { namespace dsproxy {
     return ret;
   }
   
+  void
+  column_dispatcher::add_to_backlog(const std::string & query_id,
+                               data_sptr d)
+  {
+    {
+      std::unique_lock<std::mutex> l(backlog_mtx_);
+      auto it = backlog_.find(query_id);
+      if( it == backlog_.end() )
+      {
+        auto rit = backlog_.insert(std::make_pair(query_id,
+                                                  data_backlog()));
+        it = rit.first;
+      }
+      it->second.push_back(d);
+    }
+    // schedule a safety check in 1h
+    // when we cleanup the backlog
+    if( d->seqno() == 0 )
+    {
+      std::string qid{query_id};
+      timer_svc_.schedule(7200000, [qid,this]() {
+        std::unique_lock<std::mutex> l(backlog_mtx_);
+        auto it = backlog_.find(qid);
+        if( it != backlog_.end() )
+        {
+          LOG_INFO("removing query from the backlog that should have gone already" << V_(qid));
+          backlog_.erase(qid);
+        }
+        return false;
+      });
+    }
+  }
   
   void
-  column_proxy::handle_data(const std::string & provider_name,
+  column_dispatcher::send_backlog(const std::string & query_id,
+                             const std::string & segment_id)
+  {
+    std::unique_lock<std::mutex> l(backlog_mtx_);
+    auto it = backlog_.find(query_id);
+    if( it != backlog_.end() )
+    {
+      std::string channel_id = query_id + " " + segment_id;
+      for( auto d : it->second )
+      {
+        server_.publish(channel_id, d);
+      }
+    }
+  }
+  
+  void
+  column_dispatcher::handle_data(const std::string & provider_name,
                             const std::string & channel,
                             const std::string & subscription,
                             std::shared_ptr<interface::pb::Column> data)
   {
+    std::string new_channel_id{channel};
+    other_channels others;
+    
     try
     {
       handler_(provider_name,
                channel,
                subscription,
-               data);
+               data,
+               new_channel_id,
+               others);
     }
     catch( const std::exception & e )
     {
@@ -256,25 +314,81 @@ namespace virtdb { namespace dsproxy {
     }
     
     // add message to cache before anything else
-    add_to_message_cache(channel,
+    add_to_message_cache(new_channel_id,
                          data->name(),
                          data->seqno(),
                          data);
     
-    UNLESS_INJECT_FAULT("omit-message", channel)
+    // send empty messages to others, if any
+    {
+      interface::pb::Column empty_data{*data};
+      empty_data.clear_compresseddata();
+      empty_data.clear_comptype();
+      empty_data.clear_uncompressedsize();
+      empty_data.clear_data();
+      auto dta = empty_data.mutable_data();
+      dta->set_type(data->data().type());
+
+      // one copy to the backlog
+      {
+        std::shared_ptr<interface::pb::Column>
+          empty_data_ptr{new interface::pb::Column{empty_data}};
+        
+        add_to_backlog(empty_data_ptr->queryid(),
+                       empty_data_ptr);
+      }
+      
+      for( auto const & other : others )
+      {
+        std::shared_ptr<interface::pb::Column>
+          empty_data_ptr{new interface::pb::Column{empty_data}};
+        
+        // cache the empty messages too
+        add_to_message_cache(other,
+                             empty_data_ptr->name(),
+                             empty_data_ptr->seqno(),
+                             empty_data_ptr);
+        
+        UNLESS_INJECT_FAULT("omit-message", other)
+        {
+          LOG_TRACE("sending empty data to" <<
+                    V_(other) <<
+                    V_(channel) <<
+                    V_(empty_data_ptr->queryid()) <<
+                    V_(empty_data_ptr->seqno()) <<
+                    V_(empty_data_ptr->name()) <<
+                    V_(empty_data_ptr->endofdata()));
+
+          server_.publish(other, empty_data_ptr);
+        }
+        else
+        {
+          LOG_INFO("omit empty message due to fault injection" <<
+                   V_(other) <<
+                   V_(channel) <<
+                   V_(empty_data_ptr->queryid()) <<
+                   V_(empty_data_ptr->seqno()) <<
+                   V_(empty_data_ptr->name()) );
+        }
+      }
+    }
+    
+    UNLESS_INJECT_FAULT("omit-message", new_channel_id)
     {
       LOG_TRACE("publishing to" <<
+                V_(new_channel_id) <<
                 V_(channel) <<
                 V_(data->queryid()) <<
                 V_(data->seqno()) <<
                 V_(data->name()) <<
                 V_(data->endofdata()));
 
-      server_.publish(channel, data);
+      server_.publish(new_channel_id, data);
     }
     else
     {
       LOG_INFO("not publishing due to fault injection" <<
+                V_(new_channel_id) <<
                 V_(channel) <<
                 V_(data->queryid()) <<
                 V_(data->seqno()) <<
@@ -284,8 +398,20 @@ namespace virtdb { namespace dsproxy {
     
     if( data->endofdata() )
     {
-      // schedule blockid removal in 3 mins
+      // schedule a backlog removal in 30 sec
       std::string qid{data->queryid()};
+      timer_svc_.schedule(30000, [qid,this]() {
+        std::unique_lock<std::mutex> l(backlog_mtx_);
+        auto it = backlog_.find(qid);
+        if( it != backlog_.end() )
+        {
+          LOG_TRACE("removing query from the backlog (1st pass)" << V_(qid));
+          backlog_.erase(qid);
+        }
+        return false;
+      });
+      
+      // schedule blockid removal in 3 mins
       timer_svc_.schedule(180000, [qid,this]() {
         std::unique_lock<std::mutex> l(block_id_mtx_);
         if( block_ids_.count(qid) > 0 )
@@ -298,7 +424,7 @@ namespace virtdb { namespace dsproxy {
   //const std::string & service_ep() const;
   //    const std::string & name() const;
   
-  column_proxy::column_proxy(connector::config_client & cfg_clnt,
+  column_dispatcher::column_dispatcher(connector::config_client & cfg_clnt,
                              on_data handler)
   : server_(cfg_clnt),
     ep_client_(&(cfg_clnt.get_endpoint_client())), 
@@ -310,7 +436,7 @@ namespace virtdb { namespace dsproxy {
     }
   }
   
-  column_proxy::~column_proxy()
+  column_dispatcher::~column_dispatcher()
   {
   }
   

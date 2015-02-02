@@ -15,7 +15,7 @@
 
 namespace virtdb { namespace dsproxy {
   
-  class column_proxy final
+  class column_dispatcher final
   {
     
   public:
@@ -25,10 +25,14 @@ namespace virtdb { namespace dsproxy {
     typedef std::function<void(const std::string & provider_name,
                                const std::string & channel,
                                const std::string & subscription,
-                               std::shared_ptr<interface::pb::Column> data)> on_data;
+                               std::shared_ptr<interface::pb::Column> data,
+                               std::string & new_channel_id,
+                               other_channels & others)> on_data;
   private:
     typedef std::shared_ptr<connector::column_client>        client_sptr;
     typedef std::shared_ptr<interface::pb::Column>           data_sptr;
+    typedef std::deque<data_sptr>                            data_backlog;
+    typedef std::map<std::string, data_backlog>              backlog_map;
     typedef std::tuple<std::string, uint64_t>                message_id;
     typedef std::map<message_id, data_sptr>                  message_cache;
     typedef std::set<uint64_t>                               id_set;
@@ -41,6 +45,8 @@ namespace virtdb { namespace dsproxy {
     on_disconnect                  on_disconnect_;
     std::set<std::string>          subscriptions_;
     std::mutex                     mtx_;
+    backlog_map                    backlog_;
+    std::mutex                     backlog_mtx_;
     util::timer_service            timer_svc_;
     message_cache                  message_cache_;
     std::mutex                     message_cache_mtx_;
@@ -53,6 +59,7 @@ namespace virtdb { namespace dsproxy {
                      const std::string & subscription,
                      std::shared_ptr<interface::pb::Column> data);
     
+    void add_to_backlog(const std::string & query_id, data_sptr);
     void add_to_message_cache(const std::string & channel_id,
                               const std::string & col_name,
                               uint64_t block_id,
@@ -60,20 +67,23 @@ namespace virtdb { namespace dsproxy {
     
   public:
     bool resend_message(const std::string & query_id,
+                        const std::string & segment_id,
                         const std::string & col_name,
                         uint64_t block_id);
+    void send_backlog(const std::string & query_id,
+                      const std::string & segment_id);
     void subscribe_query(const std::string & query_id);
     void unsubscribe_query(const std::string & query_id);
     bool reconnect(const std::string & server);
     bool reconnect();
     void watch_disconnect(on_disconnect);
-    column_proxy(connector::config_client & cfg_client,
+    column_dispatcher(connector::config_client & cfg_client,
                  on_data handler);
-    ~column_proxy();
+    ~column_dispatcher();
     
   private:
-    column_proxy() = delete;
-    column_proxy(const column_proxy &) = delete;
-    column_proxy& operator=(const column_proxy &) = delete;
+    column_dispatcher() = delete;
+    column_dispatcher(const column_dispatcher &) = delete;
+    column_dispatcher& operator=(const column_dispatcher &) = delete;
   };
 }}

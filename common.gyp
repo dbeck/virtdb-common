@@ -23,9 +23,12 @@
                           'cachedb/dbid.cc',             'cachedb/dbid.hh',
                         ],
     'dsproxy_sources':  [
-                          'dsproxy/column_proxy.cc',   'dsproxy/column_proxy.hh',
-                          'dsproxy/meta_proxy.cc',     'dsproxy/meta_proxy.hh',
-                          'dsproxy/query_proxy.cc',    'dsproxy/query_proxy.hh',
+                          'dsproxy.hh',
+                          'dsproxy/meta_proxy.cc',         'dsproxy/meta_proxy.hh',
+                          'dsproxy/query_proxy.cc',        'dsproxy/query_proxy.hh',
+                          'dsproxy/column_proxy.cc',       'dsproxy/column_proxy.hh',
+                          'dsproxy/query_dispatcher.cc',   'dsproxy/query_dispatcher.hh',
+                          'dsproxy/column_dispatcher.cc',  'dsproxy/column_dispatcher.hh',
                         ],
     'common_sources' :  [
                           # generic utils
