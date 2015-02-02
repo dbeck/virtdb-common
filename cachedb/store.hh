@@ -34,7 +34,7 @@ namespace virtdb { namespace cachedb {
                      size_t min_block_id,
                      column_allocator allocator,
                      column_handler handler);
-                     
+                         
     size_t expire_columns(size_t seconds_range);
     
     // config
@@ -42,7 +42,7 @@ namespace virtdb { namespace cachedb {
     typedef std::function<config_sptr(void)>        config_allocator;
     typedef std::function<bool(config_sptr)>        config_handler;
 
-    bool add_config(const interface::pb::Config & cfg);
+    void add_config(const interface::pb::Config & cfg);
     bool get_configs(config_allocator allocator,
                      config_handler handler);
     size_t remove_configs(config_allocator allocator,
@@ -55,7 +55,7 @@ namespace virtdb { namespace cachedb {
     typedef std::function<epdata_sptr(void)>              epdata_allocator;
     typedef std::function<bool(epdata_sptr)>              epdata_handler;
 
-    bool add_endpoint(const interface::pb::EndpointData & epdata);
+    void add_endpoint(const interface::pb::EndpointData & epdata);
     bool get_endpoints(epdata_allocator allocator,
                        epdata_handler handler);
     size_t remove_endpoints(epdata_allocator allocator,
@@ -63,7 +63,9 @@ namespace virtdb { namespace cachedb {
     size_t expire_endpoints(size_t seconds_range);
     size_t dedup_endpoints();
     
-    store(size_t expiry_seconds);
+    // TODO : database path, name
+    store(const std::string & path,
+          size_t expiry_seconds);
     virtual ~store();
     
     static size_t expiry_secs_to_prefix_len(size_t expiry_seconds);

@@ -6,6 +6,21 @@
 #include <strstream>
 
 namespace virtdb { namespace cachedb {
+    
+  void
+  dbid::extract_sub_b(const std::string & in,
+                      std::string & out)
+  {
+    static const char empty[17] = "0000000000000000";
+    if( in.size() > 58 )
+    {
+      out.assign( in.begin()+42, in.begin()+58 );
+    }
+    else
+    {
+      out = empty;
+    }
+  }
   
   const std::string &
   dbid::genkey()

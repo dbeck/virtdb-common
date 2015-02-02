@@ -40,6 +40,110 @@ TEST_F(CachedbStoreTest, SimpleRocksDb)
   }
 }
 
+TEST_F(CachedbStoreTest, StoreColumn)
+{
+  store st("/tmp/StoreColumn",9000);
+  
+  // fill query
+  pb::Query q;
+  q.set_queryid("QueryID");
+  q.set_table("BSEG");
+  {
+    auto * f = q.add_fields();
+    f->set_name("MANDT");
+    auto * d = f->mutable_desc();
+    d->set_type(pb::Kind::STRING);
+  }
+  
+  // fill column result
+  pb::Column c;
+  c.set_queryid("QueryID");
+  c.set_name("MANDT");
+  {
+    auto * d = c.mutable_data();
+    d->set_type(pb::Kind::STRING);
+    d->add_stringvalue("800");
+  }
+  c.set_seqno(0);
+  c.set_endofdata(true);
+  
+  std::vector<store::column_sptr> results;
+  
+  EXPECT_NO_THROW(st.add_column(q, store::clock::now(), c));
+  
+  auto alloc = []() {
+    return store::column_sptr{new pb::Column};
+  };
+  
+  auto get_handler = [&results](store::column_sptr r) {
+    results.push_back(r);
+    return true;
+  };
+
+  EXPECT_TRUE(st.get_columns(q, 0, alloc, get_handler));
+  size_t n_results = results.size();
+  EXPECT_GT(n_results, 0);
+}
+
+TEST_F(CachedbStoreTest, StoreConfig)
+{
+  store st("/tmp/StoreConfig",9000);
+  pb::Config cfg;
+  cfg.set_name("my component");
+  EXPECT_NO_THROW(st.add_config(cfg));
+  
+  std::vector<store::config_sptr> results;
+  
+  auto alloc = []() {
+    return store::config_sptr{new pb::Config};
+  };
+  
+  auto get_handler = [&results](store::config_sptr r) {
+    results.push_back(r);
+    return true;
+  };
+  
+  auto del_handler = [&results](store::config_sptr r) {
+    return true;
+  };
+  
+  EXPECT_TRUE(st.get_configs(alloc, get_handler));
+  size_t n_results = results.size();
+  size_t deleted = st.remove_configs(alloc, del_handler);
+  EXPECT_GT(n_results, 0);
+  EXPECT_GT(deleted, 0);
+}
+
+TEST_F(CachedbStoreTest, StoreEndpoint)
+{
+  store st("/tmp/StoreEndpoint",9000);
+  pb::EndpointData ep;
+  ep.set_name("my component");
+  ep.set_svctype(pb::ServiceType::NONE);
+  EXPECT_NO_THROW(st.add_endpoint(ep));
+  
+  std::vector<store::epdata_sptr> results;
+  
+  auto alloc = []() {
+    return store::epdata_sptr{new pb::EndpointData};
+  };
+  
+  auto get_handler = [&results](store::epdata_sptr r) {
+    results.push_back(r);
+    return true;
+  };
+
+  auto del_handler = [&results](store::epdata_sptr r) {
+    return true;
+  };
+  
+  EXPECT_TRUE(st.get_endpoints(alloc, get_handler));
+  size_t n_results = results.size();
+  size_t deleted = st.remove_endpoints(alloc, del_handler);
+  EXPECT_GT(n_results, 0);
+  EXPECT_GT(deleted, 0);
+}
+
 TEST_F(CachedbDbIdTest, DateNow)
 {
   std::string now;

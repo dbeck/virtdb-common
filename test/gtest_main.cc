@@ -18,6 +18,8 @@ std::string global_mock_ep{"tcp://127.0.0.1:"};
 
 int main(int argc, char **argv)
 {
+  using namespace virtdb;
+    
   // child process
   const char * progname = "./cfgsvc_mock";
   // mock config service EP

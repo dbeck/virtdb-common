@@ -57,5 +57,8 @@ namespace virtdb { namespace cachedb {
     
     static void convert_flags(const std::string & in,
                               std::string & out);
+    
+    static void extract_sub_b(const std::string & in,
+                              std::string & out);
   };
 }}
