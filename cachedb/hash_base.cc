@@ -1,10 +1,5 @@
-#pragma once
+#include "hash_base.hh"
 
 namespace virtdb { namespace cachedb {
-
-  class hash
-  {
-  public:
-  };
   
 }}

@@ -23,7 +23,7 @@
                           'cachedb/dbid.cc',                'cachedb/dbid.hh',
                           # new cachedb sources
                           'cachedb/db.cc',                  'cachedb/db.hh',
-                          'cachedb/hash.cc',                'cachedb/hash.hh',
+                          'cachedb/hash_base.cc',           'cachedb/hash_base.hh',
                           'cachedb/column_hash.cc',         'cachedb/column_hash.hh', 
                           'cachedb/column_hasher.cc',       'cachedb/column_hasher.hh', 
                           'cachedb/column_data.cc',         'cachedb/column_data.hh',
