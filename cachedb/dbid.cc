@@ -28,8 +28,8 @@ namespace virtdb { namespace cachedb {
     std::ostringstream os;
     os << objid_
        << date_time_
-       << std::string(sub_a_.begin(), sub_a_.begin()+12)
-       << sub_b_
+       << sub_a_
+       << std::string(sub_b_.begin(), sub_b_.begin()+12)
        << flags_;
     key_ = os.str();
     return key_;
@@ -81,13 +81,13 @@ namespace virtdb { namespace cachedb {
     objid_ = "@Endpoint       ";
     date_now(date_time_);
     
-    if( !hash_util::hash_string(ep.name(), sub_a_) )
+    hash_util::hex(ep.svctype(), sub_a_);
+
+    if( !hash_util::hash_string(ep.name(), sub_b_) )
     {
       THROW_("failed to hash endpoint name");
     }
-    
-    hash_util::hex(ep.svctype(), sub_b_);
-    
+
     convert_flags(flags, flags_);
   }
   
@@ -102,13 +102,13 @@ namespace virtdb { namespace cachedb {
     
     objid_ = "@Config         ";
     date_now(date_time_);
+
+    hash_util::hex(0, sub_a_);
     
-    if( !hash_util::hash_string(cfg.name(), sub_a_) )
+    if( !hash_util::hash_string(cfg.name(), sub_b_) )
     {
       THROW_("failed to hash cgfg name");
     }
-    
-    hash_util::hex(0, sub_b_);
     
     convert_flags(flags, flags_);
   }
@@ -135,12 +135,12 @@ namespace virtdb { namespace cachedb {
     
     auto const & fld = q.fields(field_id);
     
-    if( !hash_util::hash_field(q,fld,sub_a_) )
+    hash_util::hex(block_id, sub_a_);
+
+    if( !hash_util::hash_field(q,fld,sub_b_) )
     {
       THROW_("failed to hash field");
     }
-    
-    hash_util::hex(block_id, sub_b_);
     
     convert_flags(flags, flags_);
   }

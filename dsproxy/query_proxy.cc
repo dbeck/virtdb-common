@@ -135,11 +135,12 @@ namespace virtdb { namespace dsproxy {
     
     // call new query handler before we pass this query over
     // so channel subscription can go before data
+    action query_action = forward_query;
     if( new_query && new_handler_copy )
     {
       try
       {
-        new_handler_copy(q->queryid());
+        query_action = new_handler_copy(q->queryid(), q);
       }
       catch (const std::exception & e)
       {
@@ -167,6 +168,14 @@ namespace virtdb { namespace dsproxy {
       if( stop_query )
       {
         client_copy->send_request(*q);
+      }
+      else if( query_action == dont_forward )
+      {
+        LOG_TRACE("not forwarding the query to" <<
+                  V_(client_copy->server()) <<
+                  V_(q->queryid()) <<
+                  V_(q->schema()) <<
+                  V_(q->table()));
       }
       else if( resend_chunk && resend_chunk_copy )
       {
@@ -201,7 +210,7 @@ namespace virtdb { namespace dsproxy {
         }
         
         // delegating the request to the data provider
-        if( !sent )
+        if( sent )
         {
           client_copy->send_request(*q);          
         }

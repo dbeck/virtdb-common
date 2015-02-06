@@ -8,105 +8,7 @@
 #include <sstream>
 
 namespace virtdb { namespace dsproxy {
-  
-  void
-  column_proxy::add_to_message_cache(const std::string & channel_id,
-                                     const std::string & col_name,
-                                     uint64_t block_id,
-                                     data_sptr dta)
-  {
-    std::string message_key = channel_id + " " + col_name;
-    message_id id = std::make_tuple(message_key, block_id);
-    {
-      std::unique_lock<std::mutex> l(message_cache_mtx_);
-      message_cache_.insert(std::make_pair(id,dta));
-    }
-    
-    // remove block in 3 mins
-    timer_svc_.schedule(180000, [id,this]() {
-      std::unique_lock<std::mutex> l(message_cache_mtx_);
-      auto it = message_cache_.find(id);
-      if( it != message_cache_.end() )
-      {
-        message_cache_.erase(id);
-      }
-      return false;
-    });
-  }
-  
-  bool
-  column_proxy::resend_message(const std::string & query_id,
-                               const std::string & col_name,
-                               uint64_t block_id)
-  {
-    std::string channel_id  = query_id;
-    std::string message_key = channel_id + " " + col_name;
-    
-    message_id id = std::make_tuple(message_key, block_id);
-    {
-      std::unique_lock<std::mutex> l(message_cache_mtx_);
-      auto it = message_cache_.find(id);
-      if( it == message_cache_.end() )
-      {
-        LOG_INFO("cannot resend chunk. not in the cache" <<
-                 V_(query_id) <<
-                 V_(block_id));
-        
-        {
-          std::unique_lock<std::mutex> l(block_id_mtx_);
-          uint64_t min = 0;
-          uint64_t max = 0;
-          auto it = block_ids_.find(query_id);
-          std::ostringstream os;
-          if( it == block_ids_.end() )
-          {
-            os << "NOT_FOUND";
-          }
-          else
-          {
-            min = *(it->second.begin());
-            max = *(it->second.rbegin());
-            os << "missing:[";
-            for( uint64_t i=0; i<max+1; ++i )
-            {
-              if( it->second.count(i) == 0 )
-                os << i << ' ';
-            }
-            os << ']';
-          }
-          
-          LOG_INFO("missing block info" <<
-                   V_(query_id) <<
-                   V_(min) <<
-                   V_(max) <<
-                   V_(os.str()));
-        }
-        return false;
-      }
-      else
-      {
-        UNLESS_INJECT_FAULT("omit-message", channel_id)
-        {
-          server_.publish(channel_id, it->second);
-          LOG_INFO("re-sending data block" <<
-                   V_(query_id) <<
-                   V_(col_name) <<
-                   V_(block_id) <<
-                   V_(it->second->name()));
-        }
-        else
-        {
-          LOG_INFO("not re-sending data block due to fault injection" <<
-                   V_(query_id) <<
-                   V_(col_name) <<
-                   V_(block_id) <<
-                   V_(it->second->name()));
-        }
-        return true;
-      }
-    }
-  }
-  
+
   void
   column_proxy::subscribe_query(const std::string & query_id)
   {
@@ -201,6 +103,10 @@ namespace virtdb { namespace dsproxy {
     {
       std::unique_lock<std::mutex> l(mtx_);
       subscriptions_.clear();
+      
+      if( client_sptr_ )
+        client_sptr_->remove_watches();
+      
       client_sptr_.reset(new connector::column_client(*ep_client_, server));
     }
     
@@ -243,24 +149,6 @@ namespace virtdb { namespace dsproxy {
       LOG_ERROR("unknown exception during channel id generation for segment host");
     }
     
-    {
-      // save sequence numbers for debug purposes
-      std::unique_lock<std::mutex> l(block_id_mtx_);
-      auto it = block_ids_.find(data->queryid());
-      if( it == block_ids_.end() )
-      {
-        auto rit = block_ids_.insert(std::make_pair(data->queryid(),id_set()));
-        it = rit.first;
-      }
-      it->second.insert(data->seqno());
-    }
-    
-    // add message to cache before anything else
-    add_to_message_cache(channel,
-                         data->name(),
-                         data->seqno(),
-                         data);
-    
     UNLESS_INJECT_FAULT("omit-message", channel)
     {
       LOG_TRACE("publishing to" <<
@@ -281,23 +169,8 @@ namespace virtdb { namespace dsproxy {
                 V_(data->name()) <<
                 V_(data->endofdata()));
     }
-    
-    if( data->endofdata() )
-    {
-      // schedule blockid removal in 3 mins
-      std::string qid{data->queryid()};
-      timer_svc_.schedule(180000, [qid,this]() {
-        std::unique_lock<std::mutex> l(block_id_mtx_);
-        if( block_ids_.count(qid) > 0 )
-          block_ids_.erase(qid);
-        return false;
-      });
-    }
   }
-  
-  //const std::string & service_ep() const;
-  //    const std::string & name() const;
-  
+    
   column_proxy::column_proxy(connector::config_client & cfg_clnt,
                              on_data handler)
   : server_(cfg_clnt),

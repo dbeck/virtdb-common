@@ -11,14 +11,14 @@ namespace virtdb { namespace cachedb {
     //             / - column -           / - config -    / - endpoint -    /
     //    16 = 16  / h64(Table+Query)     / @Config       / @Endpoint       /
     // +  14 = 30  / DT                   / DT            / DT              /
-    // +  12 = 42  / h64(Tab+Fld+Typ)     / h64(Name)     / h64(Name)       /
-    // +  16 = 58  / Block id             / 0             / Service Type    /
+    // +  16 = 46  / Block id             / 0             / Service Type    /
+    // +  12 = 58  / h64(Tab+Fld+Typ)     / h64(Name)     / h64(Name)       /
     // +   6 = 64  / Max 6 flags          / ""            / ""              /
     
     std::string  objid_;      // 16 : hash or @string
     std::string  date_time_;  // 14 : YYYYMMDDHHMMSS
-    std::string  sub_a_;      // 12 : hex hash64 - 4 byte
-    std::string  sub_b_;      // 16 : uint64 hex
+    std::string  sub_a_;      // 16 : uint64 hex
+    std::string  sub_b_;      // 12 : hex hash64 - 4 byte
     std::string  flags_;      //  6 : unique char set
     
     std::string  key_; // result key

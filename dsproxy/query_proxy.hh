@@ -14,8 +14,15 @@ namespace virtdb { namespace dsproxy {
   class query_proxy final
   {
   public:
+    enum action {
+      forward_query = 1,
+      dont_forward  = 2,
+    };
+
+    typedef connector::query_server::query_sptr         query_sptr;
     typedef std::set<std::string>                       string_set;
-    typedef std::function<void(const std::string &)>    on_new_query;
+    typedef std::function<action(const std::string &,
+                                 query_sptr q)>         on_new_query;
     typedef std::function<void(void)>                   on_disconnect;
     typedef std::function<bool(const std::string &,     // query_id
                                std::set<std::string> &, // columns
