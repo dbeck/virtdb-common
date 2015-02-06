@@ -53,6 +53,7 @@
                           'util/relative_time.cc',    'util/relative_time.hh',
                           'util/exception.hh',        'util/value_type.hh',
                           'util/net.cc',              'util/net.hh',
+                          'util/hex_util.cc',         'util/hex_util.hh',
                           'util/zmq_utils.cc',        'util/zmq_utils.hh',
                           'util/async_worker.cc',     'util/async_worker.hh',
                           'util/compare_messages.hh', 'util/table_collector.hh',
