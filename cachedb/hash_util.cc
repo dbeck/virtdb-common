@@ -1,6 +1,7 @@
 #include "hash_util.hh"
 #include <xxhash.h>
 #include <util/flex_alloc.hh>
+#include <util/hex_util.hh>
 #include <logger.hh>
 
 namespace virtdb { namespace cachedb {
@@ -9,25 +10,12 @@ namespace virtdb { namespace cachedb {
   {
     const char empty_input [] = "= EMPTY  INPUT =";
     const char xxh_error []   = "= XXH    ERROR =";
-
-    const char hex_vals[16] = {
-      '0', '1', '2', '3',
-      '4', '5', '6', '7',
-      '8', '9', 'a', 'b',
-      'c', 'd', 'e', 'f'
-    };
   }
   
   void
   hash_util::hex(unsigned long long hashed, std::string & res)
   {
-    char result[] = "0123456789abcdef";
-    
-    for( int i=0; i<16; ++i )
-    {
-      result[i] = hex_vals[(hashed >> ((15-i)*4)) & 0x0f];
-    }
-    res = result;
+    util::hex_util(hashed, res);
   }
   
   bool
