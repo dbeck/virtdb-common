@@ -47,8 +47,8 @@ namespace virtdb { namespace cachedb {
     std::time_t  t = std::chrono::system_clock::to_time_t( tp );
     std::tm     tm = *std::localtime(&t);
     std::ostringstream os;
-    os << std::put_time(&tm, "%Y%m%d%H%M%S");
-    out = os.str();
+    // os << std::put_time(&tm, "%Y%m%d%H%M%S");
+    // out = os.str();
   }
   
   void
