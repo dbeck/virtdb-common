@@ -213,6 +213,34 @@ namespace virtdb { namespace connector {
     
     enrich_record(record);
     
+    static std::map<pb::LogLevel,int> priority_map{
+      { pb::LogLevel::VIRTDB_ERROR, 1000 },
+      { pb::LogLevel::VIRTDB_INFO,   900 },
+      { pb::LogLevel::VIRTDB_STATUS, 800 },
+      { pb::LogLevel::VIRTDB_SIMPLE_TRACE, 700 },
+      { pb::LogLevel::VIRTDB_SCOPED_TRACE, 600 },
+    };
+    
+    auto get_prio = [](pb::LogLevel l) {
+      int ret = 0;
+      if( priority_map.count(l) > 0 )
+        ret = priority_map[l];
+      return ret;
+    };
+    
+    pb::LogLevel level = pb::LogLevel::VIRTDB_SIMPLE_TRACE;
+    int prio = get_prio(level);
+    
+    for( auto const & h : record->headers() )
+    {
+      int new_prio = get_prio(h.level());
+      if( new_prio > prio )
+      {
+        prio = new_prio;
+        level = h.level();
+      }
+    }
+    
     int pub_size = record->ByteSize();
     if( pub_size > 0 )
     {
@@ -248,7 +276,7 @@ namespace virtdb { namespace connector {
       }
       
       std::ostringstream os;
-      os << procname << ' ' << hostname;
+      os << (int)level << ' ' << procname << ' ' << hostname;
       pub_base_type::publish(os.str(), std::move(record));
     }
   }
