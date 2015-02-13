@@ -41,6 +41,7 @@ void receiver_thread::send_query(
     add_query(query_client, data_client, node, query_data);
     query_client.wait_valid();
     query_client.send_request(query_data.get_message());
+    LOG_INFO("Sent query with id" << V_(query_data.id()));
 }
 
 void receiver_thread::stop_query(const std::string& table_name, query_push_client& query_client, long node, const std::string& segment_id)
@@ -83,22 +84,12 @@ void receiver_thread::add_query(
         {
             channel_id +=  " " + query_data.segment_id();
         }
-        LOG_TRACE("Subscribing to:" << V_(channel_id));
         data_client.watch(channel_id,
             [&,query_id,node](const std::string & provider_name,
                               const std::string & channel,
                               const std::string & subscription,
                               std::shared_ptr<interface::pb::Column> column)
             {
-                LOG_TRACE("Received column chunk." <<
-                          V_(column->queryid()) <<
-                          V_(channel) <<
-                          V_(subscription) <<
-                          V_(column->name()) <<
-                          V_(column->seqno()) <<
-                          V_(column->endofdata()) <<
-                          V_((int64_t)node));
-              
                 if( query_id != column->queryid() )
                 {
                     LOG_ERROR("inconsistent query id" <<
@@ -129,7 +120,6 @@ void receiver_thread::add_query(
                 data_handler* handler = get_data_handler(column->queryid());
                 if (handler != nullptr)
                 {
-                    LOG_TRACE("Pushing it to handler.")
                     handler->push(column->name(), new interface::pb::Column(*column));
                 }
                 else
