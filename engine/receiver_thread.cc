@@ -41,7 +41,7 @@ void receiver_thread::send_query(
     add_query(query_client, data_client, node, query_data);
     query_client.wait_valid();
     query_client.send_request(query_data.get_message());
-    LOG_INFO("Sent query with id" << V_(query_data.id()));
+    LOG_INFO("Sent query with id" << V_(query_data.id()) << V_(query_data.table_name()));
 }
 
 void receiver_thread::stop_query(const std::string& table_name, query_push_client& query_client, long node, const std::string& segment_id)
