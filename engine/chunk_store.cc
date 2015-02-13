@@ -14,12 +14,6 @@ void chunk_store::push(std::string name,
   if( current_sequence_id > max_inserted_sequence_id )
     max_inserted_sequence_id = current_sequence_id;
   
-  LOG_SCOPED("Received new chunk." <<
-             V_(name) <<
-             V_(new_data->name()) <<
-             V_(current_sequence_id) <<
-             V_(max_inserted_sequence_id));
-  
   auto it = column_names.find(name);
   if( it == column_names.end() )
   {
@@ -50,7 +44,6 @@ void chunk_store::push(std::string name,
 
 data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
 {
-    LOG_SCOPED(V_(sequence_number));
     for (auto * chunk : data_container)
     {
         if (chunk->sequence_number() == sequence_number)
@@ -104,8 +97,6 @@ data_chunk* chunk_store::pop()
 void chunk_store::ask_for_missing_chunks(std::string col_name,
                                          sequence_id_t current_sequence_id)
 {
-  LOG_SCOPED(V_(col_name) << V_(current_sequence_id));
-  
   try
   {
     ask_for_resend(col_name, current_sequence_id);
@@ -122,7 +113,6 @@ void chunk_store::ask_for_missing_chunks(std::string col_name,
 
 void chunk_store::ask_for_missing_chunks()
 {
-  LOG_SCOPED("asking for missing");
   std::set<column_id_t> received_columns;
   if( data_container.size() > 0 )
   {
@@ -149,8 +139,6 @@ void chunk_store::ask_for_missing_chunks()
 
 void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_sequence_id)
 {
-    LOG_SCOPED(V_(column_id) << V_(current_sequence_id));
-  
     auto it = received_ids.find(column_id);
     if( it == received_ids.end() )
     {
@@ -159,11 +147,6 @@ void chunk_store::mark_as_received(column_id_t column_id, sequence_id_t current_
     }
   
     it->second.insert(current_sequence_id);
-  
-    LOG_TRACE("Next chunk to be waited for: " <<
-              V_(column_id) <<
-              V_(current_sequence_id) <<
-              V_(max_inserted_sequence_id) );
 }
 
 bool chunk_store::is_next_chunk_available() const

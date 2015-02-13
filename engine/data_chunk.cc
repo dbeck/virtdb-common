@@ -73,7 +73,6 @@ sequence_id_t data_chunk::sequence_number()
 
 void data_chunk::add_chunk(column_id_t column_id, virtdb::interface::pb::Column* data)
 {
-    LOG_SCOPED(V_(column_id) << P_(data));
     if (has_data and seq_no != data->seqno())
     {
         THROW_("Trying to add chunk with different sequence number.");
@@ -82,8 +81,6 @@ void data_chunk::add_chunk(column_id_t column_id, virtdb::interface::pb::Column*
     columns.emplace(std::piecewise_construct,
                     std::forward_as_tuple(column_id),
                     std::forward_as_tuple(data));
-    LOG_TRACE("inserted" << V_(column_id));
-    // LOG_TRACE("Adding chunk" << V_(columns.size()) << V_(n_columns) << V_(seq_no) << V_(columns[column_id].size()));
     if (columns.size() == n_columns)
     {
         complete = true;

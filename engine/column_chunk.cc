@@ -95,7 +95,6 @@ column_chunk::column_chunk(virtdb::interface::pb::Column* data)
 
 void column_chunk::operator=(const column_chunk& source)
 {
-    LOG_TRACE("In operator=, i knew it");
     if (source.column_data != nullptr)
     {
         delete column_data;
