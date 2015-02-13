@@ -9,6 +9,7 @@ export MAKEFLAGS=$MF
 if [ -e snappy/.libs/libsnappy.a ]
 then
   echo 'snappy built'
+  ln -sf ./snappy/.libs/libsnappy.a xlast-snappy.a
   exit 0
 else
   echo 'snappy build failed'

@@ -48,3 +48,7 @@ DS_Store
 
 # atom plugin files
 tags
+
+# libs to link last
+xlast-lz4.a
+xlast-snappy.a
