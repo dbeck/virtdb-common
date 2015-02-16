@@ -41,6 +41,7 @@ bool data_handler::wait_for_data()
                 }
                 else
                 {
+                    LOG_INFO("Asking for missing chunks: " << V_(queryid) << V_(tries) << P_(current_chunk));
                     data_store->ask_for_missing_chunks();
                 }
             }
