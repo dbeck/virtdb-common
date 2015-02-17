@@ -2,6 +2,7 @@
 #include <xxhash.h>
 #include <util/flex_alloc.hh>
 #include <util/hex_util.hh>
+#include <util/exception.hh>
 #include <logger.hh>
 
 namespace virtdb { namespace cachedb {
@@ -16,6 +17,14 @@ namespace virtdb { namespace cachedb {
   hash_util::hex(unsigned long long hashed, std::string & res)
   {
     util::hex_util(hashed, res);
+  }
+  
+  void
+  hash_util::hash_query(const interface::pb::Query & query_in,
+                        std::string & table_hash_out,
+                        colhash_map & column_hashes_out)
+  {
+    THROW_("implement me");
   }
   
   bool
