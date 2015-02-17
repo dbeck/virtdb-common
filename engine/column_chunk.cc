@@ -74,12 +74,10 @@ void column_chunk::uncompress()
         {
             THROW_("failed to decompress data");
         }
-        virtdb::interface::pb::ValueType uncompressed_data;
-        if( !uncompressed_data.ParseFromArray(destinationBuffer, maxDecompressedSize) )
+        if( !column_data->mutable_data()->ParseFromArray(destinationBuffer, maxDecompressedSize) )
         {
             THROW_("failed to parse decompressed data");
         }
-        column_data->mutable_data()->MergeFrom(uncompressed_data);
     }
 }
 
