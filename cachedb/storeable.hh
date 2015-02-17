@@ -42,6 +42,9 @@ namespace virtdb { namespace cachedb {
                                                const std::string & _key,
                                                const std::string & _name,
                                                data _data)>);
+    
+    virtual void clear();
+    
     storeable();
     virtual ~storeable();
   };

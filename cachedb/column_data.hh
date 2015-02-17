@@ -20,7 +20,8 @@ namespace virtdb { namespace cachedb {
     
     // own stuff
     void set(const interface::pb::Column & c);
-    void reset();
+    void clear();
+    size_t len() const;
     
     column_data();
     virtual ~column_data();

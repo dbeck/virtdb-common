@@ -78,5 +78,13 @@ namespace virtdb { namespace cachedb {
     }
     return ret;
   }
+  
+  void
+  storeable::clear()
+  {
+    properties_.clear();
+    column_set_.clear();
+    key_.clear();
+  }
 
 }}

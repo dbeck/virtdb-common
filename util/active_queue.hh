@@ -84,18 +84,29 @@ namespace virtdb { namespace util {
         queued_items = queue_.size();
       }
         
-      while( queued_items > 0 )
+      while( queued_items > 0 && !stopped() )
       {
-        // give time to the threads to progress
-        std::this_thread::sleep_for(progress_for);
         size_t tmp = queued_items;
+        std::cv_status cvstat = std::cv_status::no_timeout;
+        
+        {
+          lock l(empty_mutex_);
+          
+          if( queued_items > 0 )
+          {
+            // give time to the threads to progress
+            cvstat = empty_cond_.wait_for(l, progress_for);
+          }
+        }
+        
         {
           lock l(mutex_);
           queued_items = queue_.size();
         }
         
         // if no progress has been made, then stop waiting for them
-        if( tmp == queued_items )
+        if( tmp == queued_items &&
+            cvstat == std::cv_status::timeout )
         {
           break;
         }
@@ -107,6 +118,7 @@ namespace virtdb { namespace util {
     {
       stop_ = true;
       cond_.notify_all();
+      empty_cond_.notify_all();
       for( auto & t : threads_ )
       {
         if( t.joinable() )
@@ -122,6 +134,8 @@ namespace virtdb { namespace util {
   private:
     mtx             mutex_;
     cond            cond_;
+    mtx             empty_mutex_;
+    cond            empty_cond_;
     q               queue_;
     barrier         barrier_;
     item_handler    handler_;
@@ -174,6 +188,11 @@ namespace virtdb { namespace util {
           {
             LOG_ERROR("unknown exception caught");
           }
+        }
+        else
+        {
+          lock l(empty_mutex_);
+          empty_cond_.notify_one();
         }
       }
     }

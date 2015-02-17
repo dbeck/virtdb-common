@@ -5,7 +5,7 @@ namespace virtdb { namespace cachedb {
   
   void
   query_hasher::hash_query(const interface::pb::Query & query_in,
-                           query_table_hash & table_hash_out,
+                           std::string & table_hash_out,
                            colhash_map & column_hashes_out)
   {
     // TODO

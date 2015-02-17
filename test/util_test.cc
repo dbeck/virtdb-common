@@ -5,6 +5,7 @@
 #include <util/exception.hh>
 #include <util/utf8.hh>
 #include <util/table_collector.hh>
+#include <util/relative_time.hh>
 #include <future>
 #include <thread>
 
@@ -19,13 +20,17 @@ ActiveQueueTest::ActiveQueueTest()
 
 TEST_F(ActiveQueueTest, AddNumbers)
 {
-  for( int i=1; i<=100; ++i )
+  for( int i=1; i<=10000; ++i )
     this->queue_.push(i);
 
-  EXPECT_TRUE( this->queue_.wait_empty(std::chrono::milliseconds(100)) );
+  {
+    relative_time rt;
+    EXPECT_TRUE( this->queue_.wait_empty(std::chrono::milliseconds(20000)) );
+    std::cout << "took " << rt.get_usec() << " usec\n";
+  }
   this->queue_.stop();
   EXPECT_TRUE( this->queue_.stopped() );
-  EXPECT_EQ( this->value_, 5050 );
+  EXPECT_EQ( this->value_, 50005000 );
 }
 
 TEST_F(ActiveQueueTest, Stop3Times)
