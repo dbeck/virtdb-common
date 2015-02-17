@@ -1,5 +1,6 @@
 #include "hash_base.hh"
 #include <util/exception.hh>
+#include <xxhash.h>
 
 namespace virtdb { namespace cachedb {
   

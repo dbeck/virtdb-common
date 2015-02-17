@@ -1,5 +1,7 @@
 #include "column_data.hh"
+#include <cachedb/column_hasher.hh>
 #include <util/exception.hh>
+#include <util/hex_util.hh>
 
 namespace virtdb { namespace cachedb {
   
@@ -22,7 +24,18 @@ namespace virtdb { namespace cachedb {
     column("data");
   }
   
-  column_data::column_data() : storeable() {}
+  column_data::column_data() : storeable(), len_{0} {}
   column_data::~column_data() {}
   
+  void
+  column_data::set(const interface::pb::Column & c)
+  {
+    THROW_("implement me");
+  }
+  
+  void
+  column_data::reset()
+  {
+    THROW_("implement me");
+  }
 }}
