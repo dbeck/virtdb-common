@@ -13,7 +13,7 @@ namespace virtdb { namespace cachedb {
     
     static void
     hash_column(const interface::pb::Column & col_in,
-                     column_hash & hash_out);
+                column_hash & hash_out);
   };
   
 }}
