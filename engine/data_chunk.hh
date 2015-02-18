@@ -4,6 +4,7 @@
 #include "column_chunk.hh"
 #include <common.pb.h>
 #include "query.hh"
+#include <util/active_queue.hh>
 
 namespace virtdb { namespace engine {
 
@@ -22,7 +23,7 @@ class data_chunk {
         int size();
         bool is_last();
         bool is_complete() const;
-        void uncompress();
+        void uncompress(virtdb::util::active_queue<column_chunk*, 20>* worker_queue);
         bool read_next();
         sequence_id_t sequence_number();
         void add_chunk(column_id_t column_id, virtdb::interface::pb::Column* data);
