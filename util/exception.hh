@@ -27,6 +27,18 @@ namespace virtdb { namespace util {
       data_ = os.str();
     }
 
+    exception(
+              const char * file,
+              unsigned int line,
+              const char * func,
+              const std::string & msg)
+    {
+      std::ostringstream os;
+      os << '[' << file << ':' << line << "] " << func << "() ";
+      if( !msg.empty() ) os << "msg=" << msg << " ";
+      data_ = os.str();
+    }
+
     virtual ~exception() {}
 
     const char* what() const noexcept(true)

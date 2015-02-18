@@ -2,8 +2,15 @@
 
 #include "common.pb.h"
 #include <string>
+#include <util/exception.hh>
+#include <sstream>
 
 // TODO : polymorphic getter
+
+#ifndef LOCAL_VALUE_TYPE_MACROS
+#define LOCAL_VALUE_TYPE_MACROS
+#define V_VT_(A)  " {" << #A << '=' << A << "} "
+#endif // LOCAL_VALUE_TYPE_MACROS
 
 namespace virtdb { namespace util {
 
@@ -84,7 +91,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.stringvalue_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.stringvalue_size())
+           << "value_type<std::string>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_stringvalue()->Get(index);
     }
@@ -141,7 +155,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.stringvalue_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.stringvalue_size())
+           << "value_type<const char *>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_stringvalue()->Get(index);
     }
@@ -198,7 +219,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.int32value_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.int32value_size())
+           << "value_type<int32_t>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_int32value()->Get(index);
     }
@@ -255,7 +283,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.int64value_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.int64value_size())
+           << "value_type<int64_t>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_int64value()->Get(index);
     }
@@ -312,7 +347,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.uint32value_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.uint32value_size())
+           << "value_type<uint32_t>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_uint32value()->Get(index);
     }
@@ -369,7 +411,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.uint64value_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.uint64value_size())
+           << "value_type<uint64_t>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_uint64value()->Get(index);
     }
@@ -435,7 +484,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.doublevalue_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.doublevalue_size())
+           << "value_type<double>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_doublevalue()->Get(index);
     }
@@ -492,7 +548,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.floatvalue_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.floatvalue_size())
+           << "value_type<float>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_floatvalue()->Get(index);
     }
@@ -549,7 +612,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.boolvalue_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.boolvalue_size())
+           << "value_type<bool>";
+        THROW_(os.str());
+      }
       else
         return pb_vt.mutable_boolvalue()->Get(index);
     }
@@ -610,7 +680,14 @@ namespace virtdb { namespace util {
         int index)
     {
       if( pb_vt.bytesvalue_size() <= index )
-        throw std::out_of_range(std::to_string(index) + " is out of range");
+      {
+        std::ostringstream os;
+        os << "out of range"
+           << V_VT_(index) << ">="
+           << V_VT_(pb_vt.bytesvalue_size())
+           << "value_type<std::string,bytes>";
+        THROW_(os.str());
+      }
       else
       {
         return pb_vt.mutable_bytesvalue()->Get(index);
@@ -619,3 +696,7 @@ namespace virtdb { namespace util {
   };
 
 }} // virtdb::interface
+
+#ifdef V_VT_
+#undef V_VT_
+#endif
