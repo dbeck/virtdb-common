@@ -475,12 +475,14 @@ namespace virtdb { namespace connector {
     if( proc_info.has_namesymbol() )
       host_and_name << "/" << resolve(symbol_table, proc_info.namesymbol());
     
+    double elapsed_ms = data.elapsedmicrosec() / 1000.0;
+    
     std::cerr << '[' << proc_info.pid() << ':' << data.threadid() << "]"
               << host_and_name.str()
               << " (" << level_string(head.level())
               << ") @" << resolve(symbol_table,head.filenamesymbol()) << ':'
               << head.linenumber() << " " << resolve(symbol_table,head.functionnamesymbol())
-              << "() @" << data.elapsedmicrosec() << "us ";
+              << "() @" << elapsed_ms << "ms ";
     
     int var_idx = 0;
     
