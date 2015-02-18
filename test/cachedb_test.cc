@@ -11,6 +11,10 @@ using namespace virtdb::cachedb;
 using namespace virtdb::interface;
 using namespace rocksdb;
 
+TEST_F(CachedbColumnDataTest, KeyLen)
+{
+}
+
 TEST_F(CachedbStoreTest, SimpleRocksDb)
 {
   Options options;

@@ -19,12 +19,13 @@ namespace virtdb { namespace cachedb {
     util::hex_util(hashed, res);
   }
   
-  void
+  bool
   hash_util::hash_query(const interface::pb::Query & query_in,
                         std::string & table_hash_out,
                         colhash_map & column_hashes_out)
   {
     THROW_("implement me");
+    return false;
   }
   
   bool
@@ -44,6 +45,24 @@ namespace virtdb { namespace cachedb {
     return ret;
   }
   
+  bool
+  hash_util::hash_data(const void * p,
+                       size_t len,
+                       std::string & out)
+  {
+    bool ret = true;
+    if( !p || !len )
+    {
+      out = empty_input;
+      ret = false;
+    }
+    else
+    {
+      hex(XXH64(p, len, 0), out);
+    }
+    return ret;
+  }
+
   bool
   hash_util::hash_query(const interface::pb::Query & in,
                         std::string & out)

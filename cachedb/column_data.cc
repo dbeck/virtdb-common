@@ -1,6 +1,8 @@
 #include "column_data.hh"
 #include <util/exception.hh>
 #include <util/hex_util.hh>
+#include <cachedb/hash_util.hh>
+#include <logger.hh>
 
 namespace virtdb { namespace cachedb {
   
@@ -53,7 +55,7 @@ namespace virtdb { namespace cachedb {
     if( byte_size >= len_ )
     {
       // this should be the state if fail to allocate
-      len_       = 0;
+      len_ = 0;
       
       // clear parent
       storeable::clear();
@@ -62,12 +64,36 @@ namespace virtdb { namespace cachedb {
       len_ = byte_size;
     }
     
-    tmp.SerializePartialToArray(data_.get(), byte_size);
-    //
+    if( !tmp.SerializePartialToArray(data_.get(), byte_size) )
     {
-      
+      LOG_ERROR("failed to serialize data"
+                << V_(byte_size)
+                << V_(c.queryid())
+                << V_(c.name())
+                << V_(c.seqno()));
+      THROW_("failed to serialize data");
     }
-
+    
+    len_ = byte_size;
+    
+    {
+      // generate hash
+      std::string hash_val;
+      if( hash_util::hash_data(data_.get(), len_, hash_val) )
+        this->key(hash_val);
+      else
+      {
+        LOG_ERROR("failed to generate hash value"
+                  << V_(len_)
+                  << V_(c.queryid())
+                  << V_(c.name())
+                  << V_(c.seqno()));
+        THROW_("cannot generate hash value");
+      }
+      
+      // set property
+      this->property("data", data_.get(), len_);
+    }
   }
   
   void
