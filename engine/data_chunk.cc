@@ -6,6 +6,7 @@
 #endif //RELEASE
 
 #include "data_chunk.hh"
+#include <util/active_queue.hh>
 #include <util/exception.hh>
 #include <logger.hh>
 #include <utility>
@@ -48,12 +49,14 @@ bool data_chunk::is_complete() const
     return complete;
 }
 
-void data_chunk::uncompress()
+void data_chunk::uncompress(virtdb::util::active_queue<column_chunk*, 20>* worker_queue)
 {
     for (auto& item : columns)
     {
-        item.second.uncompress();
+        worker_queue->push(&(item.second));
+        // item.second.uncompress();
     }
+    worker_queue->wait_empty(std::chrono::milliseconds(2000));
 }
 
 bool data_chunk::read_next()

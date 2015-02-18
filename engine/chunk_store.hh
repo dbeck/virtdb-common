@@ -6,6 +6,8 @@
 #include <iosfwd>
 #include <set>
 #include "data_chunk.hh"
+#include "column_chunk.hh"
+#include <util/active_queue.hh>
 
 namespace virtdb { namespace engine {
 
@@ -21,6 +23,7 @@ namespace virtdb { namespace engine {
             resend_function_t ask_for_resend;
             sequence_id_t last_inserted_sequence_id = 0;
             sequence_id_t max_inserted_sequence_id = 0;
+            virtdb::util::active_queue<column_chunk*, 20> worker_queue;
       
             std::map<std::string, column_id_t>  column_names;
             std::map<column_id_t, virtdb::interface::pb::Field> fields;
