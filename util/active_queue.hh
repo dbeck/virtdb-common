@@ -19,6 +19,10 @@ namespace virtdb { namespace util {
   template <typename ITEM, unsigned long WAKEUP_FREQ=DEFAULT_TIMEOUT_MS>
   class active_queue final
   {
+  public:
+    typedef std::function<void(ITEM)> item_handler;
+
+  private:
     typedef std::mutex                   mtx;
     typedef std::queue<ITEM>             q;
     typedef std::condition_variable      cond;
@@ -30,13 +34,25 @@ namespace virtdb { namespace util {
     active_queue(const active_queue&) = delete;
     active_queue & operator=(const active_queue &) = delete;
     
-  public:
-    typedef std::function<void(ITEM)> item_handler;
+    mtx             mutex_;
+    cond            cond_;
+    mtx             progress_mutex_;
+    cond            progress_cond_;
+    uint64_t        enqueued_;
+    uint64_t        done_;
+    q               queue_;
+    barrier         barrier_;
+    item_handler    handler_;
+    thread_vector   threads_;
+    flag            stop_;
     
+  public:
     static const unsigned int wakeup_freq() { return WAKEUP_FREQ; }
     
     active_queue(unsigned int nthreads, item_handler handler)
-    : barrier_(nthreads+1),
+    : enqueued_{0},
+      done_{0},
+      barrier_(nthreads+1),
       handler_(handler),
       stop_(false)
     {
@@ -54,20 +70,52 @@ namespace virtdb { namespace util {
       std::this_thread::yield();
     }
     
+    uint64_t n_done()
+    {
+      uint64_t ret = 0;
+      {
+        lock l(progress_mutex_);
+        ret = done_;
+      }
+      return ret;
+    }
+
+    uint64_t n_enqueued()
+    {
+      uint64_t ret = 0;
+      {
+        lock l(progress_mutex_);
+        ret = enqueued_;
+      }
+      return ret;
+    }
+    
     void push(const ITEM & i)
     {
       if( stopped() ) return;
-      lock l(mutex_);
-      queue_.push(i);
-      cond_.notify_one();
+      {
+        lock l(progress_mutex_);
+        ++enqueued_;
+      }
+      {
+        lock l(mutex_);
+        queue_.push(i);
+        cond_.notify_one();
+      }
     }
     
     void push(ITEM && i)
     {
       if( stopped() ) return;
-      lock l(mutex_);
-      queue_.push(std::move(i));
-      cond_.notify_one();
+      {
+        lock l(progress_mutex_);
+        ++enqueued_;
+      }
+      {
+        lock l(mutex_);
+        queue_.push(std::move(i));
+        cond_.notify_one();
+      }
     }
     
     bool stopped() const
@@ -78,47 +126,50 @@ namespace virtdb { namespace util {
     template <typename T>
     bool wait_empty(const T & progress_for)
     {
-      size_t queued_items = 0;
+      size_t enqueued_items = 0;
+      size_t done_items     = 0;
+      
       {
-        lock l(mutex_);
-        queued_items = queue_.size();
+        lock l(progress_mutex_);
+        
+        enqueued_items = enqueued_;
+        done_items     = done_;
       }
         
-      while( queued_items > 0 && !stopped() )
+      while( enqueued_ > done_items && !stopped() )
       {
-        size_t tmp = queued_items;
+        size_t last_done = done_items;
         std::cv_status cvstat = std::cv_status::no_timeout;
         
         {
-          lock l(empty_mutex_);
+          lock l(progress_mutex_);
           
-          if( queued_items > 0 )
+          if( enqueued_ > done_ )
           {
             // give time to the threads to progress
-            cvstat = empty_cond_.wait_for(l, progress_for);
+            cvstat = progress_cond_.wait_for(l, progress_for);
           }
-        }
-        
-        {
-          lock l(mutex_);
-          queued_items = queue_.size();
+          
+          enqueued_items = enqueued_;
+          done_items     = done_;
         }
         
         // if no progress has been made, then stop waiting for them
-        if( tmp == queued_items &&
+        if( last_done == done_items &&
             cvstat == std::cv_status::timeout )
         {
           break;
         }
       }
-      return (queued_items == 0);
+      
+      return (enqueued_items == done_items);
     }
     
     void stop()
     {
       stop_ = true;
       cond_.notify_all();
-      empty_cond_.notify_all();
+      progress_cond_.notify_all();
       for( auto & t : threads_ )
       {
         if( t.joinable() )
@@ -132,16 +183,6 @@ namespace virtdb { namespace util {
     }
     
   private:
-    mtx             mutex_;
-    cond            cond_;
-    mtx             empty_mutex_;
-    cond            empty_cond_;
-    q               queue_;
-    barrier         barrier_;
-    item_handler    handler_;
-    thread_vector   threads_;
-    flag            stop_;
-    
     void entry()
     {
       // synchronize between the threads and the constructor
@@ -188,11 +229,12 @@ namespace virtdb { namespace util {
           {
             LOG_ERROR("unknown exception caught");
           }
-        }
-        else
-        {
-          lock l(empty_mutex_);
-          empty_cond_.notify_one();
+          // signal wait_empty, no matter what the result was
+          {
+            lock l(progress_mutex_);
+            ++done_;
+            progress_cond_.notify_one();
+          }
         }
       }
     }

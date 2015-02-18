@@ -14,7 +14,7 @@ namespace virtdb { namespace test {
     ActiveQueueTest();
     
     std::atomic<int> value_;
-    util::active_queue<int> queue_;
+    util::active_queue<int,100> queue_;
   };
   
   class BarrierTest : public ::testing::Test

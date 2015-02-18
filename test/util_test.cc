@@ -12,10 +12,80 @@
 using namespace virtdb::test;
 using namespace virtdb::util;
 
+
 ActiveQueueTest::ActiveQueueTest()
 : value_(0),
   queue_(10,[this](int v){ value_ += v; })
 {
+}
+
+namespace
+{
+  struct measure
+  {
+    std::string    file_;
+    int            line_;
+    std::string    function_;
+    relative_time  rt_;
+    
+    measure(const char * f,
+            int l,
+            const char * fn)
+    : file_(f),
+      line_(l),
+      function_(fn) {}
+    
+    ~measure()
+    {
+      double tm = rt_.get_usec() / 1000.0;
+      std::cout << "[" << file_ << ':' << line_ << "] " << function_ << "() " << tm << " ms\n";
+    }
+  };
+}
+
+#define MEASURE_ME measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
+
+
+TEST_F(ActiveQueueTest, LongSleep)
+{
+  {
+    active_queue<int,100> q{
+      1,
+      [](int i)
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
+      }};
+    EXPECT_TRUE( q.wait_empty(std::chrono::milliseconds(1)) );
+    EXPECT_TRUE( q.wait_empty(std::chrono::milliseconds(1000)) );
+    q.push(1);
+    {
+      MEASURE_ME;
+      EXPECT_FALSE( q.wait_empty(std::chrono::milliseconds(1)) );
+    }
+    {
+      MEASURE_ME;
+      EXPECT_TRUE( q.wait_empty(std::chrono::milliseconds(6000)) );
+    }
+  }
+  {
+    active_queue<int,3000> q{
+      1,
+      [](int i)
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
+      }};
+    EXPECT_TRUE( q.wait_empty(std::chrono::milliseconds(1)) );
+    EXPECT_TRUE( q.wait_empty(std::chrono::milliseconds(1000)) );
+    q.push(1);
+    {
+      MEASURE_ME;
+      EXPECT_FALSE( q.wait_empty(std::chrono::milliseconds(1)) );
+    }
+    {
+      MEASURE_ME;
+      EXPECT_TRUE( q.wait_empty(std::chrono::milliseconds(6000)) );
+    }
+  }
 }
 
 TEST_F(ActiveQueueTest, AddNumbers)
