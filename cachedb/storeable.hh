@@ -24,6 +24,9 @@ namespace virtdb { namespace cachedb {
     column_set_t column_set_;
     properties_t properties_;
     
+    storeable & operator=(const storeable &) = delete;
+    storeable(const storeable &) = delete;
+    
   public:
     virtual const std::string & clazz() const = 0;
     virtual size_t key_len() const = 0;

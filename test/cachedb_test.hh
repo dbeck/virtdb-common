@@ -10,5 +10,6 @@ namespace virtdb { namespace test {
   
   // new classes
   class CachedbColumnDataTest : public ::testing::Test { };
+  class CachedbDBTest         : public ::testing::Test { };
 
 }}
