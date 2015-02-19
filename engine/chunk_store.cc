@@ -62,7 +62,10 @@ data_chunk* chunk_store::get_chunk(sequence_id_t sequence_number)
 
 chunk_store::chunk_store(const query& query_data, resend_function_t _ask_for_resend)
 : n_columns(query_data.columns_size()),
-  ask_for_resend(_ask_for_resend)
+  ask_for_resend(_ask_for_resend),
+  worker_queue(4, [](column_chunk* chunk) {
+      chunk->uncompress();
+  })
 {
     for (int i = 0; i < n_columns; i++)
     {
@@ -83,7 +86,7 @@ data_chunk* chunk_store::pop()
     {
         front_chunk = data_container.front();
 
-        front_chunk->uncompress();
+        front_chunk->uncompress(&worker_queue);
 
         if (front_chunk->is_last())
         {
