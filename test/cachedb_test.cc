@@ -6,6 +6,7 @@
 #include <cachedb/column_data.hh>
 #include <cachedb/query_column_log.hh>
 #include <cachedb/db.hh>
+#include <cachedb/query_hasher.hh>
 #include <memory>
 #include <iostream>
 #include <set>
@@ -14,6 +15,18 @@ using namespace virtdb::test;
 using namespace virtdb::cachedb;
 using namespace virtdb::interface;
 using namespace rocksdb;
+
+TEST_F(CachedbQueryHasherTest, HashQuery)
+{
+  pb::Query q;
+  std::string tab_hash;
+  query_hasher::colhash_map col_hashes;
+  bool res = query_hasher::hash_query(q,
+                                      tab_hash,
+                                      col_hashes);
+  
+  EXPECT_TRUE(res);
+}
 
 TEST_F(CachedbDBTest, InitTests)
 {
@@ -176,7 +189,7 @@ TEST_F(CachedbColumnDataTest, HashColumnData)
   EXPECT_NE(prev_len,calc_len(c));
 }
 
-TEST_F(CachedbStoreTest, SimpleRocksDb)
+TEST_F(XCachedbStoreTest, SimpleRocksDb)
 {
   Options options;
   options.create_if_missing = true;
@@ -205,7 +218,7 @@ TEST_F(CachedbStoreTest, SimpleRocksDb)
   }
 }
 
-TEST_F(CachedbStoreTest, StoreColumn)
+TEST_F(XCachedbStoreTest, StoreColumn)
 {
   store st("/tmp/StoreColumn",9000);
   
@@ -250,7 +263,7 @@ TEST_F(CachedbStoreTest, StoreColumn)
   EXPECT_GT(n_results, 0);
 }
 
-TEST_F(CachedbStoreTest, StoreConfig)
+TEST_F(XCachedbStoreTest, StoreConfig)
 {
   store st("/tmp/StoreConfig",9000);
   pb::Config cfg;
@@ -279,7 +292,7 @@ TEST_F(CachedbStoreTest, StoreConfig)
   EXPECT_GT(deleted, 0);
 }
 
-TEST_F(CachedbStoreTest, StoreEndpoint)
+TEST_F(XCachedbStoreTest, StoreEndpoint)
 {
   store st("/tmp/StoreEndpoint",9000);
   pb::EndpointData ep;
@@ -309,7 +322,7 @@ TEST_F(CachedbStoreTest, StoreEndpoint)
   EXPECT_GT(deleted, 0);
 }
 
-TEST_F(CachedbDbIdTest, DateNow)
+TEST_F(XCachedbDbIdTest, DateNow)
 {
   std::string now;
   dbid::date_now(now);
@@ -319,7 +332,7 @@ TEST_F(CachedbDbIdTest, DateNow)
   EXPECT_TRUE(isnum);
 }
 
-TEST_F(CachedbDbIdTest, GenEmpty)
+TEST_F(XCachedbDbIdTest, GenEmpty)
 {
   pb::Query         q;
   pb::Config        cfg;
@@ -350,7 +363,7 @@ TEST_F(CachedbDbIdTest, GenEmpty)
   }
 }
 
-TEST_F(CachedbDbIdTest, GenColumnId)
+TEST_F(XCachedbDbIdTest, GenColumnId)
 {
   pb::Query q;
   q.set_table("TEST_TAB");
@@ -396,7 +409,7 @@ TEST_F(CachedbDbIdTest, GenColumnId)
 
 }
 
-TEST_F(CachedbDbIdTest, GenConfigId)
+TEST_F(XCachedbDbIdTest, GenConfigId)
 {
   pb::Config cfg;
   cfg.set_name("my component");
@@ -412,7 +425,7 @@ TEST_F(CachedbDbIdTest, GenConfigId)
   EXPECT_EQ(res.size(), 64);
 }
 
-TEST_F(CachedbDbIdTest, GenEndpointId)
+TEST_F(XCachedbDbIdTest, GenEndpointId)
 {
   pb::EndpointData  ep;
   ep.set_name("my component");
@@ -438,7 +451,7 @@ TEST_F(CachedbDbIdTest, GenEndpointId)
   }
 }
 
-TEST_F(CachedbHashUtilTest, HexFun)
+TEST_F(XCachedbHashUtilTest, HexFun)
 {
   std::string v1;
   hash_util::hex(1, v1);
@@ -453,7 +466,7 @@ TEST_F(CachedbHashUtilTest, HexFun)
   EXPECT_EQ(v2,"1000200030004000");
 }
 
-TEST_F(CachedbHashUtilTest, HashQuery)
+TEST_F(XCachedbHashUtilTest, HashQuery)
 {
   pb::Query q;
   std::string res_t;
@@ -483,7 +496,7 @@ TEST_F(CachedbHashUtilTest, HashQuery)
   EXPECT_EQ(res_tsf.size(), res_ts.size());
 }
 
-TEST_F(CachedbHashUtilTest, HashField)
+TEST_F(XCachedbHashUtilTest, HashField)
 {
   pb::Query q;
   pb::Field fld;
@@ -511,7 +524,7 @@ TEST_F(CachedbHashUtilTest, HashField)
   EXPECT_EQ(res_fld.size(), 16);
 }
 
-TEST_F(CachedbHashUtilTest, HashString)
+TEST_F(XCachedbHashUtilTest, HashString)
 {
   std::string hello;
   EXPECT_TRUE(hash_util::hash_string("hello", hello));

@@ -28,14 +28,17 @@ namespace virtdb { namespace cachedb {
   void
   storeable::properties(std::function<void(const std::string & _clazz,
                                            const std::string & _key,
-                                           const std::string & _name,
-                                           data _data)> fn)
+                                           const std::string & _family,
+                                           data _data)> fn) const
   {
     for( auto const & it : properties_ )
     {
+      std::ostringstream os;
+      os << clazz() << '.' << it.first;
+      
       fn(clazz(),
          key(),
-         it.first,
+         os.str(),
          it.second);
     }
   }

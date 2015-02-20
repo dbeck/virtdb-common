@@ -13,7 +13,7 @@ namespace virtdb { namespace cachedb {
   public:
     typedef std::map<std::string, std::string> colhash_map;
     
-    static void
+    static bool
     hash_query(const interface::pb::Query & query_in,
                std::string & table_hash_out,
                colhash_map & column_hashes_out);

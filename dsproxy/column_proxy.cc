@@ -29,12 +29,12 @@ namespace virtdb { namespace dsproxy {
                                           subscription,
                                           data);
                             });
-        LOG_INFO("subscribed to" << V_(query_id));
+        LOG_TRACE("subscribed to" << V_(query_id));
         subscriptions_.insert(query_id);
       }
       else
       {
-        LOG_INFO("already subscribed to" << V_(query_id));
+        LOG_TRACE("already subscribed to" << V_(query_id));
       }
     }
     else
@@ -56,7 +56,7 @@ namespace virtdb { namespace dsproxy {
       if( subscriptions_.count(query_id) > 0 )
       {
         client_sptr_->remove_watch(query_id);
-        LOG_INFO("unsubscribed from" << V_(query_id));
+        LOG_TRACE("unsubscribed from" << V_(query_id));
         subscriptions_.erase(query_id);
       }
     }
@@ -114,7 +114,7 @@ namespace virtdb { namespace dsproxy {
     
     if( ret )
     {
-      LOG_INFO("column client connected to:" << V_(server));
+      LOG_TRACE("column client connected to:" << V_(server));
     }
     else
     {
@@ -162,7 +162,7 @@ namespace virtdb { namespace dsproxy {
     }
     else
     {
-      LOG_INFO("not publishing due to fault injection" <<
+      LOG_TRACE("not publishing due to fault injection" <<
                 V_(channel) <<
                 V_(data->queryid()) <<
                 V_(data->seqno()) <<

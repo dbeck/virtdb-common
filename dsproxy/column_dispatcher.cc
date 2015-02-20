@@ -49,7 +49,7 @@ namespace virtdb { namespace dsproxy {
       auto it = message_cache_.find(id);
       if( it == message_cache_.end() )
       {
-        LOG_INFO("cannot resend chunk. not in the cache" <<
+        LOG_TRACE("cannot resend chunk. not in the cache" <<
                  V_(query_id) <<
                  V_(segment_id) <<
                  V_(block_id));
@@ -77,7 +77,7 @@ namespace virtdb { namespace dsproxy {
             os << ']';
           }
           
-          LOG_INFO("missing block info" <<
+          LOG_TRACE("missing block info" <<
                    V_(query_id) <<
                    V_(segment_id) <<
                    V_(min) <<
@@ -91,7 +91,7 @@ namespace virtdb { namespace dsproxy {
         UNLESS_INJECT_FAULT("omit-message", channel_id)
         {
           server_.publish(channel_id, it->second);
-          LOG_INFO("re-sending data block" <<
+          LOG_TRACE("re-sending data block" <<
                    V_(query_id) <<
                    V_(segment_id) <<
                    V_(col_name) <<
@@ -100,7 +100,7 @@ namespace virtdb { namespace dsproxy {
         }
         else
         {
-          LOG_INFO("not re-sending data block due to fault injection" <<
+          LOG_TRACE("not re-sending data block due to fault injection" <<
                    V_(query_id) <<
                    V_(segment_id) <<
                    V_(col_name) <<
@@ -132,12 +132,12 @@ namespace virtdb { namespace dsproxy {
                                           subscription,
                                           data);
                             });
-        LOG_INFO("subscribed to" << V_(query_id));
+        LOG_TRACE("subscribed to" << V_(query_id));
         subscriptions_.insert(query_id);
       }
       else
       {
-        LOG_INFO("already subscribed to" << V_(query_id));
+        LOG_TRACE("already subscribed to" << V_(query_id));
       }
     }
     else
@@ -159,7 +159,7 @@ namespace virtdb { namespace dsproxy {
       if( subscriptions_.count(query_id) > 0 )
       {
         client_sptr_->remove_watch(query_id);
-        LOG_INFO("unsubscribed from" << V_(query_id));
+        LOG_TRACE("unsubscribed from" << V_(query_id));
         subscriptions_.erase(query_id);
       }
     }
@@ -213,7 +213,7 @@ namespace virtdb { namespace dsproxy {
     
     if( ret )
     {
-      LOG_INFO("column client connected to:" << V_(server));
+      LOG_TRACE("column client connected to:" << V_(server));
     }
     else
     {
@@ -249,7 +249,7 @@ namespace virtdb { namespace dsproxy {
         auto it = backlog_.find(qid);
         if( it != backlog_.end() )
         {
-          LOG_INFO("removing query from the backlog that should have gone already" << V_(qid));
+          LOG_TRACE("removing query from the backlog that should have gone already" << V_(qid));
           backlog_.erase(qid);
         }
         return false;
@@ -363,7 +363,7 @@ namespace virtdb { namespace dsproxy {
         }
         else
         {
-          LOG_INFO("omit empty message due to fault injection" <<
+          LOG_TRACE("omit empty message due to fault injection" <<
                    V_(other) <<
                    V_(channel) <<
                    V_(empty_data_ptr->queryid()) <<
@@ -387,7 +387,7 @@ namespace virtdb { namespace dsproxy {
     }
     else
     {
-      LOG_INFO("not publishing due to fault injection" <<
+      LOG_TRACE("not publishing due to fault injection" <<
                 V_(new_channel_id) <<
                 V_(channel) <<
                 V_(data->queryid()) <<

@@ -248,6 +248,133 @@ namespace virtdb { namespace cachedb {
       // now we have valid database objects
       return true;
     }
+
+    bool exists(const storeable & data)
+    {
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+
+      using namespace rocksdb;
+      bool ret = true;
+      
+      size_t n_columns = 0;
+      std::vector<ColumnFamilyHandle*> cf_handles;
+      
+      // gather column family handles
+      auto find_columns = [this,&ret,&cf_handles,&n_columns]
+                             (const std::string & _clazz,
+                              const std::string & _key,
+                              const std::string & _family,
+                              storeable::data _data)
+      {
+        ++n_columns;
+        auto it = column_families_.find(_family);
+        if( it == column_families_.end() )
+        {
+          LOG_ERROR("missing column family" <<
+                    V_(_clazz) <<
+                    V_(_key) <<
+                    V_(_family) <<
+                    V_(_data.len_));
+          
+          ret = false;
+        }
+        else
+        {
+          cf_handles.push_back(it->second->handle_sptr_.get());
+        }
+      };
+      
+      // fire batch find preparation
+      data.properties(find_columns);
+      
+      if( ret )
+      {
+        std::vector<Iterator*> cf_iterators;
+        Status s = db_->NewIterators(ReadOptions(),
+                                     cf_handles,
+                                     &cf_iterators);
+        
+        if( !s.ok() || cf_iterators.size() != n_columns )
+        {
+          ret = false;
+        }
+        
+        // cleanup iterator
+        for( auto & i : cf_iterators )
+        {
+          if( ret )
+          {
+            i->Seek(data.key());
+            if( i->Valid() == false )
+              ret = false;
+          }
+          delete i;
+        }
+      }
+      
+      return ret;
+    }
+    
+    bool set(const storeable & data)
+    {
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+
+      using namespace rocksdb;
+      bool ret = true;
+      WriteBatch batch;
+      auto update_columns = [this,&ret,&batch]
+                                  (const std::string & _clazz,
+                                   const std::string & _key,
+                                   const std::string & _family,
+                                   storeable::data _data)
+      {
+        auto it = column_families_.find(_family);
+        if( it == column_families_.end() )
+        {
+          LOG_ERROR("missing column family" <<
+                    V_(_clazz) <<
+                    V_(_key) <<
+                    V_(_family) <<
+                    V_(_data.len_));
+                    
+          ret = false;
+        }
+        else
+        {
+          batch.Put(it->second->handle_sptr_.get(),
+                    _key,
+                    Slice((const char *)_data.buffer_, _data.len_));
+        }
+      };
+      
+      
+      // fire batch update preparation
+      data.properties(update_columns);
+
+      if( ret )
+      {
+        auto wropts = rocksdb::WriteOptions();
+        wropts.sync = true;
+        Status s = db_->Write(wropts, &batch);
+        ret = s.ok();
+      }
+      
+      if( !ret )
+      {
+        LOG_ERROR("failed to update data" <<
+                  V_(data.clazz()) <<
+                  V_(data.key()));
+      }
+      
+      return ret;
+    }
+    
+    bool remove(const storeable & data)
+    {
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+
+      return false;
+    }
     
     impl() : db_{nullptr}
     {
@@ -289,6 +416,24 @@ namespace virtdb { namespace cachedb {
            const storeable_ptr_vec_t & stvec)
   {
     return impl_->init(path, stvec);
+  }
+  
+  bool
+  db::set(const storeable & data)
+  {
+    return impl_->set(data);
+  }
+  
+  bool
+  db::remove(const storeable & data)
+  {
+    return impl_->remove(data);
+  }
+  
+  bool
+  db::exists(const storeable & data)
+  {
+    return impl_->exists(data);
   }
   
   std::set<std::string>

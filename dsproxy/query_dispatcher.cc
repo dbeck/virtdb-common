@@ -39,7 +39,7 @@ namespace virtdb { namespace dsproxy {
     
     if( ret )
     {
-      LOG_INFO("query client connected to:" << V_(server));
+      LOG_TRACE("query client connected to:" << V_(server));
     }
     else
     {
@@ -136,7 +136,7 @@ namespace virtdb { namespace dsproxy {
       if( q->has_segmentid() && it->second.count(q->segmentid()) == 0 )
       {
         it->second.insert(q->segmentid());
-        LOG_INFO("stored" << V_(q->segmentid()) << "for" << V_(q->queryid()));
+        LOG_TRACE("stored" << V_(q->segmentid()) << "for" << V_(q->queryid()));
         new_segment = true;
         segment_handler_copy = on_new_segment_;
       }
@@ -245,7 +245,7 @@ namespace virtdb { namespace dsproxy {
         }
         else
         {
-          LOG_INFO("delay sending STOP message until all segmenst say so" <<
+          LOG_TRACE("delay sending STOP message until all segmenst say so" <<
                    V_(q->queryid()) <<
                    V_(q->segmentid()) <<
                    V_(stopped_count) <<
@@ -366,7 +366,7 @@ namespace virtdb { namespace dsproxy {
       if( q->has_segmentid() )
         segment_id = q->segmentid();
       
-      LOG_INFO("query arrived" <<
+      LOG_TRACE("query arrived" <<
                V_(q->queryid()) <<
                V_(q->table()) <<
                V_(q->fields_size()) <<

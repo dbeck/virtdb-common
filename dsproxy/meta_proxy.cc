@@ -42,7 +42,7 @@ namespace virtdb { namespace dsproxy {
     bool ret = client_sptr_->wait_valid(util::SHORT_TIMEOUT_MS);
     if( ret )
     {
-      LOG_INFO("meta client connected to:" << V_(server));
+      LOG_TRACE("meta client connected to:" << V_(server));
     }
     else
     {

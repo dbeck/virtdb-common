@@ -43,8 +43,8 @@ namespace virtdb { namespace cachedb {
                           size_t len);
     virtual void properties(std::function<void(const std::string & _clazz,
                                                const std::string & _key,
-                                               const std::string & _name,
-                                               data _data)>);
+                                               const std::string & _family,
+                                               data _data)>) const;
     
     virtual void clear();
     

@@ -4,12 +4,14 @@
 
 namespace virtdb { namespace test {
   
-  class CachedbStoreTest      : public ::testing::Test { };
-  class CachedbDbIdTest       : public ::testing::Test { };
-  class CachedbHashUtilTest   : public ::testing::Test { };
+  class XCachedbStoreTest      : public ::testing::Test { };
+  class XCachedbDbIdTest       : public ::testing::Test { };
+  class XCachedbHashUtilTest   : public ::testing::Test { };
   
   // new classes
-  class CachedbColumnDataTest : public ::testing::Test { };
-  class CachedbDBTest         : public ::testing::Test { };
+  class CachedbColumnDataTest   : public ::testing::Test { };
+  class CachedbDBTest           : public ::testing::Test { };
+  //query_hasher
+  class CachedbQueryHasherTest  : public ::testing::Test { };
 
 }}

@@ -17,10 +17,15 @@ namespace virtdb { namespace cachedb {
     db & operator=(const db &) = delete;
     
   public:
+    typedef std::shared_ptr<db>      sptr;
     typedef std::vector<storeable *> storeable_ptr_vec_t;
     
     bool init(const std::string & path,
               const storeable_ptr_vec_t & stvec);
+    
+    bool set(const storeable & data);
+    bool remove(const storeable & data);
+    bool exists(const storeable & data);
     
     std::set<std::string> column_families() const;
     

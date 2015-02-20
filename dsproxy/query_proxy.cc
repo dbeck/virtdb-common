@@ -39,7 +39,7 @@ namespace virtdb { namespace dsproxy {
     
     if( ret )
     {
-      LOG_INFO("query client connected to:" << V_(server));
+      LOG_TRACE("query client connected to:" << V_(server));
     }
     else
     {
@@ -237,7 +237,7 @@ namespace virtdb { namespace dsproxy {
       if( q->has_segmentid() )
         segment_id = q->segmentid();
       
-      LOG_INFO("query arrived" <<
+      LOG_TRACE("query arrived" <<
                V_(q->queryid()) <<
                V_(q->table()) <<
                V_(q->fields_size()) <<
