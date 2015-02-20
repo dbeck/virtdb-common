@@ -15,11 +15,35 @@ using namespace rocksdb;
 
 TEST_F(CachedbQueryHasherTest, HashQuery)
 {
+  // fill query
   pb::Query q;
+  q.set_queryid("QueryID");
+  q.set_table("KNA1");
+  
+  {
+    auto * f = q.add_fields();
+    f->set_name("MANDT");
+    auto * d = f->mutable_desc();
+    d->set_type(pb::Kind::STRING);
+  }
+
+  {
+    auto * f = q.add_fields();
+    f->set_name("LAND1");
+    auto * d = f->mutable_desc();
+    d->set_type(pb::Kind::NUMERIC);
+  }
+  
   std::string tab_hash;
   hash_util::colhash_map col_hashes;
   bool res = hash_util::hash_query(q, tab_hash, col_hashes);
   EXPECT_TRUE(res);
+  
+  std::cout << "h0: " << tab_hash << "\n";
+  for( const auto & it : col_hashes )
+  {
+    std::cout << " - " << it.first << " = " << it.second << "\n";
+  }
 }
 
 TEST_F(CachedbDBTest, InitTests)
@@ -182,188 +206,4 @@ TEST_F(CachedbColumnDataTest, HashColumnData)
   EXPECT_NE(hash,prev);
   EXPECT_NE(prev_len,calc_len(c));
 }
-
-#if 0
-TEST_F(XCachedbStoreTest, StoreColumn)
-{
-  store st("/tmp/StoreColumn",9000);
-  
-  // fill query
-  pb::Query q;
-  q.set_queryid("QueryID");
-  q.set_table("BSEG");
-  {
-    auto * f = q.add_fields();
-    f->set_name("MANDT");
-    auto * d = f->mutable_desc();
-    d->set_type(pb::Kind::STRING);
-  }
-  
-  // fill column result
-  pb::Column c;
-  c.set_queryid("QueryID");
-  c.set_name("MANDT");
-  {
-    auto * d = c.mutable_data();
-    d->set_type(pb::Kind::STRING);
-    d->add_stringvalue("800");
-  }
-  c.set_seqno(0);
-  c.set_endofdata(true);
-  
-  std::vector<store::column_sptr> results;
-  
-  EXPECT_NO_THROW(st.add_column(q, store::clock::now(), c));
-  
-  auto alloc = []() {
-    return store::column_sptr{new pb::Column};
-  };
-  
-  auto get_handler = [&results](store::column_sptr r) {
-    results.push_back(r);
-    return true;
-  };
-
-  EXPECT_TRUE(st.get_columns(q, 0, alloc, get_handler));
-  size_t n_results = results.size();
-  EXPECT_GT(n_results, 0);
-}
-
-TEST_F(XCachedbStoreTest, StoreConfig)
-{
-  store st("/tmp/StoreConfig",9000);
-  pb::Config cfg;
-  cfg.set_name("my component");
-  EXPECT_NO_THROW(st.add_config(cfg));
-  
-  std::vector<store::config_sptr> results;
-  
-  auto alloc = []() {
-    return store::config_sptr{new pb::Config};
-  };
-  
-  auto get_handler = [&results](store::config_sptr r) {
-    results.push_back(r);
-    return true;
-  };
-  
-  auto del_handler = [&results](store::config_sptr r) {
-    return true;
-  };
-  
-  EXPECT_TRUE(st.get_configs(alloc, get_handler));
-  size_t n_results = results.size();
-  size_t deleted = st.remove_configs(alloc, del_handler);
-  EXPECT_GT(n_results, 0);
-  EXPECT_GT(deleted, 0);
-}
-
-TEST_F(XCachedbStoreTest, StoreEndpoint)
-{
-  store st("/tmp/StoreEndpoint",9000);
-  pb::EndpointData ep;
-  ep.set_name("my component");
-  ep.set_svctype(pb::ServiceType::NONE);
-  EXPECT_NO_THROW(st.add_endpoint(ep));
-  
-  std::vector<store::epdata_sptr> results;
-  
-  auto alloc = []() {
-    return store::epdata_sptr{new pb::EndpointData};
-  };
-  
-  auto get_handler = [&results](store::epdata_sptr r) {
-    results.push_back(r);
-    return true;
-  };
-
-  auto del_handler = [&results](store::epdata_sptr r) {
-    return true;
-  };
-  
-  EXPECT_TRUE(st.get_endpoints(alloc, get_handler));
-  size_t n_results = results.size();
-  size_t deleted = st.remove_endpoints(alloc, del_handler);
-  EXPECT_GT(n_results, 0);
-  EXPECT_GT(deleted, 0);
-}
-
-TEST_F(CachedbHashUtilTest, HashQuery)
-{
-  pb::Query q;
-  std::string res_t;
-  
-  EXPECT_FALSE(hash_util::hash_query(q, res_t));
-  
-  q.set_table("TEST_TAB2");
-  
-  EXPECT_TRUE(hash_util::hash_query(q, res_t));
-
-  q.set_schema("SCHEMA");
-  std::string res_ts;
-  EXPECT_TRUE(hash_util::hash_query(q, res_ts));
-  
-  EXPECT_NE(res_t, res_ts);
-  EXPECT_EQ(res_t.size(), res_ts.size());
-  
-  auto * f= q.add_filter();
-  auto * fs = f->mutable_simple();
-  fs->set_variable("COL");
-  f->set_operand("=");
-  fs->set_value("X");
-
-  std::string res_tsf;
-  EXPECT_TRUE(hash_util::hash_query(q, res_tsf));
-  EXPECT_NE(res_tsf, res_ts);
-  EXPECT_EQ(res_tsf.size(), res_ts.size());
-}
-
-TEST_F(CachedbHashUtilTest, HashField)
-{
-  pb::Query q;
-  pb::Field fld;
-  std::string res_f0,res_f1, res_fl, res_fld;
-  
-  EXPECT_FALSE(hash_util::hash_field(q, fld, res_f0));
-  q.set_table("TABLE");
-  EXPECT_FALSE(hash_util::hash_field(q, fld, res_f1));
-  EXPECT_FALSE(res_f0.empty());
-  EXPECT_EQ(res_f0,res_f1);
-  EXPECT_EQ(res_f0.size(), 16);
-  
-  fld.set_name("FIELD1");
-  EXPECT_TRUE(hash_util::hash_field(q, fld, res_fl));
-  EXPECT_FALSE(res_fl.empty());
-  EXPECT_NE(res_fl,res_f1);
-  EXPECT_EQ(res_fl.size(), 16);
-
-  auto * des = fld.mutable_desc();
-  des->set_type(pb::Kind::DATE);
-  EXPECT_TRUE(hash_util::hash_field(q, fld, res_fld));
-  EXPECT_FALSE(res_fld.empty());
-  EXPECT_NE(res_fl,res_fld);
-  EXPECT_NE(res_f1,res_fld);
-  EXPECT_EQ(res_fld.size(), 16);
-}
-
-TEST_F(CachedbHashUtilTest, HashString)
-{
-  std::string hello;
-  EXPECT_TRUE(hash_util::hash_string("hello", hello));
-  EXPECT_FALSE(hello.empty());
-  EXPECT_EQ(16, hello.size());
-
-  {
-    std::string tmp;
-    EXPECT_TRUE(hash_util::hash_string("hello", tmp));
-    EXPECT_EQ(tmp, hello);
-  }
-
-  {
-    std::string tmp;
-    EXPECT_TRUE(hash_util::hash_string("hello1", tmp));
-    EXPECT_NE(tmp, hello);
-  }
-}
-#endif
 

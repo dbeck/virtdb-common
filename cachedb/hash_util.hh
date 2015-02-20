@@ -17,19 +17,6 @@ namespace virtdb { namespace cachedb {
     static bool hash_data(const void * p,
                           size_t len,
                           std::string & out);
-
-    // remove these:
-#if 0
-    static bool hash_field(const interface::pb::Query & q_in,
-                           const interface::pb::Field & field_in,
-                           std::string & out);
-    
-    static bool hash_string(const std::string in,
-                            std::string & out);
-    
-    static bool hash_query(const interface::pb::Query & in,
-                           std::string & out);
-#endif
   };
   
 }}
