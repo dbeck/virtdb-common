@@ -4,9 +4,7 @@
 
 namespace virtdb { namespace test {
   
-  class XCachedbStoreTest      : public ::testing::Test { };
-  class XCachedbDbIdTest       : public ::testing::Test { };
-  class XCachedbHashUtilTest   : public ::testing::Test { };
+  class CachedbHashUtilTest    : public ::testing::Test { };
   
   // new classes
   class CachedbColumnDataTest   : public ::testing::Test { };

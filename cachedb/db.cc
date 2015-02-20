@@ -43,7 +43,7 @@ namespace virtdb { namespace cachedb {
       
       column_family(size_t prefix_len,
                     cf_handle_sptr h)
-      : prefix_len_{prefix_len_},
+      : prefix_len_{prefix_len},
         name_{h->GetName()},
         handle_sptr_{h}
       {

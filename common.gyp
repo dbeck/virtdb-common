@@ -18,14 +18,11 @@
     'cachedb_sources':
                         [
                           # cache db sources
-                          'cachedb/store.cc',               'cachedb/store.hh',
                           'cachedb/hash_util.cc',           'cachedb/hash_util.hh',
-                          'cachedb/dbid.cc',                'cachedb/dbid.hh',
                           # new cachedb sources
                           'cachedb/db.cc',                  'cachedb/db.hh',
                           'cachedb/storeable.cc',           'cachedb/storeable.hh',
                           'cachedb/column_data.cc',         'cachedb/column_data.hh',
-                          'cachedb/query_hasher.cc',        'cachedb/query_hasher.hh',
                           'cachedb/query_column_log.cc',    'cachedb/query_column_log.hh',
                           'cachedb/query_column_job.cc',    'cachedb/query_column_job.hh',
                           'cachedb/query_column_block.cc',  'cachedb/query_column_block.hh',

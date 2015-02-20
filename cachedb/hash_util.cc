@@ -13,12 +13,6 @@ namespace virtdb { namespace cachedb {
     const char xxh_error []   = "= XXH    ERROR =";
   }
   
-  void
-  hash_util::hex(unsigned long long hashed, std::string & res)
-  {
-    util::hex_util(hashed, res);
-  }
-  
   bool
   hash_util::hash_query(const interface::pb::Query & query_in,
                         std::string & table_hash_out,
@@ -26,23 +20,6 @@ namespace virtdb { namespace cachedb {
   {
     THROW_("implement me");
     return false;
-  }
-  
-  bool
-  hash_util::hash_string(const std::string in,
-                        std::string & out)
-  {
-    bool ret = true;
-    if( in.empty() )
-    {
-      out = empty_input;
-      ret = false;
-    }
-    else
-    {
-      hex(XXH64(in.c_str(), in.size(), 0), out);
-    }
-    return ret;
   }
   
   bool
@@ -58,11 +35,29 @@ namespace virtdb { namespace cachedb {
     }
     else
     {
-      hex(XXH64(p, len, 0), out);
+      util::hex_util(XXH64(p, len, 0), out);
     }
     return ret;
   }
 
+#if 0
+  bool
+  hash_util::hash_string(const std::string in,
+                         std::string & out)
+  {
+    bool ret = true;
+    if( in.empty() )
+    {
+      out = empty_input;
+      ret = false;
+    }
+    else
+    {
+      util::hex_util(XXH64(in.c_str(), in.size(), 0), out);
+    }
+    return ret;
+  }
+  
   bool
   hash_util::hash_query(const interface::pb::Query & in,
                         std::string & out)
@@ -121,7 +116,7 @@ namespace virtdb { namespace cachedb {
           throw 'l';
       }
       
-      hex( XXH64_digest(&hstate), out);
+      util::hex_util( XXH64_digest(&hstate), out);
       
     }
     catch (char non_important)
@@ -185,7 +180,7 @@ namespace virtdb { namespace cachedb {
         }
       }
       
-      hex( XXH64_digest(&hstate), out);
+      util::hex_util( XXH64_digest(&hstate), out);
     }
     catch (char non_important)
     {
@@ -196,5 +191,6 @@ namespace virtdb { namespace cachedb {
     }
     return ret;
   }
-  
+#endif
+
 }}
