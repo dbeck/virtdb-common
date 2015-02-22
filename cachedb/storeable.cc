@@ -6,42 +6,7 @@ namespace virtdb { namespace cachedb {
   storeable::storeable() {}
   storeable::~storeable() {}
   
-  void
-  storeable::property(const std::string & name,
-                      void * ptr,
-                      size_t len)
-  {
-    data itm { ptr, len };
-    auto it = properties_.find(name);
-    if( it == properties_.end() )
-    {
-      properties_[name] = itm;
-      column(name);
-    }
-    else
-    {
-      it->second.buffer_ = ptr;
-      it->second.len_    = len;
-    }
-  }
-  
-  void
-  storeable::properties(std::function<void(const std::string & _clazz,
-                                           const std::string & _key,
-                                           const std::string & _family,
-                                           data _data)> fn) const
-  {
-    for( auto const & it : properties_ )
-    {
-      std::ostringstream os;
-      os << clazz() << '.' << it.first;
-      
-      fn(clazz(),
-         key(),
-         os.str(),
-         it.second);
-    }
-  }
+
   
   const std::string &
   storeable::key() const
@@ -69,17 +34,88 @@ namespace virtdb { namespace cachedb {
     return column_set_;
   }
 
-  storeable::data
-  storeable::property(const std::string name) const
+  const storeable::data_t &
+  storeable::property_cref(const std::string & name) const
   {
-    data ret { 0, 0 };
+    static const data_t empty;
     auto it = properties_.find(name);
     if( it != properties_.end() )
     {
-      ret.buffer_  = it->second.buffer_;
-      ret.len_     = it->second.len_;
+      return it->second;
+    }
+    else
+    {
+      return empty;
+    }
+  }
+
+  storeable::data_t
+  storeable::property(const std::string & name) const
+  {
+    data_t ret;
+    auto it = properties_.find(name);
+    if( it != properties_.end() )
+    {
+      ret = it->second;
     }
     return ret;
+  }
+
+  void
+  storeable::property(const std::string & name,
+                      const char * ptr,
+                      size_t len)
+  {
+    auto it = properties_.find(name);
+    if( it == properties_.end() )
+    {
+      if( !ptr || !len )
+        properties_[name] = data_t();
+      else
+        properties_[name] = data_t(ptr, ptr+len);
+      column(name);
+    }
+    else
+    {
+      if( !ptr || !len )
+        it->second = data_t();
+      else
+        it->second = data_t(ptr, ptr+len);
+    }
+  }
+  
+  void
+  storeable::property(const std::string & name,
+                      const data_t & dta)
+  {
+    auto it = properties_.find(name);
+    if( it == properties_.end() )
+    {
+      properties_[name] = dta;
+      column(name);
+    }
+    else
+    {
+      it->second = dta;
+    }
+  }
+  
+  void
+  storeable::properties(std::function<void(const std::string & _clazz,
+                                           const std::string & _key,
+                                           const std::string & _family,
+                                           const data_t & _data)> fn) const
+  {
+    for( auto const & it : properties_ )
+    {
+      std::ostringstream os;
+      os << clazz() << '.' << it.first;
+      
+      fn(clazz(),
+         key(),
+         os.str(),
+         it.second);
+    }
   }
   
   void

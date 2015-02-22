@@ -333,7 +333,7 @@ namespace virtdb { namespace cachedb {
                              (const std::string & _clazz,
                               const std::string & _key,
                               const std::string & _family,
-                              storeable::data _data)
+                              const storeable::data_t & _data)
       {
         ++n_columns;
         auto it = column_families_.find(_family);
@@ -343,7 +343,7 @@ namespace virtdb { namespace cachedb {
                     V_(_clazz) <<
                     V_(_key) <<
                     V_(_family) <<
-                    V_(_data.len_));
+                    V_(_data.size()));
           
           ret = false;
         }
@@ -396,7 +396,7 @@ namespace virtdb { namespace cachedb {
                                   (const std::string & _clazz,
                                    const std::string & _key,
                                    const std::string & _family,
-                                   storeable::data _data)
+                                   const storeable::data_t & _data)
       {
         auto it = column_families_.find(_family);
         if( it == column_families_.end() )
@@ -405,7 +405,7 @@ namespace virtdb { namespace cachedb {
                     V_(_clazz) <<
                     V_(_key) <<
                     V_(_family) <<
-                    V_(_data.len_));
+                    V_(_data.size()));
                     
           ret = false;
         }
@@ -413,7 +413,7 @@ namespace virtdb { namespace cachedb {
         {
           batch.Put(it->second->handle_sptr_.get(),
                     _key,
-                    Slice((const char *)_data.buffer_, _data.len_));
+                    _data);
         }
       };
       

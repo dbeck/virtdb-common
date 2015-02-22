@@ -10,14 +10,9 @@ namespace virtdb { namespace cachedb {
   class storeable
   {
   public:
-    struct data
-    {
-      void * buffer_;
-      size_t len_;
-    };
-    
-    typedef std::set<std::string>        column_set_t;
-    typedef std::map<std::string, data>  properties_t;
+    typedef std::string                    data_t;
+    typedef std::set<std::string>          column_set_t;
+    typedef std::map<std::string, data_t>  properties_t;
     
   private:
     std::string  key_;
@@ -37,15 +32,18 @@ namespace virtdb { namespace cachedb {
     virtual void default_columns() = 0;
     virtual void column(const std::string & name);
     virtual const column_set_t & column_set() const;
-    virtual data property(const std::string name) const;
+    
+    virtual const data_t & property_cref(const std::string & name) const;
+    virtual data_t property(const std::string & name) const;
     virtual void property(const std::string & name,
-                          void * ptr,
+                          const char * ptr,
                           size_t len);
+    virtual void property(const std::string & name,
+                          const data_t & dta);
     virtual void properties(std::function<void(const std::string & _clazz,
                                                const std::string & _key,
                                                const std::string & _family,
-                                               data _data)>) const;
-    
+                                               const data_t & _data)>) const;
     virtual void clear();
     
     storeable();

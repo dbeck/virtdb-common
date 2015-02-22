@@ -118,18 +118,15 @@ TEST_F(CachedbColumnDataTest, SetClearSet)
   EXPECT_EQ(d.column_set().size(), 0);
   EXPECT_EQ(d.len(), 0);
   EXPECT_GT(d.key_len(), 0);
-  EXPECT_EQ(d.property("non-existant").buffer_, nullptr);
-  EXPECT_EQ(d.property("non-existant").len_, 0);
+  EXPECT_TRUE(d.property("non-existant").empty());
   
   // verify after set
   d.set(c);
   EXPECT_EQ(d.column_set().size(), 1);
   EXPECT_GT(d.len(), 0);
   EXPECT_GT(d.key_len(), 0);
-  EXPECT_EQ(d.property("non-existant").buffer_, nullptr);
-  EXPECT_EQ(d.property("non-existant").len_, 0);
-  EXPECT_NE(d.property("data").buffer_, nullptr);
-  EXPECT_GT(d.property("data").len_, 0);
+  EXPECT_TRUE(d.property("non-existant").empty());
+  EXPECT_FALSE(d.property("data").empty());
   
   // check second object same values
   column_data d2;
@@ -143,8 +140,7 @@ TEST_F(CachedbColumnDataTest, SetClearSet)
   EXPECT_EQ(d.column_set().size(), 0);
   EXPECT_EQ(d.len(), 0);
   EXPECT_GT(d.key_len(), 0);
-  EXPECT_EQ(d.property("data").buffer_, nullptr);
-  EXPECT_EQ(d.property("data").len_, 0);
+  EXPECT_TRUE(d.property("data").empty());
 
   // set object back
   d.set(c);
