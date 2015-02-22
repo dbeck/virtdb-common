@@ -248,8 +248,77 @@ namespace virtdb { namespace cachedb {
       // now we have valid database objects
       return true;
     }
+    
+    bool
+    fetch(storeable & data)
+    {
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+      
+      using namespace rocksdb;
+      bool ret = true;
+      size_t n_columns = 0;
+      
+      auto const & colset = data.column_set();
+      std::vector<ColumnFamilyHandle*> cf_handles;
+      
+      for( auto const & family : colset )
+      {
+        ++n_columns;
+        auto it = column_families_.find(family);
+        if( it == column_families_.end() )
+        {
+          LOG_ERROR("missing column family" <<
+                    V_(data.clazz()) <<
+                    V_(data.key()) <<
+                    V_(family));
+          ret = false;
+        }
+        else
+        {
+          cf_handles.push_back(it->second->handle_sptr_.get());
+        }
+      }
+      
+      if( ret )
+      {
+        //db_->MultiGet(<#const rocksdb::ReadOptions &options#>, <#const std::vector<ColumnFamilyHandle *> &column_family#>, <#const std::vector<Slice> &keys#>, <#std::vector<std::string> *values#>)
+        //db_->Get(<#const rocksdb::ReadOptions &options#>, <#rocksdb::ColumnFamilyHandle *column_family#>, <#const rocksdb::Slice &key#>, <#std::string *value#>)
+        
+        std::vector<Iterator*> cf_iterators;
+        Status s = db_->NewIterators(ReadOptions(),
+                                     cf_handles,
+                                     &cf_iterators);
+      
+        if( !s.ok() || cf_iterators.size() != n_columns )
+        {
+          ret = false;
+        }
+        
+        // cleanup iterator
+        for( auto & i : cf_iterators )
+        {
+          if( ret )
+          {
+            i->Seek(data.key());
+            if( i->Valid() == false )
+            {
+              ret = false;
+            }
+            else
+            {
+              Slice s = i->value();
+              // xxx : allocate and pass data
+            }
+          }
+          delete i;
+        }
+      }
+      
+      return false;
+    }
 
-    bool exists(const storeable & data)
+    bool
+    exists(const storeable & data)
     {
       if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
 
@@ -315,7 +384,8 @@ namespace virtdb { namespace cachedb {
       return ret;
     }
     
-    bool set(const storeable & data)
+    bool
+    set(const storeable & data)
     {
       if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
 
@@ -347,7 +417,6 @@ namespace virtdb { namespace cachedb {
         }
       };
       
-      
       // fire batch update preparation
       data.properties(update_columns);
 
@@ -369,7 +438,8 @@ namespace virtdb { namespace cachedb {
       return ret;
     }
     
-    bool remove(const storeable & data)
+    bool
+    remove(const storeable & data)
     {
       if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
 
@@ -434,6 +504,12 @@ namespace virtdb { namespace cachedb {
   db::exists(const storeable & data)
   {
     return impl_->exists(data);
+  }
+  
+  bool
+  db::fetch(storeable & data)
+  {
+    return impl_->fetch(data);
   }
   
   std::set<std::string>

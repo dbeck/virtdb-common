@@ -13,13 +13,14 @@ using namespace virtdb::cachedb;
 using namespace virtdb::interface;
 using namespace rocksdb;
 
-TEST_F(CachedbQueryHasherTest, HashQuery)
+TEST_F(CachedbHashUtilTest, HashQuery)
 {
   // fill query
   pb::Query q;
   q.set_queryid("QueryID");
   q.set_table("KNA1");
   
+  // add column: MANDT
   {
     auto * f = q.add_fields();
     f->set_name("MANDT");
@@ -27,6 +28,7 @@ TEST_F(CachedbQueryHasherTest, HashQuery)
     d->set_type(pb::Kind::STRING);
   }
 
+  // add column: LAND1
   {
     auto * f = q.add_fields();
     f->set_name("LAND1");
@@ -38,12 +40,16 @@ TEST_F(CachedbQueryHasherTest, HashQuery)
   hash_util::colhash_map col_hashes;
   bool res = hash_util::hash_query(q, tab_hash, col_hashes);
   EXPECT_TRUE(res);
+  EXPECT_EQ(col_hashes.size(), 2);
+  EXPECT_FALSE(tab_hash.empty());
   
+  /*
   std::cout << "h0: " << tab_hash << "\n";
   for( const auto & it : col_hashes )
   {
     std::cout << " - " << it.first << " = " << it.second << "\n";
   }
+  */
 }
 
 TEST_F(CachedbDBTest, InitTests)
