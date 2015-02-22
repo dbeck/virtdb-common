@@ -4,6 +4,7 @@
 #include "util/constants.hh"
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 using namespace virtdb::interface;
 using namespace std::placeholders;
@@ -90,7 +91,8 @@ namespace virtdb { namespace logger {
                 << " (" << level_string(head.level())
                 << ") @" << symbol_store::get(head.file_symbol()) << ':'
                 << head.line() << " " << symbol_store::get(head.func_symbol())
-                << "() @" << elapsed_ms << "ms ";
+                << "() @" << std::setprecision(std::numeric_limits<double>::digits10 + 1)
+                << elapsed_ms << "ms ";
       
       int var_idx = 0;
       

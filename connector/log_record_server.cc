@@ -5,6 +5,7 @@
 #include <util/relative_time.hh>
 #include <logger.hh>
 #include <sstream>
+#include <iomanip>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -482,7 +483,8 @@ namespace virtdb { namespace connector {
               << " (" << level_string(head.level())
               << ") @" << resolve(symbol_table,head.filenamesymbol()) << ':'
               << head.linenumber() << " " << resolve(symbol_table,head.functionnamesymbol())
-              << "() @" << elapsed_ms << "ms ";
+              << "() @" << std::setprecision(std::numeric_limits<double>::digits10 + 1)
+              << elapsed_ms << "ms ";
     
     int var_idx = 0;
     
