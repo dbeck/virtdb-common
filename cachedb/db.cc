@@ -201,7 +201,7 @@ namespace virtdb { namespace cachedb {
           auto const & cs = s->column_set();
           for( auto const & cf : cs )
           {
-            desired.insert(std::make_pair(cf,s->key_len()));
+            desired.insert(std::make_pair(cf.name_,s->key_len()));
           }
         }
       }
@@ -264,13 +264,13 @@ namespace virtdb { namespace cachedb {
       for( auto const & family : colset )
       {
         ++n_columns;
-        auto it = column_families_.find(family);
+        auto it = column_families_.find(family.name_);
         if( it == column_families_.end() )
         {
           LOG_ERROR("missing column family" <<
                     V_(data.clazz()) <<
                     V_(data.key()) <<
-                    V_(family));
+                    V_(family.name_));
           ret = false;
         }
         else
@@ -332,17 +332,17 @@ namespace virtdb { namespace cachedb {
       auto find_columns = [this,&ret,&cf_handles,&n_columns]
                              (const std::string & _clazz,
                               const std::string & _key,
-                              const std::string & _family,
+                              const storeable::qual_name & _family,
                               const storeable::data_t & _data)
       {
         ++n_columns;
-        auto it = column_families_.find(_family);
+        auto it = column_families_.find(_family.name_);
         if( it == column_families_.end() )
         {
           LOG_ERROR("missing column family" <<
                     V_(_clazz) <<
                     V_(_key) <<
-                    V_(_family) <<
+                    V_(_family.name_) <<
                     V_(_data.size()));
           
           ret = false;
@@ -395,16 +395,16 @@ namespace virtdb { namespace cachedb {
       auto update_columns = [this,&ret,&batch]
                                   (const std::string & _clazz,
                                    const std::string & _key,
-                                   const std::string & _family,
+                                   const storeable::qual_name & _family,
                                    const storeable::data_t & _data)
       {
-        auto it = column_families_.find(_family);
+        auto it = column_families_.find(_family.name_);
         if( it == column_families_.end() )
         {
           LOG_ERROR("missing column family" <<
                     V_(_clazz) <<
                     V_(_key) <<
-                    V_(_family) <<
+                    V_(_family.name_) <<
                     V_(_data.size()));
                     
           ret = false;

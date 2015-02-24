@@ -72,7 +72,7 @@ namespace virtdb { namespace cachedb {
       }
       
       // set property
-      this->property("data", data_);
+      this->property(column("data"), data_);
     }
   }
   

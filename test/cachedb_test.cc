@@ -13,6 +13,44 @@ using namespace virtdb::cachedb;
 using namespace virtdb::interface;
 using namespace rocksdb;
 
+TEST_F(CachedbStoreableTest, ConvertTimeAndDate)
+{
+  auto now = std::chrono::system_clock::now();
+  storeable::data_t res;
+  EXPECT_TRUE(storeable::convert(now, res));
+  auto converted = now;
+  EXPECT_TRUE(storeable::convert(res,converted));
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(now - converted).count(), 0);
+  storeable::data_t res2;
+  EXPECT_TRUE(storeable::convert(converted, res2));
+  EXPECT_EQ(res,res2);
+}
+
+TEST_F(CachedbStoreableTest, ConvertSizeT)
+{
+  size_t res = 10000;
+  std::string str;
+  EXPECT_FALSE(storeable::convert("-1", res));
+  // check both, that we can convert and haven't modified the value
+  EXPECT_TRUE(storeable::convert(res,str));
+  EXPECT_EQ(str,"10000");
+  size_t res2 = 0;
+  EXPECT_TRUE(storeable::convert(str,res2));
+  EXPECT_EQ(res,res2);
+}
+
+TEST_F(CachedbStoreableTest, ConvertInt64)
+{
+  int64_t res = 0;
+  std::string str;
+  EXPECT_TRUE(storeable::convert("-10000", res));
+  EXPECT_TRUE(storeable::convert(res,str));
+  EXPECT_EQ(str,"-10000");
+  int64_t res2 = 0;
+  EXPECT_TRUE(storeable::convert(str,res2));
+  EXPECT_EQ(res,res2);
+}
+
 TEST_F(CachedbHashUtilTest, HashQuery)
 {
   // fill query
@@ -118,15 +156,15 @@ TEST_F(CachedbColumnDataTest, SetClearSet)
   EXPECT_EQ(d.column_set().size(), 0);
   EXPECT_EQ(d.len(), 0);
   EXPECT_GT(d.key_len(), 0);
-  EXPECT_TRUE(d.property("non-existant").empty());
+  EXPECT_TRUE(d.property(storeable::qual_name(d,"non-existant")).empty());
   
   // verify after set
   d.set(c);
   EXPECT_EQ(d.column_set().size(), 1);
   EXPECT_GT(d.len(), 0);
   EXPECT_GT(d.key_len(), 0);
-  EXPECT_TRUE(d.property("non-existant").empty());
-  EXPECT_FALSE(d.property("data").empty());
+  EXPECT_TRUE(d.property(storeable::qual_name(d,"non-existant")).empty());
+  EXPECT_FALSE(d.property(storeable::qual_name(d,"data")).empty());
   
   // check second object same values
   column_data d2;
@@ -140,7 +178,7 @@ TEST_F(CachedbColumnDataTest, SetClearSet)
   EXPECT_EQ(d.column_set().size(), 0);
   EXPECT_EQ(d.len(), 0);
   EXPECT_GT(d.key_len(), 0);
-  EXPECT_TRUE(d.property("data").empty());
+  EXPECT_TRUE(d.property(storeable::qual_name(d,"data")).empty());
 
   // set object back
   d.set(c);
