@@ -159,7 +159,7 @@ namespace virtdb { namespace cachedb {
   {
     return column_set_;
   }
-
+  
   const storeable::data_t &
   storeable::property_cref(const qual_name & name) const
   {

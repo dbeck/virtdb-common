@@ -3,6 +3,8 @@
 #include <cachedb/hash_util.hh>
 #include <cachedb/column_data.hh>
 #include <cachedb/query_column_log.hh>
+#include <cachedb/query_table_log.hh>
+
 #include <cachedb/db.hh>
 #include <memory>
 #include <iostream>
@@ -12,6 +14,43 @@ using namespace virtdb::test;
 using namespace virtdb::cachedb;
 using namespace virtdb::interface;
 using namespace rocksdb;
+
+TEST_F(CachedbDBTest, QueryTableLogTest)
+{
+  {
+    query_table_log   dl;
+    db                cache;
+    
+    // set default columns
+    dl.default_columns();
+    
+    // create storable object vectors
+    db::storeable_ptr_vec_t v{&dl};
+    
+    EXPECT_TRUE(cache.init("/tmp/CachedbDBTestQueryTableLogTest", v));
+    
+    auto now = std::chrono::system_clock::now();
+    dl.key("0123456789abcdef-mykey");
+    dl.data("Hello");
+    dl.n_columns(100);
+    dl.t0_completed_at(now);
+    dl.t0_nblocks(999);
+    
+    EXPECT_EQ(cache.set(dl), 4);
+    
+    query_table_log dl2;
+    dl2.key(dl.key());
+    
+    EXPECT_EQ(cache.fetch(dl2), 4);
+    EXPECT_EQ(dl2.data(), "Hello");
+    EXPECT_EQ(dl2.n_columns(), 100);
+    EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(now - dl2.t0_completed_at()).count(), 0);
+    EXPECT_EQ(dl2.t0_nblocks(), 999);
+    EXPECT_NE(std::chrono::duration_cast<std::chrono::seconds>(now - dl2.t1_completed_at()).count(), 0);
+    EXPECT_EQ(dl2.t1_nblocks(), 0);
+  }
+  system("rm -Rf /tmp/CachedbDBTestQueryTableLogTest");
+}
 
 TEST_F(CachedbStoreableTest, ConvertTimeAndDate)
 {

@@ -23,10 +23,10 @@ namespace virtdb { namespace cachedb {
     bool init(const std::string & path,
               const storeable_ptr_vec_t & stvec);
     
-    bool set(const storeable & data);
-    bool remove(const storeable & data);
-    bool exists(const storeable & data);
-    bool fetch(storeable & data);
+    size_t remove(const storeable & data);
+    size_t set(const storeable & data);
+    size_t exists(const storeable & data);
+    size_t fetch(storeable & data);
     
     std::set<std::string> column_families() const;
     

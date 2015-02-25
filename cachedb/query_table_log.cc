@@ -53,7 +53,7 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::data(const std::string & d)
   {
-    THROW_("implement me");
+    this->property(qn_data, d);
   }
   
   size_t
@@ -72,7 +72,15 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::n_columns(size_t n)
   {
-    THROW_("implement me");
+    std::string val;
+    if( convert(n,val) )
+    {
+      this->property(qn_n_columns,val);
+    }
+    else
+    {
+      LOG_ERROR("conversion failed" << V_(n) << V_(qn_n_columns.name_));
+    }
   }
   
   std::chrono::system_clock::time_point
@@ -91,7 +99,15 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::t0_completed_at(const std::chrono::system_clock::time_point & tp)
   {
-    THROW_("implement me");
+    std::string val;
+    if( convert(tp,val) )
+    {
+      this->property(qn_t0_completed_at,val);
+    }
+    else
+    {
+      LOG_ERROR("conversion failed" << V_(qn_t0_completed_at.name_));
+    }
   }
   
   std::chrono::system_clock::time_point
@@ -110,7 +126,15 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::t1_completed_at(const std::chrono::system_clock::time_point & tp)
   {
-    THROW_("implement me");
+    std::string val;
+    if( convert(tp,val) )
+    {
+      this->property(qn_t1_completed_at,val);
+    }
+    else
+    {
+      LOG_ERROR("conversion failed" << V_(qn_t1_completed_at.name_));
+    }
   }
   
   size_t
@@ -129,7 +153,15 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::t0_nblocks(size_t n)
   {
-    THROW_("implement me");
+    std::string val;
+    if( convert(n,val) )
+    {
+      this->property(qn_t0_nblocks,val);
+    }
+    else
+    {
+      LOG_ERROR("conversion failed" << V_(n) << V_(qn_t0_nblocks.name_));
+    }
   }
   
   size_t
@@ -148,7 +180,15 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::t1_nblocks(size_t n)
   {
-    THROW_("implement me");
+    std::string val;
+    if( convert(n,val) )
+    {
+      this->property(qn_t1_nblocks,val);
+    }
+    else
+    {
+      LOG_ERROR("conversion failed" << V_(n) << V_(qn_t1_nblocks.name_));
+    }
   }
   
 }}

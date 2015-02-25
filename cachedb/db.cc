@@ -249,17 +249,18 @@ namespace virtdb { namespace cachedb {
       return true;
     }
     
-    bool
+    size_t
     fetch(storeable & data)
     {
-      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return 0; }
       
       using namespace rocksdb;
-      bool ret = true;
+      size_t ret = 0;
       size_t n_columns = 0;
-      
+
+      // make sure the column set has all columns
+      data.default_columns();
       auto const & colset = data.column_set();
-      std::vector<ColumnFamilyHandle*> cf_handles;
       
       for( auto const & family : colset )
       {
@@ -271,60 +272,33 @@ namespace virtdb { namespace cachedb {
                     V_(data.clazz()) <<
                     V_(data.key()) <<
                     V_(family.name_));
-          ret = false;
         }
         else
         {
-          cf_handles.push_back(it->second->handle_sptr_.get());
-        }
-      }
-      
-      if( ret )
-      {
-        //db_->MultiGet(<#const rocksdb::ReadOptions &options#>, <#const std::vector<ColumnFamilyHandle *> &column_family#>, <#const std::vector<Slice> &keys#>, <#std::vector<std::string> *values#>)
-        //db_->Get(<#const rocksdb::ReadOptions &options#>, <#rocksdb::ColumnFamilyHandle *column_family#>, <#const rocksdb::Slice &key#>, <#std::string *value#>)
-        
-        std::vector<Iterator*> cf_iterators;
-        Status s = db_->NewIterators(ReadOptions(),
-                                     cf_handles,
-                                     &cf_iterators);
-      
-        if( !s.ok() || cf_iterators.size() != n_columns )
-        {
-          ret = false;
-        }
-        
-        // cleanup iterator
-        for( auto & i : cf_iterators )
-        {
-          if( ret )
+          auto cf_handle_sptr = it->second->handle_sptr_;
+          storeable::qual_name qn{family.name_};
+          Status s = db_->Get(ReadOptions(), cf_handle_sptr.get(), data.key(), &(data.property_ref(qn)));
+          if( s.IsNotFound() )
           {
-            i->Seek(data.key());
-            if( i->Valid() == false )
-            {
-              ret = false;
-            }
-            else
-            {
-              Slice s = i->value();
-              // xxx : allocate and pass data
-            }
+            LOG_TRACE("data not found for" << V_(data.key()) << V_(family.name_));
           }
-          delete i;
+          else
+          {
+            ++ret;
+          }
         }
       }
       
-      return false;
+      return ret;
     }
 
-    bool
+    size_t
     exists(const storeable & data)
     {
-      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return 0; }
 
       using namespace rocksdb;
-      bool ret = true;
-      
+      size_t ret = 0;
       size_t n_columns = 0;
       std::vector<ColumnFamilyHandle*> cf_handles;
       
@@ -344,8 +318,6 @@ namespace virtdb { namespace cachedb {
                     V_(_key) <<
                     V_(_family.name_) <<
                     V_(_data.size()));
-          
-          ret = false;
         }
         else
         {
@@ -356,26 +328,29 @@ namespace virtdb { namespace cachedb {
       // fire batch find preparation
       data.properties(find_columns);
       
-      if( ret )
+      if( cf_handles.size() > 0 )
       {
         std::vector<Iterator*> cf_iterators;
         Status s = db_->NewIterators(ReadOptions(),
                                      cf_handles,
                                      &cf_iterators);
         
-        if( !s.ok() || cf_iterators.size() != n_columns )
-        {
-          ret = false;
-        }
+        bool in_valid_iterators = ( !s.ok() || cf_iterators.size() != n_columns );
         
         // cleanup iterator
         for( auto & i : cf_iterators )
         {
-          if( ret )
+          if( !in_valid_iterators )
           {
             i->Seek(data.key());
             if( i->Valid() == false )
+            {
               ret = false;
+            }
+            else
+            {
+              ++ret;
+            }
           }
           delete i;
         }
@@ -384,13 +359,13 @@ namespace virtdb { namespace cachedb {
       return ret;
     }
     
-    bool
+    size_t
     set(const storeable & data)
     {
-      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return 0; }
 
       using namespace rocksdb;
-      bool ret = true;
+      size_t ret = 0;
       WriteBatch batch;
       auto update_columns = [this,&ret,&batch]
                                   (const std::string & _clazz,
@@ -406,26 +381,28 @@ namespace virtdb { namespace cachedb {
                     V_(_key) <<
                     V_(_family.name_) <<
                     V_(_data.size()));
-                    
-          ret = false;
         }
         else
         {
           batch.Put(it->second->handle_sptr_.get(),
                     _key,
                     _data);
+          ++ret;
         }
       };
       
       // fire batch update preparation
       data.properties(update_columns);
 
-      if( ret )
+      if( ret > 0 )
       {
         auto wropts = rocksdb::WriteOptions();
         wropts.sync = true;
         Status s = db_->Write(wropts, &batch);
-        ret = s.ok();
+        if( !s.ok() )
+        {
+          ret = 0;
+        }
       }
       
       if( !ret )
@@ -438,12 +415,12 @@ namespace virtdb { namespace cachedb {
       return ret;
     }
     
-    bool
+    size_t
     remove(const storeable & data)
     {
-      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return 0; }
 
-      return false;
+      return 0;
     }
     
     impl() : db_{nullptr}
@@ -488,25 +465,25 @@ namespace virtdb { namespace cachedb {
     return impl_->init(path, stvec);
   }
   
-  bool
+  size_t
   db::set(const storeable & data)
   {
     return impl_->set(data);
   }
   
-  bool
+  size_t
   db::remove(const storeable & data)
   {
     return impl_->remove(data);
   }
   
-  bool
+  size_t
   db::exists(const storeable & data)
   {
     return impl_->exists(data);
   }
   
-  bool
+  size_t
   db::fetch(storeable & data)
   {
     return impl_->fetch(data);
