@@ -301,33 +301,26 @@ namespace virtdb { namespace cachedb {
       size_t ret = 0;
       size_t n_columns = 0;
       std::vector<ColumnFamilyHandle*> cf_handles;
+            
+      auto const & colset = data.column_set();
       
-      // gather column family handles
-      auto find_columns = [this,&ret,&cf_handles,&n_columns]
-                             (const std::string & _clazz,
-                              const std::string & _key,
-                              const storeable::qual_name & _family,
-                              const storeable::data_t & _data)
+      for( auto const & family : colset )
       {
         ++n_columns;
-        auto it = column_families_.find(_family.name_);
+        auto it = column_families_.find(family.name_);
         if( it == column_families_.end() )
         {
           LOG_ERROR("missing column family" <<
-                    V_(_clazz) <<
-                    V_(_key) <<
-                    V_(_family.name_) <<
-                    V_(_data.size()));
+                    V_(data.clazz()) <<
+                    V_(data.key()) <<
+                    V_(family.name_));
         }
         else
         {
           cf_handles.push_back(it->second->handle_sptr_.get());
         }
-      };
-      
-      // fire batch find preparation
-      data.properties(find_columns);
-      
+      }
+            
       if( cf_handles.size() > 0 )
       {
         std::vector<Iterator*> cf_iterators;
@@ -343,11 +336,7 @@ namespace virtdb { namespace cachedb {
           if( !in_valid_iterators )
           {
             i->Seek(data.key());
-            if( i->Valid() == false )
-            {
-              ret = false;
-            }
-            else
+            if( i->Valid() )
             {
               ++ret;
             }

@@ -48,6 +48,13 @@ TEST_F(CachedbDBTest, QueryTableLogTest)
     EXPECT_EQ(dl2.t0_nblocks(), 999);
     EXPECT_NE(std::chrono::duration_cast<std::chrono::seconds>(now - dl2.t1_completed_at()).count(), 0);
     EXPECT_EQ(dl2.t1_nblocks(), 0);
+    
+    query_table_log dl3;
+    dl3.key(dl.key());
+    dl3.column(query_table_log::qn_n_columns); // this has to be there
+    dl3.column(query_table_log::qn_t1_nblocks); // this column doesn't exist
+    
+    EXPECT_EQ(cache.exists(dl3), 1);
   }
   system("rm -Rf /tmp/CachedbDBTestQueryTableLogTest");
 }
