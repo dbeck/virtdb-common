@@ -11,12 +11,14 @@ namespace virtdb { namespace cachedb {
     std::string  data_;
     
   public:
-    // interface:
+    static const std::string & clazz_static();
+    static const qual_name qn_data;
+    
     const std::string & clazz() const;
+    
     size_t key_len() const;
     void default_columns();
     
-    // own stuff
     void set(const interface::pb::Column & c);
     void clear();
     size_t len() const;

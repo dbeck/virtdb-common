@@ -8,6 +8,9 @@ namespace virtdb { namespace cachedb {
   class query_column_block : public storeable
   {
   public:
+    static const std::string & clazz_static();
+    static const qual_name qn_column_hash;
+    
     const std::string & clazz() const;
     size_t key_len() const;
     

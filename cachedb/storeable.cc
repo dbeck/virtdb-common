@@ -105,13 +105,22 @@ namespace virtdb { namespace cachedb {
   
   storeable::qual_name::qual_name(const std::string & n) : name_{n} {}
   
-  storeable::qual_name::qual_name(const storeable & st, const std::string n)
+  storeable::qual_name::qual_name(const storeable & st,
+                                  const std::string & n)
   {
     std::ostringstream os;
     os << st.clazz() << '.' << n;
     name_ = os.str();
   }
   
+  storeable::qual_name::qual_name(const std::string & clazz,
+                                  const std::string & n)
+  {
+    std::ostringstream os;
+    os << clazz << '.' << n;
+    name_ = os.str();
+  }
+
   //
   
   storeable::storeable() {}

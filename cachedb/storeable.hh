@@ -23,7 +23,10 @@ namespace virtdb { namespace cachedb {
       qual_name(const std::string & n);
       
       // constructs from st.clazz + '.' + name
-      qual_name(const storeable & st, const std::string name);
+      qual_name(const storeable & st, const std::string & name);
+      
+      // constructs from clazz + '.' + name
+      qual_name(const std::string & clazz, const std::string & name);
     };
 
     typedef std::string                  data_t;

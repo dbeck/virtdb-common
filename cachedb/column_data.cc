@@ -6,11 +6,19 @@
 
 namespace virtdb { namespace cachedb {
   
+  const storeable::qual_name column_data::qn_data{column_data::clazz_static(),"data"};
+  
   const std::string &
-  column_data::clazz() const
+  column_data::clazz_static()
   {
     static std::string clz("column_data");
     return clz;
+  }
+  
+  const std::string &
+  column_data::clazz() const
+  {
+    return clazz_static();
   }
   
   size_t
@@ -22,7 +30,7 @@ namespace virtdb { namespace cachedb {
   void
   column_data::default_columns()
   {
-    column("data");
+    column(qn_data);
   }
   
   column_data::column_data()
@@ -72,7 +80,7 @@ namespace virtdb { namespace cachedb {
       }
       
       // set property
-      this->property(column("data"), data_);
+      this->property(qn_data, data_);
     }
   }
   

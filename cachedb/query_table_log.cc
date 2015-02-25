@@ -1,13 +1,27 @@
 #include "query_table_log.hh"
 #include <util/exception.hh>
+#include <logger.hh>
 
 namespace virtdb { namespace cachedb {
+  
+  const storeable::qual_name query_table_log::qn_data{query_table_log::clazz_static(),"data"};
+  const storeable::qual_name query_table_log::qn_n_columns{query_table_log::clazz_static(),"#columns"};
+  const storeable::qual_name query_table_log::qn_t0_completed_at{query_table_log::clazz_static(),"t0_completed_at"};
+  const storeable::qual_name query_table_log::qn_t0_nblocks{query_table_log::clazz_static(),"t0_#blocks"};
+  const storeable::qual_name query_table_log::qn_t1_completed_at{query_table_log::clazz_static(),"t1_completed_at"};
+  const storeable::qual_name query_table_log::qn_t1_nblocks{query_table_log::clazz_static(),"t1_#blocks"};
+  
+  const std::string &
+  query_table_log::clazz_static()
+  {
+    static std::string clz("query_table_log");
+    return clz;
+  }
   
   const std::string &
   query_table_log::clazz() const
   {
-    static std::string clz("query_table_log");
-    return clz;
+    return clazz_static();
   }
   
   size_t
@@ -19,14 +33,12 @@ namespace virtdb { namespace cachedb {
   void
   query_table_log::default_columns()
   {
-    column("data");
-    column("#columns");
-    column("t0_completed_at");
-    column("t0_#blocks");
-    column("t1_completed_at");
-    column("t1_#blocks");
-    column("t2_completed_at");
-    column("t2_#blocks");
+    column(qn_data);
+    column(qn_n_columns);
+    column(qn_t0_completed_at);
+    column(qn_t0_nblocks);
+    column(qn_t1_completed_at);
+    column(qn_t1_nblocks);
   }
   
   query_table_log::query_table_log() : storeable() {}
@@ -35,73 +47,108 @@ namespace virtdb { namespace cachedb {
   const std::string &
   query_table_log::data() const
   {
-    return this->property_cref(qual_name{"data"});
+    return this->property_cref(qn_data);
+  }
+  
+  void
+  query_table_log::data(const std::string & d)
+  {
+    THROW_("implement me");
   }
   
   size_t
   query_table_log::n_columns() const
   {
     size_t ret = 0;
-    auto const & v = this->property_cref(qual_name{"#columns"});
+    auto const & v = this->property_cref(qn_n_columns);
     if( v.empty() ) return ret;
+    if( !convert(v,ret) )
+    {
+      LOG_ERROR("conversion failed" << V_(v.size()) << V_(qn_n_columns.name_) );
+    }
     return ret;
+  }
+  
+  void
+  query_table_log::n_columns(size_t n)
+  {
+    THROW_("implement me");
   }
   
   std::chrono::system_clock::time_point
   query_table_log::t0_completed_at() const
   {
     auto ret = std::chrono::system_clock::now() - std::chrono::hours(24*365*20); // 20y
-    auto const & v = this->property_cref(qual_name{"t0_completed_at"});
+    auto const & v = this->property_cref(qn_t0_completed_at);
     if( v.empty() ) return ret;
-    
-    auto x = std::chrono::system_clock::now();
-    
+    if( !convert(v,ret) )
+    {
+      LOG_ERROR("conversion failed" << V_(v.size()) << V_(qn_t0_completed_at.name_) );
+    }
     return ret;
+  }
+  
+  void
+  query_table_log::t0_completed_at(const std::chrono::system_clock::time_point & tp)
+  {
+    THROW_("implement me");
   }
   
   std::chrono::system_clock::time_point
   query_table_log::t1_completed_at() const
   {
     auto ret = std::chrono::system_clock::now() - std::chrono::hours(24*365*20); // 20y
-    auto const & v = this->property_cref(qual_name{"t1_completed_at"});
+    auto const & v = this->property_cref(qn_t1_completed_at);
     if( v.empty() ) return ret;
+    if( !convert(v,ret) )
+    {
+      LOG_ERROR("conversion failed" << V_(v.size()) << V_(qn_t1_completed_at.name_) );
+    }
     return ret;
   }
   
-  std::chrono::system_clock::time_point
-  query_table_log::t2_completed_at() const
+  void
+  query_table_log::t1_completed_at(const std::chrono::system_clock::time_point & tp)
   {
-    auto ret = std::chrono::system_clock::now() - std::chrono::hours(24*365*20); // 20y
-    auto const & v = this->property_cref(qual_name{"t2_completed_at"});
-    if( v.empty() ) return ret;
-    return ret;
+    THROW_("implement me");
   }
   
   size_t
   query_table_log::t0_nblocks() const
   {
     size_t ret = 0;
-    auto const & v = this->property_cref(qual_name{"t0_#blocks"});
+    auto const & v = this->property_cref(qn_t0_nblocks);
     if( v.empty() ) return ret;
+    if( !convert(v,ret) )
+    {
+      LOG_ERROR("conversion failed" << V_(v.size()) << V_(qn_t0_nblocks.name_) );
+    }
     return ret;
+  }
+  
+  void
+  query_table_log::t0_nblocks(size_t n)
+  {
+    THROW_("implement me");
   }
   
   size_t
   query_table_log::t1_nblocks() const
   {
     size_t ret = 0;
-    auto const & v = this->property_cref(qual_name{"t1_#blocks"});
+    auto const & v = this->property_cref(qn_t1_nblocks);
     if( v.empty() ) return ret;
+    if( !convert(v,ret) )
+    {
+      LOG_ERROR("conversion failed" << V_(v.size()) << V_(qn_t1_nblocks.name_) );
+    }
     return ret;
   }
   
-  size_t
-  query_table_log::t2_nblocks() const
+  void
+  query_table_log::t1_nblocks(size_t n)
   {
-    size_t ret = 0;
-    auto const & v = this->property_cref(qual_name{"t2_#blocks"});
-    if( v.empty() ) return ret;
-    return ret;
+    THROW_("implement me");
   }
   
 }}
