@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "db.hh"
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
