@@ -15,11 +15,21 @@ namespace virtdb { namespace cachedb {
     
     const std::string & clazz() const;
     size_t key_len() const;
+    void key(const std::string hash,
+             const std::chrono::system_clock::time_point & tp);
     
     void default_columns();
     
     query_column_job();
     virtual ~query_column_job();
+    
+    bool is_complete() const;
+    size_t max_block() const;
+    size_t block_count() const;
+    
+    void is_complete(bool value);
+    void max_block(size_t n);
+    void block_count(size_t n);
   };
   
 }}

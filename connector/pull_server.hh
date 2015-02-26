@@ -111,7 +111,7 @@ namespace virtdb { namespace connector {
                                   st,
                                   interface::pb::ConnectionType::PUSH_PULL)};
       
-      if( !socket_.batch_ep_rebind(ep_set) )
+      if( !socket_.batch_ep_rebind(ep_set, true) )
       {
         socket_.batch_tcp_bind(hosts());
       }

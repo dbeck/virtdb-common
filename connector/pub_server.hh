@@ -48,7 +48,6 @@ namespace virtdb { namespace connector {
               {
                 LOG_ERROR("failed to send" << M_(*(tp.second)) << V_(tp.first));
               }
-              
             }
           }
           else
@@ -92,7 +91,7 @@ namespace virtdb { namespace connector {
                                     st,
                                     interface::pb::ConnectionType::PUB_SUB)};
       
-      if( !socket_.batch_ep_rebind(ep_set) )
+      if( !socket_.batch_ep_rebind(ep_set, true) )
       {
         socket_.batch_tcp_bind(hosts());
       }

@@ -22,6 +22,18 @@ namespace virtdb { namespace cachedb {
 
     query_column_log();
     virtual ~query_column_log();
+    
+    const std::string & data() const;
+    std::chrono::system_clock::time_point t0_completed_at() const;
+    std::chrono::system_clock::time_point t1_completed_at() const;
+    size_t t0_nblocks() const;
+    size_t t1_nblocks() const;
+    
+    void data(const std::string & d);
+    void t0_completed_at(const std::chrono::system_clock::time_point & tp);
+    void t1_completed_at(const std::chrono::system_clock::time_point & tp);
+    void t0_nblocks(size_t n);
+    void t1_nblocks(size_t n);
   };
   
 }}

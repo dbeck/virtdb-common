@@ -96,23 +96,33 @@ namespace virtdb { namespace util {
   }
   
   bool
-  zmq_socket_wrapper::batch_ep_rebind(const endpoint_set & eps)
+  zmq_socket_wrapper::batch_ep_rebind(const endpoint_set & eps,
+                                      bool same_host_once)
   {
-    bool ret = (eps.size() > 0);
+    size_t bound = 0;
+    std::set<std::string> hosts;
+    
+    // bool ret = (eps.size() > 0);
+    
     for( auto const & ep : eps )
     {
       try
       {
-        bind(ep.c_str());
+        std::pair<std::string, unsigned short> parsed = parse_zmq_tcp_endpoint(ep);
+        if( same_host_once && hosts.count(parsed.first) == 0 )
+        {
+          bind(ep.c_str());
+          hosts.insert(parsed.first);
+          ++bound;
+        }
       }
       catch (const std::exception & e)
       {
         // ignore errors, only log them
         LOG_ERROR("exception caught:" << E_(e) << "while trying to bind to" << V_(ep));
-        ret = false;
       }
     }
-    return ret;
+    return (bound > 0);
   }
 
   void
