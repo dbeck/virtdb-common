@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <iosfwd>
 #include <set>
+#include <memory>
 #include "data_chunk.hh"
 #include "column_chunk.hh"
 #include <util/active_queue.hh>
@@ -49,7 +50,7 @@ namespace virtdb { namespace engine {
             }
 
             void push(std::string name,
-                      virtdb::interface::pb::Column* new_data,
+                      std::shared_ptr<virtdb::interface::pb::Column> new_data,
                       bool & is_complete);
             void dump_front(std::ostream & os);
 

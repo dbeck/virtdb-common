@@ -10,7 +10,6 @@ using namespace virtdb::engine;
 
 column_chunk::~column_chunk()
 {
-    delete column_data;
 }
 
 const std::string &
@@ -81,9 +80,9 @@ void column_chunk::uncompress()
     }
 }
 
-column_chunk::column_chunk(virtdb::interface::pb::Column* data)
+column_chunk::column_chunk(std::shared_ptr<virtdb::interface::pb::Column> data)
 {
-    if (data == nullptr)
+    if (data.get() == nullptr)
     {
         std::string err = std::string("Initializing column_chunk with nullptr as data");
         THROW_(err.c_str());
@@ -93,11 +92,9 @@ column_chunk::column_chunk(virtdb::interface::pb::Column* data)
 
 void column_chunk::operator=(const column_chunk& source)
 {
-    if (source.column_data != nullptr)
+    if (source.column_data.get() != nullptr)
     {
-        delete column_data;
-        column_data = new virtdb::interface::pb::Column();
-        column_data->MergeFrom(*source.column_data);
+        column_data = source.column_data;
     }
 }
 

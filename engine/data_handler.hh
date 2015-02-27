@@ -4,6 +4,7 @@
 #include <vector>
 #include <condition_variable>
 #include <mutex>
+#include <memory>
 
 #include "chunk_store.hh"
 #include "data_chunk.hh"
@@ -32,7 +33,7 @@ namespace virtdb { namespace engine {
             data_handler(const query& query_data, resend_function_t ask_for_resend);
             virtual ~data_handler() { delete data_store; }
             const std::string& query_id() const;
-            void push(std::string name, virtdb::interface::pb::Column* new_data);
+            void push(std::string name, std::shared_ptr<virtdb::interface::pb::Column> new_data);
             bool read_next();
             bool has_more_data();
             virtdb::interface::pb::Kind get_type(int column_id);

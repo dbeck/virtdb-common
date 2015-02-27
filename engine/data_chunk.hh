@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include "column_chunk.hh"
 #include <common.pb.h>
 #include "query.hh"
@@ -26,7 +27,7 @@ class data_chunk {
         void uncompress(virtdb::util::active_queue<column_chunk*, 20>* worker_queue);
         bool read_next();
         sequence_id_t sequence_number();
-        void add_chunk(column_id_t column_id, virtdb::interface::pb::Column* data);
+        void add_chunk(column_id_t column_id, std::shared_ptr<virtdb::interface::pb::Column> data);
         virtdb::interface::pb::Kind get_type(column_id_t column_id);
 
         template<typename T, interface::pb::Kind KIND = interface::pb::Kind::STRING>

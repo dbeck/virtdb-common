@@ -74,7 +74,7 @@ sequence_id_t data_chunk::sequence_number()
     return seq_no;
 }
 
-void data_chunk::add_chunk(column_id_t column_id, virtdb::interface::pb::Column* data)
+void data_chunk::add_chunk(column_id_t column_id, std::shared_ptr<virtdb::interface::pb::Column> data)
 {
     if (has_data and seq_no != data->seqno())
     {

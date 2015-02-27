@@ -4,16 +4,17 @@
 #include <util/value_type.hh>
 #include <util/exception.hh>
 #include <sstream>
+#include <memory>
 
 namespace virtdb {  namespace engine {
 
     class column_chunk {
         private:
-            virtdb::interface::pb::Column* column_data = nullptr;
+            std::shared_ptr<virtdb::interface::pb::Column> column_data;
             column_chunk() = delete;
             column_chunk(const column_chunk &) = delete;
         public:
-            column_chunk(virtdb::interface::pb::Column* data);
+            column_chunk(std::shared_ptr<virtdb::interface::pb::Column> data);
             virtual ~column_chunk();
             int size();
             void uncompress();

@@ -7,7 +7,7 @@
 using namespace virtdb::engine;
 
 void chunk_store::push(std::string name,
-                       virtdb::interface::pb::Column* new_data,
+                       std::shared_ptr<virtdb::interface::pb::Column> new_data,
                        bool & is_complete)
 {
   auto current_sequence_id = new_data->seqno();

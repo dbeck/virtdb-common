@@ -120,7 +120,7 @@ void receiver_thread::add_query(
                 data_handler* handler = get_data_handler(column->queryid());
                 if (handler != nullptr)
                 {
-                    handler->push(column->name(), new interface::pb::Column(*column));
+                    handler->push(column->name(), column);
                 }
                 else
                 {

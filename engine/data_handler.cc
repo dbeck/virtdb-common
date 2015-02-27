@@ -81,7 +81,7 @@ const std::string& data_handler::query_id() const
     return queryid;
 }
 
-void data_handler::push(std::string name, virtdb::interface::pb::Column* new_data)
+void data_handler::push(std::string name, std::shared_ptr<virtdb::interface::pb::Column> new_data)
 {
     bool is_complete = false;
     {
