@@ -144,7 +144,7 @@ namespace virtdb { namespace cachedb {
       ret.reset(db);
       
       // save column family handles
-      for( int i=0; i<cfds.size(); ++i )
+      for( size_t i=0; i<cfds.size(); ++i )
       {
         cf_handles[handles[i]->GetName()] = cf_handle_sptr(handles[i]);
       }

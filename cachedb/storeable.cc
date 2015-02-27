@@ -14,10 +14,11 @@ namespace virtdb { namespace cachedb {
     {
       return false;
     }
-    std::istringstream is{in};
+
     std::tm tm;
-    
-    is >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S %z");
+    // std::istringstream is{in};
+    // is >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S %z");
+    strptime(in.c_str(), "%Y-%m-%d %H:%M:%S %z", &tm);
     
     tm.tm_isdst   = -1;
     tm.tm_gmtoff  = 0;
@@ -44,16 +45,23 @@ namespace virtdb { namespace cachedb {
     tm.tm_gmtoff  = 0;
     tm.tm_zone    = nullptr;
     
-    std::time_t t2 = std::mktime(&tm);
+    std::mktime(&tm);
     
     if( !ret )
     {
       return false;
     }
-    std::ostringstream os;
-    os << std::put_time(&tm, "%Y-%m-%d %H:%M:%S %z");
-    out = os.str();
-    return true;
+    
+    char result[128];
+    if( strftime(result, sizeof(result), "%Y-%m-%d %H:%M:%S %z", &tm) )
+    {
+      out = result;
+      return true;
+    }
+    else
+    {
+      return false;
+    }
   }
   
   bool
