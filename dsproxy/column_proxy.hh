@@ -53,6 +53,8 @@ namespace virtdb { namespace dsproxy {
                  on_data handler);
     ~column_proxy();
     
+    void publish(std::shared_ptr<interface::pb::Column> data);
+    
   private:
     column_proxy() = delete;
     column_proxy(const column_proxy &) = delete;

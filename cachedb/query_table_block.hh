@@ -15,7 +15,7 @@ namespace virtdb { namespace cachedb {
     
     const std::string & clazz() const;
     size_t key_len() const;
-    void key(const std::string hash,
+    void key(const std::string & hash,
              const std::chrono::system_clock::time_point & tp,
              size_t seq_no);
     

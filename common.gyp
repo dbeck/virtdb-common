@@ -23,11 +23,8 @@
                           'cachedb/db.cc',                  'cachedb/db.hh',
                           'cachedb/storeable.cc',           'cachedb/storeable.hh',
                           'cachedb/column_data.cc',         'cachedb/column_data.hh',
-                          'cachedb/query_column_log.cc',    'cachedb/query_column_log.hh',
-                          'cachedb/query_column_job.cc',    'cachedb/query_column_job.hh',
                           'cachedb/query_column_block.cc',  'cachedb/query_column_block.hh',
                           'cachedb/query_table_log.cc',     'cachedb/query_table_log.hh',
-                          'cachedb/query_table_job.cc',     'cachedb/query_table_job.hh',
                           'cachedb/query_table_block.cc',   'cachedb/query_table_block.hh',
                         ],
     'dsproxy_sources':  [

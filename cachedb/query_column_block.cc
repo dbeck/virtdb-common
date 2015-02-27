@@ -37,7 +37,7 @@ namespace virtdb { namespace cachedb {
   query_column_block::~query_column_block() {}
   
   void
-  query_column_block::key(const std::string hash,
+  query_column_block::key(const std::string & hash,
                           const std::chrono::system_clock::time_point & tp,
                           size_t seq_no)
   {

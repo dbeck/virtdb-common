@@ -8,8 +8,6 @@ namespace virtdb { namespace cachedb {
   
   class column_data : public storeable
   {
-    std::string  data_;
-    
   public:
     static const std::string & clazz_static();
     static const qual_name qn_data;
@@ -20,11 +18,12 @@ namespace virtdb { namespace cachedb {
     void default_columns();
     
     void set(const interface::pb::Column & c);
-    void clear();
     size_t len() const;
     
     column_data();
     virtual ~column_data();
+    
+    const std::string & data() const;
   };
   
 }}

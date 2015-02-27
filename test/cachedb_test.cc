@@ -2,7 +2,6 @@
 #include <rocksdb/db.h>
 #include <cachedb/hash_util.hh>
 #include <cachedb/column_data.hh>
-#include <cachedb/query_column_log.hh>
 #include <cachedb/query_table_log.hh>
 
 #include <cachedb/db.hh>
@@ -140,21 +139,21 @@ TEST_F(CachedbDBTest, InitTests)
 {
   {
     column_data       da;
-    query_column_log  qcl;
+    query_table_log   qtl;
     db                dx;
   
     // set default columns
     da.default_columns();
-    qcl.default_columns();
+    qtl.default_columns();
   
     // create storable object vectors
     db::storeable_ptr_vec_t v{&da};
-    db::storeable_ptr_vec_t v2{&da, &qcl};
+    db::storeable_ptr_vec_t v2{&da, &qtl};
   
     EXPECT_TRUE(dx.init("/tmp/CachedbDBTestInit", v));
     EXPECT_EQ(dx.column_families().size(), da.column_set().size()+1);
     EXPECT_TRUE(dx.init("/tmp/CachedbDBTestInit", v2));
-    EXPECT_EQ(dx.column_families().size(), da.column_set().size()+qcl.column_set().size()+1);
+    EXPECT_EQ(dx.column_families().size(), da.column_set().size()+qtl.column_set().size()+1);
 
     // this must fail. we may call init with more columns, but not less
     EXPECT_FALSE(dx.init("/tmp/CachedbDBTestInit", v));
@@ -175,7 +174,8 @@ namespace
   {
     column_data d;
     d.set(c);
-    return d.len();
+    auto const & dr = d.data();
+    return dr.size();
   }
 }
 

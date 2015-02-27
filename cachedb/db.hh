@@ -27,6 +27,7 @@ namespace virtdb { namespace cachedb {
     size_t set(const storeable & data);
     size_t exists(const storeable & data);
     size_t fetch(storeable & data);
+    bool flush(bool sync=false);
     
     std::set<std::string> column_families() const;
     

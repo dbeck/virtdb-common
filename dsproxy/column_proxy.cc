@@ -170,7 +170,13 @@ namespace virtdb { namespace dsproxy {
                 V_(data->endofdata()));
     }
   }
-    
+  
+  void
+  column_proxy::publish(std::shared_ptr<interface::pb::Column> data)
+  {
+    server_.publish(data->queryid(), data);
+  }
+  
   column_proxy::column_proxy(connector::config_client & cfg_clnt,
                              on_data handler)
   : server_(cfg_clnt),

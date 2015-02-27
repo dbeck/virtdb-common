@@ -33,9 +33,12 @@ namespace virtdb { namespace cachedb {
       static void set_options(T & t, size_t prefix_len)
       {
         t.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(prefix_len));
-        t.memtable_prefix_bloom_bits = 100000000;
-        t.memtable_prefix_bloom_probes = 6;
-        t.compression = rocksdb::kLZ4Compression;
+        t.memtable_prefix_bloom_bits        = 100000000;
+        t.memtable_prefix_bloom_probes      = 6;
+        t.compression                       = rocksdb::kLZ4Compression;
+        t.write_buffer_size                 = 16*1024*1024;
+        t.min_write_buffer_number_to_merge  = 1;
+        t.max_write_buffer_number           = 4;
 
         rocksdb::BlockBasedTableOptions topts;
         // Enable prefix bloom for SST files
@@ -391,7 +394,7 @@ namespace virtdb { namespace cachedb {
       if( ret > 0 )
       {
         auto wropts = rocksdb::WriteOptions();
-        wropts.sync = true;
+        wropts.sync = false;
         Status s = db_->Write(wropts, &batch);
         if( !s.ok() )
         {
@@ -415,6 +418,26 @@ namespace virtdb { namespace cachedb {
       if( !db_ ) { LOG_ERROR("database not yet initialized"); return 0; }
 
       return 0;
+    }
+    
+    bool
+    flush(bool sync)
+    {
+      if( !db_ ) { LOG_ERROR("database not yet initialized"); return false; }
+      bool ret = true;
+      rocksdb::FlushOptions opts;
+      opts.wait = sync;
+      
+      for( auto & cf : column_families_ )
+      {
+        rocksdb::Status s = db_->Flush(opts, cf.second->handle_sptr_.get());
+        if( !s.ok() )
+        {
+          LOG_ERROR("failed to flush column family" <<  V_(cf.first));
+          ret = false;
+        }
+      }
+      return ret;
     }
     
     impl() : db_{nullptr}
@@ -481,6 +504,12 @@ namespace virtdb { namespace cachedb {
   db::fetch(storeable & data)
   {
     return impl_->fetch(data);
+  }
+  
+  bool
+  db::flush(bool sync)
+  {
+    return impl_->flush(sync);
   }
   
   std::set<std::string>

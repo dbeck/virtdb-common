@@ -44,6 +44,7 @@ namespace virtdb { namespace cachedb {
   column_data::set(const interface::pb::Column & c)
   {
     interface::pb::Column tmp;
+    std::string tmp_data;
     
     tmp.mutable_data()->MergeFrom(c.data());
     
@@ -56,7 +57,7 @@ namespace virtdb { namespace cachedb {
     if( c.has_uncompressedsize() )
       tmp.set_uncompressedsize(c.uncompressedsize());
     
-    if( !tmp.SerializePartialToString(&data_) )
+    if( !tmp.SerializePartialToString(&tmp_data) )
     {
       LOG_ERROR("failed to serialize data"
                 << V_(c.queryid())
@@ -68,7 +69,7 @@ namespace virtdb { namespace cachedb {
     {
       // generate hash
       std::string hash_val;
-      if( hash_util::hash_data(data_.data(), data_.size(), hash_val) )
+      if( hash_util::hash_data(tmp_data.data(), tmp_data.size(), hash_val) )
         this->key(hash_val);
       else
       {
@@ -80,24 +81,21 @@ namespace virtdb { namespace cachedb {
       }
       
       // set property
-      this->property(qn_data, data_);
+      this->property(qn_data, tmp_data);
     }
   }
   
-  void
-  column_data::clear()
+  const std::string &
+  column_data::data() const
   {
-    // clear parent
-    storeable::clear();
-    
-    // clear own data
-    data_.erase();
+    return this->property_cref(qn_data);
   }
   
   size_t
   column_data::len() const
   {
-    return data_.size();
+    auto const & dr = data();
+    return dr.size();
   }
 
 }}
