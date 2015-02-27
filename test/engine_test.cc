@@ -19,6 +19,8 @@ using namespace virtdb::interface::pb;
 class DummyColumn : public Column
 {
 public:
+    typedef std::shared_ptr<DummyColumn> sptr;
+  
     DummyColumn(const std::string & name = "", Kind type = Kind::STRING, size_t records = 0)
     {
         set_name(name);
@@ -32,7 +34,7 @@ public:
 
 TEST_F(ColumnChunkTest, empty)
 {
-    DummyColumn* column = new DummyColumn();
+    DummyColumn::sptr column{new DummyColumn()};
     column_chunk chunk(column);
 
     ASSERT_EQ(0, chunk.size());
@@ -47,7 +49,7 @@ TEST_F(ColumnChunkTest, empty_int32_withname)
 {
     auto name = "Colname";
     auto type = Kind::INT32;
-    DummyColumn* column = new DummyColumn(name, type, 0);
+    DummyColumn::sptr column{new DummyColumn(name, type, 0)};
     column_chunk chunk(column);
 
     ASSERT_EQ(0, chunk.size());

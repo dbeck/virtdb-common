@@ -288,7 +288,7 @@ namespace virtdb { namespace cachedb {
           Status s = db_->Get(ReadOptions(), cf_handle_sptr.get(), data.key(), &(data.property_ref(qn)));
           if( s.IsNotFound() )
           {
-            LOG_TRACE("data not found for" << V_(data.key()) << V_(family.name_));
+            // LOG_TRACE("data not found for" << V_(data.key()) << V_(family.name_));
           }
           else
           {

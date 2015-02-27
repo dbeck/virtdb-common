@@ -142,10 +142,10 @@ namespace virtdb { namespace dsproxy {
             // check in 1 sec that we have the full meta_data
             // remove it from the cache if not
             
-            timer_service_.schedule(1000,[this,schema_tmp,table_tmp]() {
+            timer_service_.schedule(60000,[this,schema_tmp,table_tmp]() {
               if( !server_.has_fields(schema_tmp, table_tmp) )
               {
-                LOG_TRACE("removing empty data" << V_(schema_tmp) << V_(table_tmp));
+                // LOG_TRACE("removing empty data" << V_(schema_tmp) << V_(table_tmp));
                 server_.remove_table(schema_tmp, table_tmp);
               }
               return false;
