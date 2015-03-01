@@ -1,12 +1,187 @@
 #include "value_type_test.hh"
+#include <util/relative_time.hh>
+#include <util/value_type_reader.hh>
+#include <google/protobuf/io/coded_stream.h>
+#include <logger.hh>
 #include <list>
 #include <set>
 #include <deque>
 #include <vector>
 #include <limits>
+#include <iostream>
+#include <memory>
 
 using namespace virtdb::test;
 using namespace virtdb::interface;
+using namespace virtdb::util;
+
+namespace
+{
+  struct measure
+  {
+    std::string    file_;
+    int            line_;
+    std::string    function_;
+    std::string    msg_;
+    relative_time  rt_;
+    
+    measure(const char * f,
+            int l,
+            const char * fn,
+            const char * msg)
+    : file_(f),
+    line_(l),
+    function_(fn),
+    msg_(msg) {}
+    
+    ~measure()
+    {
+      double tm = rt_.get_usec() / 1000.0;
+      std::cout << "[" << file_ << ':' << line_ << "] " << function_ << "() '" << msg_ << "' " << tm << " ms\n";
+    }
+  };
+  
+  void fill_int32(pb::ValueType & vt)
+  {
+    std::vector<int32_t> v;
+    v.reserve(1000000);
+    for( int i=0; i<1000000; ++i )
+      v.push_back(i-500000);
+    value_type<int32_t>::set(vt,v.begin(), v.end());
+    ASSERT_EQ(v.size(), 1000000);
+  }
+  
+  void fill_string(pb::ValueType & vt)
+  {
+    std::vector<std::string> v;
+    v.reserve(1000000);
+    for( int i=0; i<1000000; ++i )
+      v.push_back("Hello World");
+    value_type<std::string>::set(vt,v.begin(), v.end());
+    ASSERT_EQ(v.size(), 1000000);
+  }
+}
+
+#define MEASURE_ME(M) measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__, M };
+
+TEST_F(ValueTypeReaderTest, String)
+{
+  pb::ValueType vt;
+  fill_string(vt);
+  
+  int buffer_size = vt.ByteSize();
+  std::unique_ptr<char[]> buffer{new char[buffer_size]};
+  ASSERT_TRUE(vt.SerializeToArray(buffer.get(), buffer_size));
+  
+  std::string s(128,' ');
+  std::vector<std::string> preallocated{1000000,s};
+  
+  {
+    MEASURE_ME("String baseline");
+    pb::ValueType tmp;
+    tmp.ParseFromArray(buffer.get(), buffer_size);
+  }
+  
+  {
+    MEASURE_ME("String baseline reserved");
+    pb::ValueType tmp;
+    auto sv = tmp.mutable_stringvalue();
+    std::string* released[1000000];
+    sv->Reserve(1000000);
+    for( size_t i=0;i<1000000;++i )
+      sv->AddAllocated(&preallocated[i]);
+    tmp.ParseFromArray(buffer.get(), buffer_size);
+    sv = tmp.mutable_stringvalue();
+    sv->ExtractSubrange(0, 1000000, released);
+  }
+  
+  {
+    MEASURE_ME("String coded stream");
+    google::protobuf::io::CodedInputStream is{(const uint8_t *)buffer.get(), buffer_size};
+    
+    auto tag = is.ReadTag();
+    uint32_t typ = 0;
+    is.ReadVarint32(&typ);
+    EXPECT_EQ(tag, 1<<3);
+    EXPECT_TRUE( typ >= 2 && typ <= 18 );
+    
+    int64_t val = 0;
+    
+    {
+      while( true )
+      {
+        tag = is.ReadTag();
+        if( tag != ((2<<3)+2) ) { break; }
+        uint32_t len = 0;
+        is.ReadVarint32(&len);
+        is.Skip(len);
+      }
+    }
+  }
+}
+
+
+TEST_F(ValueTypeReaderTest, Int32)
+{
+  pb::ValueType vt;
+  fill_int32(vt);
+  int64_t check_val = 0;
+  
+  for( auto const & i : vt.int32value() )
+    check_val += i;
+  
+  int buffer_size = vt.ByteSize();
+  std::unique_ptr<char[]> buffer{new char[buffer_size]};
+  ASSERT_TRUE(vt.SerializeToArray(buffer.get(), buffer_size));
+
+  {
+    MEASURE_ME("Int32 baseline");
+    pb::ValueType tmp;
+    tmp.ParseFromArray(buffer.get(), buffer_size);
+    {
+      MEASURE_ME("Int32 baseline sum");
+      int64_t val = 0;
+      for( auto const & i : tmp.int32value() )
+        val += i;
+      EXPECT_EQ(val, check_val);
+    }
+  }
+
+  {
+    MEASURE_ME("Int32 baseline - parse only");
+    pb::ValueType tmp;
+    tmp.ParseFromArray(buffer.get(), buffer_size);
+  }
+
+  {
+    MEASURE_ME("Int32 coded stream - parse only");
+    google::protobuf::io::CodedInputStream is{(const uint8_t *)buffer.get(), buffer_size};
+    
+    auto tag = is.ReadTag();
+    uint32_t typ = 0;
+    is.ReadVarint32(&typ);
+    EXPECT_EQ(tag, 1<<3);
+    EXPECT_TRUE( typ >= 2 && typ <= 18 );
+
+    {
+      tag = is.ReadTag();
+      EXPECT_EQ(tag,((3<<3)+2));
+      uint32_t payload = 0;
+      is.ReadVarint32(&payload);
+      int pos = is.CurrentPosition();
+      
+      int32_t sval = 0;
+      int endpos = pos + payload;
+      uint32_t n = 0;
+      while( pos < endpos )
+      {
+        is.ReadVarint32(&n);
+        sval = (n >> 1) ^ (-(n & 1));
+        pos = is.CurrentPosition();
+      }
+    }
+  }
+}
 
 TEST_F(ValueTypeTest, TestString)
 {
