@@ -8,29 +8,29 @@
 
 namespace virtdb { namespace test {
   
-  class ActiveQueueTest : public ::testing::Test
+  class UtilActiveQueueTest : public ::testing::Test
   {
   protected:
-    ActiveQueueTest();
+    UtilActiveQueueTest();
     
     std::atomic<int> value_;
     util::active_queue<int,100> queue_;
   };
   
-  class BarrierTest : public ::testing::Test
+  class UtilBarrierTest : public ::testing::Test
   {
   protected:
-    BarrierTest();
+    UtilBarrierTest();
     
     util::barrier barrier_;
   };
   
-  class NetTest : public ::testing::Test { };
-  class FlexAllocTest : public ::testing::Test { };
-  class AsyncWorkerTest : public ::testing::Test { };
-  class CompareMessagesTest : public ::testing::Test { };
-  class ZmqTest : public ::testing::Test { };
-  class TableCollectorTest : public ::testing::Test { };
-  class Utf8Test : public ::testing::Test { };
+  class UtilNetTest : public ::testing::Test { };
+  class UtilFlexAllocTest : public ::testing::Test { };
+  class UtilAsyncWorkerTest : public ::testing::Test { };
+  class UtilCompareMessagesTest : public ::testing::Test { };
+  class UtilZmqTest : public ::testing::Test { };
+  class UtilTableCollectorTest : public ::testing::Test { };
+  class UtilUtf8Test : public ::testing::Test { };
 }}
 

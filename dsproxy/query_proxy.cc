@@ -169,14 +169,6 @@ namespace virtdb { namespace dsproxy {
       {
         client_copy->send_request(*q);
       }
-      else if( query_action == dont_forward )
-      {
-        LOG_TRACE("not forwarding the query to" <<
-                  V_(client_copy->server()) <<
-                  V_(q->queryid()) <<
-                  V_(q->schema()) <<
-                  V_(q->table()));
-      }
       else if( resend_chunk && resend_chunk_copy )
       {
         bool sent = false;
@@ -214,6 +206,14 @@ namespace virtdb { namespace dsproxy {
         {
           client_copy->send_request(*q);          
         }
+      }
+      else if( query_action == dont_forward )
+      {
+        LOG_TRACE("not forwarding the query to" <<
+                  V_(client_copy->server()) <<
+                  V_(q->queryid()) <<
+                  V_(q->schema()) <<
+                  V_(q->table()));
       }
       else
       {

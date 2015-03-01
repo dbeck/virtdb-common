@@ -12,13 +12,6 @@
 using namespace virtdb::test;
 using namespace virtdb::util;
 
-
-ActiveQueueTest::ActiveQueueTest()
-: value_(0),
-  queue_(10,[this](int v){ value_ += v; })
-{
-}
-
 namespace
 {
   struct measure
@@ -45,8 +38,96 @@ namespace
 
 #define MEASURE_ME measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
 
+TEST_F(UtilTableCollectorTest, Basic)
+{
+  table_collector<int> q(3);
+  EXPECT_FALSE(q.stopped());
+  EXPECT_EQ(q.last_updated(0), 0);
+  EXPECT_EQ(q.last_updated(1000), 0);
+  auto const & val0 = q.get(0,200);
+  EXPECT_EQ(val0.first.empty(), true);
+  EXPECT_EQ(val0.second, 0);
+  std::shared_ptr<int> i(new int{1});
+  q.insert(0, 0, i);
+  EXPECT_NE(q.last_updated(0), 0);
+  q.insert(0, 1, i);
+  auto const & val1 = q.get(0,200);
+  EXPECT_FALSE(val1.first.empty());
+  EXPECT_NE(val1.second, 3);
+  q.insert(0, 2, i);
+  auto const & val2 = q.get(0,200);
+  EXPECT_FALSE(val2.first.empty());
+  EXPECT_EQ(val2.second, 3);
+  EXPECT_EQ(val2.first.size(), 3);
+  // test timeout too
+  relative_time rt;
+  auto const & val3 = q.get(0,2000000);
+  EXPECT_FALSE(val3.first.empty());
+  EXPECT_EQ(val3.second, 3);
+  // I expect to have results immediately. give a bit
+  // of time for table_collector anyway
+  EXPECT_LT(rt.get_msec(), 10);
+}
 
-TEST_F(ActiveQueueTest, LongSleep)
+TEST_F(UtilTableCollectorTest, AllOps)
+{
+  table_collector<int> q(2);
+  q.insert(0, 0, new int{0});
+  q.insert(0, 1, new int{1});
+  q.insert(1, 0, new int{2});
+  q.insert(1, 1, new int{3});
+  q.insert(2, 1, new int{4});
+
+  // double set 0,0
+  q.insert(0, 0, new int{0});
+  
+  // missing columns
+  EXPECT_EQ(q.missing_columns(0), 0);
+  EXPECT_EQ(q.missing_columns(1), 0);
+  EXPECT_EQ(q.missing_columns(2), 1);
+  
+  // erase + missing
+  q.erase(1);
+  EXPECT_EQ(q.missing_columns(0), 0);
+  EXPECT_EQ(q.missing_columns(1), 2);
+  EXPECT_EQ(q.missing_columns(2), 1);
+  
+  // get(0)
+  size_t one_ms = 1;
+  {
+    auto row = q.get(0,one_ms);
+    EXPECT_EQ(row.first.size(), 2);
+    EXPECT_EQ(row.second, 2);
+    EXPECT_EQ(*row.first[0], 0);
+    EXPECT_EQ(*row.first[1], 1);
+  }
+
+  // get(1)
+  {
+    auto row = q.get(1,one_ms);
+    EXPECT_EQ(row.first.size(), 2);
+    EXPECT_EQ(row.second, 0);
+    EXPECT_EQ(row.first[0].get(), nullptr);
+    EXPECT_EQ(row.first[1].get(), nullptr);
+  }
+
+  // get(2)
+  {
+    auto row = q.get(2,one_ms);
+    EXPECT_EQ(row.first.size(), 2);
+    EXPECT_EQ(row.second, 1);
+    EXPECT_EQ(row.first[0].get(), nullptr);
+    EXPECT_EQ(*row.first[1], 4);
+  }
+}
+
+UtilActiveQueueTest::UtilActiveQueueTest()
+: value_(0),
+  queue_(10,[this](int v){ value_ += v; })
+{
+}
+
+TEST_F(UtilActiveQueueTest, LongSleep)
 {
   {
     active_queue<int,100> q{
@@ -88,7 +169,7 @@ TEST_F(ActiveQueueTest, LongSleep)
   }
 }
 
-TEST_F(ActiveQueueTest, AddNumbers)
+TEST_F(UtilActiveQueueTest, AddNumbers)
 {
   for( int i=1; i<=10000; ++i )
     this->queue_.push(i);
@@ -103,7 +184,7 @@ TEST_F(ActiveQueueTest, AddNumbers)
   EXPECT_EQ( this->value_, 50005000 );
 }
 
-TEST_F(ActiveQueueTest, Stop3Times)
+TEST_F(UtilActiveQueueTest, Stop3Times)
 {
   this->queue_.stop();
   EXPECT_TRUE( this->queue_.stopped() );
@@ -113,9 +194,9 @@ TEST_F(ActiveQueueTest, Stop3Times)
   EXPECT_TRUE( this->queue_.stopped() );
 }
 
-BarrierTest::BarrierTest() : barrier_(10) {}
+UtilBarrierTest::UtilBarrierTest() : barrier_(10) {}
 
-TEST_F(BarrierTest, BarrierReady)
+TEST_F(UtilBarrierTest, BarrierReady)
 {
   std::atomic<int> flag{0};
   std::vector<std::thread> threads;
@@ -151,17 +232,17 @@ TEST_F(BarrierTest, BarrierReady)
   EXPECT_EQ(flag, 9);
 }
 
-TEST_F(NetTest, DummyTest)
+TEST_F(UtilNetTest, DummyTest)
 {
   // TODO : NetTest
 }
 
-TEST_F(FlexAllocTest, DummyTest)
+TEST_F(UtilFlexAllocTest, DummyTest)
 {
   // TODO : FlexAllocTest
 }
 
-TEST_F(AsyncWorkerTest, DestroyWithoutStart)
+TEST_F(UtilAsyncWorkerTest, DestroyWithoutStart)
 {
   auto fun = [](void) {
     throw std::logic_error("hello");
@@ -174,7 +255,7 @@ TEST_F(AsyncWorkerTest, DestroyWithoutStart)
 }
 
 
-TEST_F(AsyncWorkerTest, CatchThreadException)
+TEST_F(UtilAsyncWorkerTest, CatchThreadException)
 {
   auto fun = [](void) {
     throw std::logic_error("hello");
@@ -187,12 +268,12 @@ TEST_F(AsyncWorkerTest, CatchThreadException)
   EXPECT_THROW(worker.rethrow_error(), std::logic_error);
 }
 
-TEST_F(CompareMessagesTest, DummyTest)
+TEST_F(UtilCompareMessagesTest, DummyTest)
 {
   // TODO : CompareMessagesTest
 }
 
-TEST_F(ZmqTest, TestValid)
+TEST_F(UtilZmqTest, TestValid)
 {
   
   zmq::context_t rep_ctx(1);
@@ -282,7 +363,7 @@ TEST_F(ZmqTest, TestValid)
    */
 }
 
-TEST_F(ZmqTest, DeleteWhileWaiting)
+TEST_F(UtilZmqTest, DeleteWhileWaiting)
 {
   zmq::context_t rep_ctx(1);
   std::shared_ptr<zmq_socket_wrapper> srv(new zmq_socket_wrapper(rep_ctx,ZMQ_REP));
@@ -305,7 +386,7 @@ TEST_F(ZmqTest, DeleteWhileWaiting)
   }
 }
 
-TEST_F(ZmqTest, DeleteWhileWaitingForEver)
+TEST_F(UtilZmqTest, DeleteWhileWaitingForEver)
 {
   zmq::context_t rep_ctx(1);
   std::shared_ptr<zmq_socket_wrapper> srv(new zmq_socket_wrapper(rep_ctx,ZMQ_REP));
@@ -328,34 +409,8 @@ TEST_F(ZmqTest, DeleteWhileWaitingForEver)
   }
 }
 
-TEST_F(TableCollectorTest, Basic)
-{
-  table_collector<int> q(3);
-  EXPECT_FALSE(q.stopped());
-  EXPECT_EQ(q.last_updated(0), 0);
-  EXPECT_EQ(q.last_updated(1000), 0);
-  auto const & val0 = q.get(0,200);
-  EXPECT_EQ(val0.empty(), true);
-  std::shared_ptr<int> i(new int{1});
-  q.insert(0, 0, i);
-  EXPECT_NE(q.last_updated(0), 0);
-  q.insert(0, 1, i);
-  auto const & val1 = q.get(0,200);
-  EXPECT_TRUE(val1.empty());
-  q.insert(0, 2, i);
-  auto const & val2 = q.get(0,200);
-  EXPECT_FALSE(val2.empty());
-  EXPECT_EQ(val2.size(), 3);
-  // test timeout too
-  relative_time rt;
-  auto const & val3 = q.get(0,2000000);
-  EXPECT_NE(val3.empty(), true);
-  // I expect to have results immediately. give a bit
-  // of time for table_collector anyway
-  EXPECT_LT(rt.get_msec(), 10);
-}
 
-TEST_F(Utf8Test, Valid)
+TEST_F(UtilUtf8Test, Valid)
 {
   char simple[] = u8"árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP";
   std::string simple_str{u8"árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"};
@@ -365,7 +420,7 @@ TEST_F(Utf8Test, Valid)
   EXPECT_EQ(simple_str, simple);
 }
 
-TEST_F(Utf8Test, InValid)
+TEST_F(UtilUtf8Test, InValid)
 {
   char simple[] = "árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP";
   std::string simple_str{u8"árvíztűrő tükörfúrógép. ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"};
@@ -374,7 +429,7 @@ TEST_F(Utf8Test, InValid)
   EXPECT_EQ(simple_str, simple);
 }
 
-TEST_F(Utf8Test, ZeroChar)
+TEST_F(UtilUtf8Test, ZeroChar)
 {
   char simple[] = "X\0X";
   std::string simple_str{"X X"};
@@ -383,7 +438,7 @@ TEST_F(Utf8Test, ZeroChar)
   EXPECT_EQ(simple_str, simple);
 }
 
-TEST_F(Utf8Test, BadContinuation)
+TEST_F(UtilUtf8Test, BadContinuation)
 {
   char c = 128;
   char str[] = { 'X', c ,'X', 0 };
@@ -393,7 +448,7 @@ TEST_F(Utf8Test, BadContinuation)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Short2ByteSeq)
+TEST_F(UtilUtf8Test, Short2ByteSeq)
 {
   char c = 128+64;
   char str[] = { 'X', c ,'X', 0 };
@@ -403,7 +458,7 @@ TEST_F(Utf8Test, Short2ByteSeq)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Long2ByteSeq)
+TEST_F(UtilUtf8Test, Long2ByteSeq)
 {
   char tb = 128+64;
   char c = 128+1;
@@ -414,7 +469,7 @@ TEST_F(Utf8Test, Long2ByteSeq)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Short3ByteSeq1)
+TEST_F(UtilUtf8Test, Short3ByteSeq1)
 {
   char tb = 128+64+32;
   char str[] = { 'X', tb, 'X', 0 };
@@ -424,7 +479,7 @@ TEST_F(Utf8Test, Short3ByteSeq1)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Short3ByteSeq2)
+TEST_F(UtilUtf8Test, Short3ByteSeq2)
 {
   char tb = 128+64+32;
   char c  = 128+4;
@@ -435,7 +490,7 @@ TEST_F(Utf8Test, Short3ByteSeq2)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Long3ByteSeq)
+TEST_F(UtilUtf8Test, Long3ByteSeq)
 {
   char tb = 128+64+32;
   char c = 128+1;
@@ -446,7 +501,7 @@ TEST_F(Utf8Test, Long3ByteSeq)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Short4ByteSeq1)
+TEST_F(UtilUtf8Test, Short4ByteSeq1)
 {
   char tb = 128+64+32+16;
   char str[] = { 'X', tb, 'X', 0 };
@@ -456,7 +511,7 @@ TEST_F(Utf8Test, Short4ByteSeq1)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Short4ByteSeq2)
+TEST_F(UtilUtf8Test, Short4ByteSeq2)
 {
   char tb = 128+64+32+16;
   char c  = 128+4;
@@ -467,7 +522,7 @@ TEST_F(Utf8Test, Short4ByteSeq2)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Short4ByteSeq3)
+TEST_F(UtilUtf8Test, Short4ByteSeq3)
 {
   char tb = 128+64+32+16;
   char c  = 128+4;
@@ -478,7 +533,7 @@ TEST_F(Utf8Test, Short4ByteSeq3)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Long4ByteSeq)
+TEST_F(UtilUtf8Test, Long4ByteSeq)
 {
   char tb = 128+64+32+16;
   char c = 128+1;
@@ -489,7 +544,7 @@ TEST_F(Utf8Test, Long4ByteSeq)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Mixed1)
+TEST_F(UtilUtf8Test, Mixed1)
 {
   char tb1 = 128;
   char tb2 = 128+64;
@@ -503,7 +558,7 @@ TEST_F(Utf8Test, Mixed1)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Mixed2)
+TEST_F(UtilUtf8Test, Mixed2)
 {
   char tb1 = 128;
   char tb2 = 128+64;
@@ -517,7 +572,7 @@ TEST_F(Utf8Test, Mixed2)
   EXPECT_EQ(str2, str);
 }
 
-TEST_F(Utf8Test, Garbage)
+TEST_F(UtilUtf8Test, Garbage)
 {
   char c = 0xff;
   char str[] = { 'X', c, 'X', 0 };

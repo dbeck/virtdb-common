@@ -14,4 +14,5 @@
 #include "util/table_collector.hh"
 #include "util/timer_service.hh"
 #include "util/utf8.hh"
+#include "util/value_type_reader.hh"
 

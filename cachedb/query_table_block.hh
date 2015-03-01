@@ -19,6 +19,8 @@ namespace virtdb { namespace cachedb {
              const std::chrono::system_clock::time_point & tp,
              size_t seq_no);
     
+    const std::string & key() const { return storeable::key(); }
+    
     void default_columns();
     
     query_table_block();

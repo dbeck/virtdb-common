@@ -7,6 +7,7 @@
 namespace virtdb { namespace cachedb {
   
   const storeable::qual_name query_column_block::qn_column_hash{query_column_block::clazz_static(),"column_hash"};
+  const storeable::qual_name query_column_block::qn_end_of_data{query_column_block::clazz_static(),"end_of_data"};
   
   const std::string &
   query_column_block::clazz_static()
@@ -31,6 +32,7 @@ namespace virtdb { namespace cachedb {
   query_column_block::default_columns()
   {
     column(qn_column_hash);
+    column(qn_end_of_data);
   }
   
   query_column_block::query_column_block() : storeable() {}
@@ -66,4 +68,32 @@ namespace virtdb { namespace cachedb {
     this->property(qn_column_hash, ch);
   }
 
+  bool
+  query_column_block::end_of_data() const
+  {
+    size_t ret = 0;
+    auto const & v = this->property_cref(qn_end_of_data);
+    if( v.empty() ) return ret;
+    if( !convert(v,ret) )
+    {
+      LOG_ERROR("conversion failed" << V_(v.size()) << V_(qn_end_of_data.name_) );
+    }
+    return (ret > 0);
+  }
+  
+  void
+  query_column_block::end_of_data(bool value)
+  {
+    size_t n = (value ? 1 : 0);
+    std::string val;
+    if( convert(n,val) )
+    {
+      this->property(qn_end_of_data,val);
+    }
+    else
+    {
+      LOG_ERROR("conversion failed" << V_(n) << V_(qn_end_of_data.name_));
+    }
+  }
+  
 }}
