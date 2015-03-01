@@ -106,7 +106,7 @@
                           'engine/query.cc',             'engine/query.hh',
                           'engine/receiver_thread.cc',   'engine/receiver_thread.hh',
                           'engine/collector.cc',         'engine/collector.hh',
-                          'engine/decoder.cc',           'engine/decoder.hh',
+                          'engine/feeder.cc',            'engine/feeder.hh',
                           'engine/util.hh',
                           # fault injection
                           'fault/injector.cc',           'fault/injector.hh',
@@ -128,7 +128,7 @@
         'defines':  [ 'NDEBUG', 'RELEASE', ],
         'cflags':   [ '-O3', ],
         'xcode_settings': {
-          'OTHER_LDFLAGS': [ '-O3', ],
+          # 'OTHER_LDFLAGS': [ '-O3', ],
         },
       },
     },

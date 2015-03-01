@@ -48,6 +48,8 @@ namespace
     for( int i=0; i<1000000; ++i )
       v.push_back(i-500000);
     value_type<int32_t>::set(vt,v.begin(), v.end());
+    value_type<std::string>::set_null(vt, 999999);
+    value_type<std::string>::set_null(vt, 3);
     ASSERT_EQ(v.size(), 1000000);
   }
   
@@ -58,16 +60,87 @@ namespace
     for( int i=0; i<1000000; ++i )
       v.push_back("Hello World");
     value_type<std::string>::set(vt,v.begin(), v.end());
+    value_type<std::string>::set_null(vt, 999999);
+    value_type<std::string>::set_null(vt, 3);
+    ASSERT_EQ(v.size(), 1000000);
+  }
+  
+  void fill_double(pb::ValueType & vt)
+  {
+    std::vector<double> v;
+    v.reserve(1000000);
+    for( int i=0; i<1000000; ++i )
+      v.push_back(1.0+i);
+    value_type<double>::set(vt,v.begin(), v.end());
+    value_type<std::string>::set_null(vt, 999999);
+    value_type<std::string>::set_null(vt, 3);
     ASSERT_EQ(v.size(), 1000000);
   }
 }
 
 #define MEASURE_ME(M) measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__, M };
 
+
+TEST_F(ValueTypeReaderTest, Double)
+{
+  pb::ValueType vt;
+  fill_double(vt);
+  double check_val = 0;
+  
+  for( auto const & i : vt.doublevalue() )
+    check_val += i;
+  
+  int buffer_size = vt.ByteSize();
+  std::unique_ptr<char[]> buffer{new char[buffer_size]};
+  ASSERT_TRUE(vt.SerializeToArray(buffer.get(), buffer_size));
+  
+  {
+    MEASURE_ME("Double baseline - parse only");
+    pb::ValueType tmp;
+    tmp.ParseFromArray(buffer.get(), buffer_size);
+  }
+  
+  {
+    MEASURE_ME("Double coded stream - parse only");
+    google::protobuf::io::CodedInputStream is{(const uint8_t *)buffer.get(), buffer_size};
+    
+    auto tag = is.ReadTag();
+    uint32_t typ = 0;
+    is.ReadVarint32(&typ);
+    EXPECT_EQ(tag, 1<<3);
+    EXPECT_TRUE( typ >= 2 && typ <= 18 );
+    
+    {
+      tag = is.ReadTag();
+      EXPECT_EQ(tag,((7<<3)+2));
+      uint32_t payload = 0;
+      is.ReadVarint32(&payload);
+      int pos = is.CurrentPosition();
+      
+      int32_t sval = 0;
+      int endpos = pos + payload;
+      double n = 0;
+      while( pos < endpos )
+      {
+        is.ReadRaw(&n, sizeof(n));
+        pos = is.CurrentPosition();
+      }
+    }
+  }
+  
+  {
+    MEASURE_ME("Double value type reader - parse only");
+    auto rdr = value_type_reader::construct(std::move(buffer), buffer_size);
+  }
+}
+
+
 TEST_F(ValueTypeReaderTest, String)
 {
   pb::ValueType vt;
   fill_string(vt);
+  std::string cx{"Hello World"};
+  size_t clen = cx.length();
   
   int buffer_size = vt.ByteSize();
   std::unique_ptr<char[]> buffer{new char[buffer_size]};
@@ -80,6 +153,14 @@ TEST_F(ValueTypeReaderTest, String)
     MEASURE_ME("String baseline");
     pb::ValueType tmp;
     tmp.ParseFromArray(buffer.get(), buffer_size);
+    uint32_t n = 0;
+    for( auto const & s : tmp.stringvalue() )
+    {
+      ++n;
+      EXPECT_EQ('H', *s.begin() );
+      EXPECT_EQ(s.length(), clen);
+    }
+    EXPECT_EQ(n, 1000000);
   }
   
   {
@@ -91,6 +172,14 @@ TEST_F(ValueTypeReaderTest, String)
     for( size_t i=0;i<1000000;++i )
       sv->AddAllocated(&preallocated[i]);
     tmp.ParseFromArray(buffer.get(), buffer_size);
+    uint32_t n = 0;
+    for( auto const & s : tmp.stringvalue() )
+    {
+      ++n;
+      EXPECT_EQ('H', *s.begin() );
+      EXPECT_EQ(s.length(), clen);
+    }
+    EXPECT_EQ(n, 1000000);
     sv = tmp.mutable_stringvalue();
     sv->ExtractSubrange(0, 1000000, released);
   }
@@ -108,16 +197,42 @@ TEST_F(ValueTypeReaderTest, String)
     int64_t val = 0;
     
     {
+      uint32_t n = 0;
+      uint32_t len = 0;
       while( true )
       {
         tag = is.ReadTag();
         if( tag != ((2<<3)+2) ) { break; }
-        uint32_t len = 0;
-        is.ReadVarint32(&len);
+        EXPECT_TRUE(is.ReadVarint32(&len));
+        EXPECT_EQ('H', buffer.get()[is.CurrentPosition()]);
+        EXPECT_EQ(len, clen);
         is.Skip(len);
+        ++n;
       }
+      EXPECT_EQ(n, 1000000);
     }
   }
+  
+  {
+    MEASURE_ME("String value type reader");
+    auto rdr = value_type_reader::construct(std::move(buffer), buffer_size);
+    uint32_t n = 0;
+    char * p = nullptr;
+    size_t len = 0;
+    while( rdr->read_string(&p, len) == value_type_reader::ok_ )
+    {
+      ++n;
+      EXPECT_EQ('H', *p);
+      EXPECT_EQ(len, clen);
+    }
+    EXPECT_EQ(n, 1000000);
+    EXPECT_FALSE( rdr->read_null() );
+    EXPECT_FALSE( rdr->read_null() );
+    EXPECT_FALSE( rdr->read_null() );
+    EXPECT_TRUE( rdr->read_null() );
+    EXPECT_EQ( rdr->n_nulls(), 1000000 );
+  }
+
 }
 
 
@@ -133,19 +248,6 @@ TEST_F(ValueTypeReaderTest, Int32)
   int buffer_size = vt.ByteSize();
   std::unique_ptr<char[]> buffer{new char[buffer_size]};
   ASSERT_TRUE(vt.SerializeToArray(buffer.get(), buffer_size));
-
-  {
-    MEASURE_ME("Int32 baseline");
-    pb::ValueType tmp;
-    tmp.ParseFromArray(buffer.get(), buffer_size);
-    {
-      MEASURE_ME("Int32 baseline sum");
-      int64_t val = 0;
-      for( auto const & i : tmp.int32value() )
-        val += i;
-      EXPECT_EQ(val, check_val);
-    }
-  }
 
   {
     MEASURE_ME("Int32 baseline - parse only");
@@ -180,6 +282,69 @@ TEST_F(ValueTypeReaderTest, Int32)
         pos = is.CurrentPosition();
       }
     }
+  }
+  
+  {
+    MEASURE_ME("Int32 value type reader - parse only");
+    auto rdr = value_type_reader::construct(std::move(buffer), buffer_size);
+  }
+
+  buffer.reset(new char[buffer_size]);
+  ASSERT_TRUE(vt.SerializeToArray(buffer.get(), buffer_size));
+
+  {
+    MEASURE_ME("Int32 baseline - sum");
+    pb::ValueType tmp;
+    tmp.ParseFromArray(buffer.get(), buffer_size);
+    {
+      int64_t val = 0;
+      for( auto const & i : tmp.int32value() )
+        val += i;
+      EXPECT_EQ(val, check_val);
+    }
+  }
+  
+  {
+    MEASURE_ME("Int32 coded stream - sum");
+    google::protobuf::io::CodedInputStream is{(const uint8_t *)buffer.get(), buffer_size};
+    int64_t val = 0;
+    
+    auto tag = is.ReadTag();
+    uint32_t typ = 0;
+    is.ReadVarint32(&typ);
+    EXPECT_EQ(tag, 1<<3);
+    EXPECT_TRUE( typ >= 2 && typ <= 18 );
+    
+    {
+      tag = is.ReadTag();
+      EXPECT_EQ(tag,((3<<3)+2));
+      uint32_t payload = 0;
+      is.ReadVarint32(&payload);
+      int pos = is.CurrentPosition();
+      
+      int32_t sval = 0;
+      int endpos = pos + payload;
+      uint32_t n = 0;
+      while( pos < endpos )
+      {
+        is.ReadVarint32(&n);
+        sval = (n >> 1) ^ (-(n & 1));
+        val += sval;
+        pos = is.CurrentPosition();
+      }
+    }
+    
+    EXPECT_EQ(val, check_val);
+  }
+  
+  {
+    MEASURE_ME("Int32 value type reader - sum");
+    auto rdr = value_type_reader::construct(std::move(buffer), buffer_size);
+    int64_t val = 0;
+    int32_t v = 0;
+    while( rdr->read_int32(v) == value_type_reader::ok_ )
+      val += v;
+    EXPECT_EQ(val, check_val);
   }
 }
 
