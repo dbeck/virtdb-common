@@ -22,15 +22,12 @@ namespace virtdb { namespace engine {
   {
     // check if we are at the end of stream
     auto last = collector_->last_block_id();
+    LOG_SCOPED("stream" << V_(last) << V_(act_block_) << V_(collector_->max_block_id()));
+    
     if( last != -1 && act_block_ == last )
     {
-      LOG_TRACE("end of stream" << V_(last) << V_(act_block_));
       // no more data to be read
       return vtr::end_of_stream_;
-    }
-    else
-    {
-      LOG_TRACE("mid stream" << V_(last) << V_(act_block_) << V_(collector_->max_block_id()));
     }
     
     collector_->process(act_block_+1, 10, false);
@@ -47,7 +44,8 @@ namespace virtdb { namespace engine {
         ++act_block_;
         // schedule the next process to give a chance the next block
         // being ready when needed
-        collector_->process(act_block_+1, 10, false);
+        if( act_block_ != last )
+          collector_->process(act_block_+1, 10, false);
         return vtr::ok_;
       }
       else
