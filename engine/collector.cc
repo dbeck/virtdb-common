@@ -93,8 +93,9 @@ namespace virtdb { namespace engine {
                      uint64_t timeout_ms,
                      bool wait_ready)
   {
-    auto row = collector_.get(block_id,
-                              timeout_ms);
+    LOG_SCOPED("processing" << V_(block_id) << V_(timeout_ms) << V_(wait_ready));
+    
+    auto row = collector_.get(block_id, timeout_ms);
     
     size_t n_cols    = 0;
     size_t n_pushed  = 0;
@@ -139,6 +140,7 @@ namespace virtdb { namespace engine {
                  reader_sptr_vec & rdrs,
                  uint64_t timeout_ms)
   {
+    LOG_SCOPED(V_(block_id) << V_(timeout_ms));
     size_t n_processed = 0;
     reader_sptr_vec result;
     
