@@ -28,6 +28,12 @@ namespace virtdb { namespace engine {
       // no more data to be read
       return vtr::end_of_stream_;
     }
+    else
+    {
+      LOG_TRACE("mid stream" << V_(last) << V_(act_block_) << V_(collector_->max_block_id()));
+    }
+    
+    collector_->process(act_block_+1, 10, false);
     
     // will need to wait for the next block
     for( int i=0; i<3; ++i )
@@ -41,7 +47,7 @@ namespace virtdb { namespace engine {
         ++act_block_;
         // schedule the next process to give a chance the next block
         // being ready when needed
-        collector_->process(act_block_+1, 100, false);
+        collector_->process(act_block_+1, 10, false);
         return vtr::ok_;
       }
       else
@@ -49,7 +55,7 @@ namespace virtdb { namespace engine {
         collector_->process(act_block_+1, 60000, true);
       }
       
-      LOG_INFO("reader array is not yet ready" <<
+      LOG_TRACE("reader array is not yet ready" <<
                V_(act_block_) <<
                V_(collector_->n_columns()));
     }
