@@ -33,7 +33,7 @@ namespace virtdb { namespace engine {
     for( int i=0; i<3; ++i )
     {
       bool got_reader =  collector_->get(act_block_+1,
-                                        readers_,
+                                         readers_,
                                          60000);
       
       if( got_reader )

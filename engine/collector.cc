@@ -120,8 +120,8 @@ namespace virtdb { namespace engine {
     size_t n_processed = 0;
     reader_sptr_vec result;
     
-    auto row = collector_.get(block_id,
-                              timeout_ms);
+    auto row = collector_.get(block_id, timeout_ms);
+    
     for( auto & c : row.first )
     {
       if( c->reader_.get() )
@@ -137,6 +137,12 @@ namespace virtdb { namespace engine {
     
     bool retval = ((row.second == collector_.n_columns()) &&
                    (n_processed == collector_.n_columns()));
+    
+    LOG_TRACE("get result" <<
+              V_(row.second) <<
+              V_(n_processed) <<
+              V_(collector_.n_columns()) <<
+              V_(retval));
     
     if( retval ) result.swap(rdrs);
     

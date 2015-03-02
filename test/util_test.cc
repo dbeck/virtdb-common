@@ -69,6 +69,14 @@ TEST_F(UtilTableCollectorTest, Basic)
   EXPECT_LT(rt.get_msec(), 10);
 }
 
+TEST_F(UtilTableCollectorTest, Timeout)
+{
+  //MEASURE_ME;
+  //table_collector<int> q(2);
+  //q.get(0,1000);
+}
+
+
 TEST_F(UtilTableCollectorTest, AllOps)
 {
   table_collector<int> q(2);
