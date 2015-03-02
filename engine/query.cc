@@ -1,3 +1,10 @@
+#ifdef RELEASE
+#undef LOG_TRACE_IS_ENABLED
+#define LOG_TRACE_IS_ENABLED false
+#undef LOG_SCOPED_IS_ENABLED
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include <engine/query.hh>
 #include <engine/expression.hh>
 #include <engine/util.hh>

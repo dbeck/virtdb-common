@@ -1,3 +1,10 @@
+#ifdef RELEASE
+#undef LOG_TRACE_IS_ENABLED
+#define LOG_TRACE_IS_ENABLED false
+#undef LOG_SCOPED_IS_ENABLED
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "feeder.hh"
 
 namespace virtdb { namespace engine {
@@ -17,6 +24,7 @@ namespace virtdb { namespace engine {
     auto last = collector_->last_block_id();
     if( last != -1 && act_block_ == last )
     {
+      LOG_TRACE("end of stream" << V_(last) << V_(act_block_));
       // no more data to be read
       return vtr::end_of_stream_;
     }
@@ -73,6 +81,7 @@ namespace virtdb { namespace engine {
       // all subsequent next_block() calls will come from
       // read* calls
       ret = next_block();
+      LOG_TRACE("next block returned" << V_((int)ret));
     }
     if( ret != vtr::ok_ )
     {
@@ -89,6 +98,7 @@ namespace virtdb { namespace engine {
     {
       LOG_ERROR("invalid argument" << V_(readers_.size()) << V_(col_id));
       ret = vtr::end_of_stream_;
+      return ret;
     }
   }
   
@@ -121,13 +131,23 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_string(ptr, len);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
-    
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
+
     return ret;
   }
   
@@ -159,12 +179,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_int32(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }
@@ -197,12 +227,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_int64(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }
@@ -235,12 +275,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_uint32(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }
@@ -273,12 +323,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_uint64(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }
@@ -311,13 +371,23 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_double(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
-    
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
+
     return ret;
   }
   
@@ -349,12 +419,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_float(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }
@@ -387,12 +467,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_bool(v);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }
@@ -426,12 +516,22 @@ namespace virtdb { namespace engine {
     }
     
     // no valid reader found
-    if( ret != vtr::ok_ ) return ret;
+    if( ret != vtr::ok_ )
+    {
+      LOG_TRACE("no valid reader found" << V_((int)ret));
+      return ret;
+    }
     
     // second try for the next block
     ret = reader->read_bytes(ptr, len);
     if( ret == vtr::ok_ )
+    {
       null = reader->read_null();
+    }
+    else
+    {
+      LOG_TRACE("last chance read failed" << V_((int)ret));
+    }
     
     return ret;
   }

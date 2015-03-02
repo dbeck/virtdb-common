@@ -1,3 +1,10 @@
+#ifdef RELEASE
+#undef LOG_TRACE_IS_ENABLED
+#define LOG_TRACE_IS_ENABLED false
+#undef LOG_SCOPED_IS_ENABLED
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "data_handler.hh"
 #include "query.hh"
 #include <logger.hh>

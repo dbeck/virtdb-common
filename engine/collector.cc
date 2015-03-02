@@ -1,3 +1,10 @@
+#ifdef RELEASE
+#undef LOG_TRACE_IS_ENABLED
+#define LOG_TRACE_IS_ENABLED false
+#undef LOG_SCOPED_IS_ENABLED
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "collector.hh"
 #include <logger.hh>
 #include <functional>
@@ -69,7 +76,7 @@ namespace virtdb { namespace engine {
     i->col_id_    = col_id;
     {
       lock l(mtx_);
-      if( data->seqno() > max_block_id_ )
+      if( (int64_t)data->seqno() > max_block_id_ )
       {
         max_block_id_ = data->seqno();
         if( data->endofdata() )
