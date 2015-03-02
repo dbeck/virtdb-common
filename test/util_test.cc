@@ -79,7 +79,7 @@ TEST_F(UtilTableCollectorTest, AllOps)
   q.insert(2, 1, new int{4});
 
   // double set 0,0
-  q.insert(0, 0, new int{0});
+  q.insert(0, 0, new int{9});
   
   // missing columns
   EXPECT_EQ(q.missing_columns(0), 0);
@@ -98,7 +98,7 @@ TEST_F(UtilTableCollectorTest, AllOps)
     auto row = q.get(0,one_ms);
     EXPECT_EQ(row.first.size(), 2);
     EXPECT_EQ(row.second, 2);
-    EXPECT_EQ(*row.first[0], 0);
+    EXPECT_EQ(*row.first[0], 9);
     EXPECT_EQ(*row.first[1], 1);
   }
 

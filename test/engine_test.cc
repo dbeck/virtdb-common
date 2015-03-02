@@ -7,6 +7,8 @@
 #include <engine/query.hh>
 #include <engine/receiver_thread.hh>
 #include <engine/util.hh>
+#include <engine/collector.hh>
+#include <engine/feeder.hh>
 
 using namespace virtdb::util;
 using namespace virtdb::engine;

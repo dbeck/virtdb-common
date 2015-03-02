@@ -6,11 +6,72 @@
 
 namespace virtdb { namespace engine {
 
-data_handler::data_handler(const query& query_data, resend_function_t ask_for_resend) :
-    queryid (query_data.id())
-{
+  data_handler::data_handler(const query& query_data, resend_function_t ask_for_resend)
+  : queryid (query_data.id())
+  {
+    size_t n_columns = query_data.columns_size();
+    for (size_t i = 0; i < n_columns; ++i)
+    {
+      column_id_t col_id = query_data.column_id(i);
+      std::string col_name = query_data.column(i).name();
+      name_to_query_col_[col_name]  = i;
+      column_id_to_query_col_[col_id] = i;
+    }
+    
     data_store = new chunk_store(query_data, ask_for_resend);
-}
+    
+    // initialize collector and feeder
+    collector_.reset(new collector(n_columns));
+    feeder_.reset(new feeder(collector_));
+  }
+
+  const std::map<column_id_t, size_t> &
+  data_handler::column_id_map() const
+  {
+    return column_id_to_query_col_;
+  }
+  
+  void
+  data_handler::push(const std::string & name,
+                     std::shared_ptr<virtdb::interface::pb::Column> new_data)
+  {
+    auto it = name_to_query_col_.find(name);
+    if( it == name_to_query_col_.end() )
+    {
+      LOG_ERROR("cannot find column name mapping" <<
+                V_(name) <<
+                V_(queryid));
+      return;
+    }
+    
+    collector_->push(new_data->seqno(),
+                     it->second,
+                     new_data);
+    
+#if 0
+    bool is_complete = false;
+    {
+      std::unique_lock<std::mutex> cv_lock(mutex);
+      data_store->push(name, new_data, is_complete);
+      if( is_complete )
+      {
+        variable.notify_all();
+      }
+    }
+#endif
+  }
+  
+  const std::string&
+  data_handler::query_id() const
+  {
+    return queryid;
+  }
+  
+  feeder &
+  data_handler::get_feeder()
+  {
+    return *feeder_;
+  }
 
 bool data_handler::wait_for_data()
 {
@@ -76,23 +137,6 @@ virtdb::interface::pb::Kind data_handler::get_type(int column_id)
     return current_chunk->get_type(column_id);
 }
 
-const std::string& data_handler::query_id() const
-{
-    return queryid;
-}
-
-void data_handler::push(std::string name, std::shared_ptr<virtdb::interface::pb::Column> new_data)
-{
-    bool is_complete = false;
-    {
-        std::unique_lock<std::mutex> cv_lock(mutex);
-        data_store->push(name, new_data, is_complete);
-        if( is_complete )
-        {
-            variable.notify_all();
-        }
-    }
-}
 
 bool data_handler::received_data() const
 {

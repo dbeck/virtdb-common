@@ -10,6 +10,7 @@
 #include <util/relative_time.hh>
 #include <util/exception.hh>
 #include <util/constants.hh>
+#include <logger.hh>
 
 namespace virtdb { namespace util {
 
@@ -72,6 +73,7 @@ namespace virtdb { namespace util {
     uint64_t last_updated(size_t block_id) const;
     size_t missing_columns(size_t block_id) const;
     size_t max_block_id() const;
+    size_t n_columns() const;
     
   private:
     table_collector() = delete;
@@ -390,6 +392,13 @@ namespace virtdb { namespace util {
       return 0;
     else
       return it->first;
+  }
+
+  template <typename T>
+  size_t
+  table_collector<T>::table_collector::n_columns() const
+  {
+    return n_columns_;
   }
   
 }}

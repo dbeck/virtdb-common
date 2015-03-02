@@ -1,0 +1,439 @@
+#include "feeder.hh"
+
+namespace virtdb { namespace engine {
+
+  feeder::feeder(collector::sptr cll)
+  : collector_(cll),
+    act_block_{-1}
+  {
+  }
+  
+  feeder::~feeder() {}
+  
+  feeder::vtr::status
+  feeder::next_block()
+  {
+    // check if we are at the end of stream
+    auto last = collector_->last_block_id();
+    if( last != -1 && act_block_ == last )
+    {
+      // no more data to be read
+      return vtr::end_of_stream_;
+    }
+    
+    // will need to wait for the next block
+    for( int i=0; i<3; ++i )
+    {
+      bool got_reader =  collector_->get(act_block_+1,
+                                        readers_,
+                                         60000);
+      
+      // cannot get a reader array in a minute
+      if( !got_reader )
+      {
+        LOG_ERROR("data timed out in 60 seconds");
+        return vtr::end_of_stream_;
+      }
+      
+      size_t n_valid_readers = 0;
+      for( auto & r : readers_ )
+      {
+        if( r.get() )
+          ++n_valid_readers;
+      }
+      
+      if( n_valid_readers == collector_->n_columns() )
+      {
+        ++act_block_;
+        // schedule the next process to give a chance the next block
+        // being ready when needed
+        collector_->process(act_block_+1, 1000);
+        return vtr::ok_;
+      }
+      
+      LOG_INFO("reader array is not yet ready" <<
+               V_(n_valid_readers) <<
+               V_(collector_->n_columns()));
+      
+      collector_->process(act_block_+1, 60000);
+    }
+    
+    LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minutes");
+    return vtr::end_of_stream_;
+  }
+  
+  feeder::vtr::status
+  feeder::get_reader(size_t col_id,
+                     vtr::sptr & reader)
+  {
+    feeder::vtr::status ret = vtr::ok_;
+    if( readers_.empty() )
+    {
+      // no reader so far, must initialize
+      // all subsequent next_block() calls will come from
+      // read* calls
+      ret = next_block();
+    }
+    if( ret != vtr::ok_ )
+    {
+      // cannot get initial reader
+      return ret;
+    }
+    if( col_id < readers_.size() )
+    {
+      // return valid reader here
+      reader = readers_[col_id];
+      return ret;
+    }
+    else
+    {
+      LOG_ERROR("invalid argument" << V_(readers_.size()) << V_(col_id));
+      ret = vtr::end_of_stream_;
+    }
+  }
+  
+  feeder::vtr::status
+  feeder::read_string(size_t col_id,
+                      char ** ptr,
+                      size_t & len,
+                      bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+
+    // try to read the data
+    ret = reader->read_string(ptr, len);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_string(ptr, len);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_int32(size_t col_id,
+                     int32_t & v,
+                     bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_int32(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_int32(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_int64(size_t col_id,
+                     int64_t & v,
+                     bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_int64(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_int64(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_uint32(size_t col_id,
+                      uint32_t & v,
+                      bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_uint32(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_uint32(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_uint64(size_t col_id,
+                      uint64_t & v,
+                      bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_uint64(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_uint64(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_double(size_t col_id,
+                      double & v,
+                      bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_double(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_double(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_float(size_t col_id,
+                     float & v,
+                     bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_float(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_float(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_bool(size_t col_id,
+                    bool & v,
+                    bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_bool(v);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_bool(v);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+  feeder::vtr::status
+  feeder::read_bytes(size_t col_id,
+                     char ** ptr,
+                     size_t & len,
+                     bool & null)
+  {
+    vtr::sptr reader;
+    auto ret = get_reader(col_id, reader);
+    
+    // must be able to find a valid reader
+    if( ret != vtr::ok_ ) { return ret; }
+    
+    // try to read the data
+    ret = reader->read_bytes(ptr, len);
+    
+    // if failed, try next block
+    if( ret != vtr::ok_ ) {
+      ret = next_block();
+      if( ret == vtr::ok_ )
+        ret = get_reader(col_id, reader);
+    }
+    else
+    {
+      // succeed, let's return
+      null = reader->read_null();
+      return ret;
+    }
+    
+    // no valid reader found
+    if( ret != vtr::ok_ ) return ret;
+    
+    // second try for the next block
+    ret = reader->read_bytes(ptr, len);
+    if( ret == vtr::ok_ )
+      null = reader->read_null();
+    
+    return ret;
+  }
+  
+}}

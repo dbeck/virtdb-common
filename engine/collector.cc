@@ -1,0 +1,174 @@
+#include "collector.hh"
+#include <logger.hh>
+#include <functional>
+#include <lz4/lib/lz4.h>
+
+namespace virtdb { namespace engine {
+  
+  collector::collector(size_t n_cols)
+  : collector_{n_cols},
+    queue_{4, std::bind(&collector::prrocess,this,std::placeholders::_1)},
+    max_block_id_{-1},
+    last_block_id_{-1}
+  {
+  }
+  
+  collector::~collector()
+  {
+  }
+  
+  void
+  collector::prrocess(item::sptr itm)
+  {
+    // cannot process invalid ptr
+    if( itm.get() == nullptr ) return;
+    
+    // need a column to be processed
+    if( itm->col_ == nullptr ) return;
+    
+    // already processed
+    if( itm->reader_.get() != nullptr ) return;
+    
+    int orig_size = itm->col_->uncompressedsize();
+    if( orig_size <= 0 ) return;
+    
+    std::unique_ptr<char[]> buffer{new char[orig_size]};
+    int comp_size = itm->col_->compresseddata().size();
+    if( comp_size <= 0 ) return;
+    
+    char* res_bufer = buffer.get();
+    int comp_ret = LZ4_decompress_safe(itm->col_->compresseddata().c_str(),
+                                       res_bufer,
+                                       itm->col_->compresseddata().size(),
+                                       orig_size);
+    if( comp_ret <= 0 )
+    {
+      LOG_ERROR("failed to decompress" <<
+                V_(itm->block_id_) <<
+                V_(itm->col_id_) <<
+                V_(itm->col_->queryid()) <<
+                V_(itm->col_->name()) <<
+                V_(itm->col_->endofdata()));
+      return;
+    }
+    
+    // assign reader and update collector
+    auto rdr = util::value_type_reader::construct(std::move(buffer), orig_size);
+    itm->reader_ = rdr;
+    collector_.insert(itm->block_id_, itm->col_id_, itm);
+  }
+  
+  void
+  collector::push(size_t block_id,
+                  size_t col_id,
+                  column_sptr data)
+  {
+    item::sptr i{new item};
+    i->col_       = data;
+    i->block_id_  = block_id;
+    i->col_id_    = col_id;
+    {
+      lock l(mtx_);
+      if( data->seqno() > max_block_id_ )
+      {
+        max_block_id_ = data->seqno();
+        if( data->endofdata() )
+        {
+          last_block_id_ = data->seqno();
+        }
+      }
+    }
+    collector_.insert(block_id, col_id, i);
+  }
+  
+  bool
+  collector::process(size_t block_id,
+                     uint64_t timeout_ms)
+  {
+    auto row = collector_.get(block_id,
+                              timeout_ms);
+    
+    size_t n_cols = 0;
+    
+    for( auto & i : row.first )
+    {
+      if( i.get() )
+      {
+        if( !i->reader_ )
+        {
+          queue_.push(i);
+        }
+        ++n_cols;
+      }
+    }
+    
+    return (n_cols == collector_.n_columns());
+  }
+  
+  bool
+  collector::get(size_t block_id,
+                 reader_sptr_vec & rdrs,
+                 uint64_t timeout_ms)
+  {
+    size_t n_processed = 0;
+    reader_sptr_vec result;
+    
+    auto row = collector_.get(block_id,
+                              timeout_ms);
+    for( auto & c : row.first )
+    {
+      if( c->reader_.get() )
+      {
+        result.push_back(c->reader_);
+        ++n_processed;
+      }
+      else
+      {
+        result.push_back(reader_sptr());
+      }
+    }
+    
+    bool retval = ((row.second == collector_.n_columns()) &&
+                   (n_processed == collector_.n_columns()));
+    
+    if( retval ) result.swap(rdrs);
+    
+    return retval;
+  }
+  
+  void
+  collector::erase(size_t block_id)
+  {
+    collector_.erase(block_id);
+  }
+  
+  int64_t
+  collector::max_block_id() const
+  {
+    int64_t ret = -1;
+    {
+      lock l(mtx_);
+      ret = max_block_id_;
+    }
+    return ret;
+  }
+  
+  int64_t
+  collector::last_block_id() const
+  {
+    int64_t ret = -1;
+    {
+      lock l(mtx_);
+      ret = last_block_id_;
+    }
+    return ret;
+  }
+  
+  size_t
+  collector::n_columns() const
+  {
+    return collector_.n_columns();
+  }
+
+  
+}}
