@@ -62,7 +62,7 @@ namespace virtdb { namespace engine {
     // assign reader and update collector
     auto rdr = util::value_type_reader::construct(std::move(buffer), orig_size);
     itm->reader_ = rdr;
-    collector_.insert(itm->block_id_, itm->col_id_, itm);
+    // collector_.insert(itm->block_id_, itm->col_id_, itm);
   }
   
   void
@@ -100,16 +100,19 @@ namespace virtdb { namespace engine {
     size_t n_cols    = 0;
     size_t n_pushed  = 0;
     
-    for( auto & i : row.first )
+    if( row.second == collector_.n_columns() )
     {
-      if( i.get() )
+      for( auto & i : row.first )
       {
-        if( !i->reader_ )
+        if( i.get() )
         {
-          queue_.push(i);
-          ++n_pushed;
+          if( !i->reader_ )
+          {
+            queue_.push(i);
+            ++n_pushed;
+          }
+          ++n_cols;
         }
-        ++n_cols;
       }
     }
     
