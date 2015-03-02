@@ -35,9 +35,9 @@ namespace virtdb { namespace engine {
     // will need to wait for the next block
     for( int i=0; i<3; ++i )
     {
-      bool got_reader =  collector_->get(act_block_+1,
-                                         readers_,
-                                         60000);
+      bool got_reader = collector_->get(act_block_+1,
+                                        readers_,
+                                        20000);
       
       if( got_reader )
       {
@@ -50,7 +50,7 @@ namespace virtdb { namespace engine {
       }
       else
       {
-        collector_->process(act_block_+1, 60000, true);
+        collector_->process(act_block_+1, 20000, true);
       }
       
       LOG_TRACE("reader array is not yet ready" <<

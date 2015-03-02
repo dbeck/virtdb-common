@@ -140,7 +140,7 @@ namespace virtdb { namespace engine {
                  reader_sptr_vec & rdrs,
                  uint64_t timeout_ms)
   {
-    LOG_SCOPED(V_(block_id) << V_(timeout_ms));
+    LOG_SCOPED(V_(block_id) << V_(timeout_ms) << V_(collector_.missing_columns(block_id)));
     size_t n_processed = 0;
     reader_sptr_vec result;
     
