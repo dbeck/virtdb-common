@@ -346,6 +346,20 @@ TEST_F(ValueTypeReaderTest, Int32)
       val += v;
     EXPECT_EQ(val, check_val);
   }
+  
+  buffer.reset(new char[buffer_size]);
+  ASSERT_TRUE(vt.SerializeToArray(buffer.get(), buffer_size));
+
+  {
+    auto rdr = value_type_reader::construct(std::move(buffer), buffer_size);
+    int32_t v = 0;
+    int i=0;
+    while( rdr->read_int32(v) == value_type_reader::ok_ )
+    {
+      EXPECT_EQ(v, (i-500000));
+      ++i;
+    }
+  }
 }
 
 TEST_F(ValueTypeTest, TestString)
