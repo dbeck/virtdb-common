@@ -74,8 +74,9 @@ namespace virtdb { namespace util {
       uint32_t     payload_;
       int          endpos_;
       
-      virtual inline status
-      read32(uint32_t & v)
+      template <typename X>
+      inline status
+      read32(X & v)
       {
         int pos = is_.CurrentPosition();
         if( pos < endpos_ )
@@ -89,8 +90,9 @@ namespace virtdb { namespace util {
         }
       }
 
-      virtual inline status
-      read64(uint64_t & v)
+      template <typename X>
+      inline status
+      read64(X & v)
       {
         int pos = is_.CurrentPosition();
         if( pos < endpos_ )
@@ -104,7 +106,7 @@ namespace virtdb { namespace util {
         }
       }
       
-      virtual inline status
+      inline status
       read(data_t & v)
       {
         int pos = is_.CurrentPosition();
@@ -186,7 +188,7 @@ namespace virtdb { namespace util {
       {
         uint32_t n = 0;
         auto ret = read32(n);
-        v = (n >> 1) ^ (-(n & 1));
+        v = n;
         return ret;
       }
       int32_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
@@ -201,7 +203,7 @@ namespace virtdb { namespace util {
       {
         uint64_t n = 0;
         auto ret = read64(n);
-        v = (n >> 1) ^ (-(n & 1));
+        v = n;
         return ret;
       }
       int64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
