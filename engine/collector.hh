@@ -29,8 +29,8 @@ namespace virtdb { namespace engine {
       size_t         col_id_;
     };
     
-    typedef util::table_collector<item>      collector_t;
-    typedef util::active_queue<item::sptr>   process_queue_t;
+    typedef util::table_collector<item>         collector_t;
+    typedef util::active_queue<item::sptr,50>   process_queue_t;
 
     collector_t            collector_;
     process_queue_t        queue_;
