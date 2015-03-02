@@ -51,7 +51,8 @@ namespace virtdb { namespace engine {
               column_sptr data);
     
     bool process(size_t block_id,
-                 uint64_t timeout_ms);
+                 uint64_t timeout_ms,
+                 bool wait_ready);
     
     bool get(size_t block_id,
              reader_sptr_vec & rdrs,

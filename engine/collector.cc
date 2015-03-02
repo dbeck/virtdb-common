@@ -90,12 +90,14 @@ namespace virtdb { namespace engine {
   
   bool
   collector::process(size_t block_id,
-                     uint64_t timeout_ms)
+                     uint64_t timeout_ms,
+                     bool wait_ready)
   {
     auto row = collector_.get(block_id,
                               timeout_ms);
     
-    size_t n_cols = 0;
+    size_t n_cols    = 0;
+    size_t n_pushed  = 0;
     
     for( auto & i : row.first )
     {
@@ -104,12 +106,32 @@ namespace virtdb { namespace engine {
         if( !i->reader_ )
         {
           queue_.push(i);
+          ++n_pushed;
         }
         ++n_cols;
       }
     }
     
-    return (n_cols == collector_.n_columns());
+    if( wait_ready == false )
+    {
+      return (n_cols == collector_.n_columns());
+    }
+    else if( n_pushed == 0 )
+    {
+      return (n_cols == collector_.n_columns());
+    }
+    else
+    {
+      bool wait_res = queue_.wait_empty(std::chrono::milliseconds(timeout_ms));
+      if( !wait_res )
+      {
+        return false;
+      }
+      else
+      {
+        return (n_cols == collector_.n_columns());
+      }
+    }
   }
   
   bool

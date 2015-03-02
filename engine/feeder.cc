@@ -41,12 +41,12 @@ namespace virtdb { namespace engine {
         ++act_block_;
         // schedule the next process to give a chance the next block
         // being ready when needed
-        collector_->process(act_block_+1, 100);
+        collector_->process(act_block_+1, 100, false);
         return vtr::ok_;
       }
       else
       {
-        collector_->process(act_block_+1, 60000);
+        collector_->process(act_block_+1, 60000, true);
       }
       
       LOG_INFO("reader array is not yet ready" <<
