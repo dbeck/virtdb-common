@@ -36,34 +36,22 @@ namespace virtdb { namespace engine {
                                         readers_,
                                          60000);
       
-      // cannot get a reader array in a minute
-      if( !got_reader )
-      {
-        LOG_ERROR("data timed out in 60 seconds");
-        return vtr::end_of_stream_;
-      }
-      
-      size_t n_valid_readers = 0;
-      for( auto & r : readers_ )
-      {
-        if( r.get() )
-          ++n_valid_readers;
-      }
-      
-      if( n_valid_readers == collector_->n_columns() )
+      if( got_reader )
       {
         ++act_block_;
         // schedule the next process to give a chance the next block
         // being ready when needed
-        collector_->process(act_block_+1, 1000);
+        collector_->process(act_block_+1, 100);
         return vtr::ok_;
+      }
+      else
+      {
+        collector_->process(act_block_+1, 60000);
       }
       
       LOG_INFO("reader array is not yet ready" <<
-               V_(n_valid_readers) <<
+               V_(act_block_) <<
                V_(collector_->n_columns()));
-      
-      collector_->process(act_block_+1, 60000);
     }
     
     LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minutes");
