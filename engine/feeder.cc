@@ -47,33 +47,33 @@ namespace virtdb { namespace engine {
         if( act_block_ != last )
         {
           size_t to_schedule = act_block_+1;
-          auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 100, true);
+          size_t wait_len    = 1000;
+          if(collector_->max_block_id() >= to_schedule )
+            wait_len = 10;
+          
+          auto background_process = [this,to_schedule, wait_len]() {
+            collector_->process(to_schedule, wait_len, true);
             return false;
           };
-          
-          timer_svc_.schedule(10,  background_process);
-          timer_svc_.schedule(300, background_process);
-          timer_svc_.schedule(600, background_process);
-          timer_svc_.schedule(900, background_process);
-        }
-        
-        // same thing for the one after, if any available there
-        if( act_block_+1 != last && act_block_+2 <= collector_->max_block_id() )
-        {
-          size_t to_schedule = act_block_+2;
-          auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 1000, true);
-            return false;
-          };
-          
           timer_svc_.schedule(1,  background_process);
         }
         
-        // we allow 1 old block to stay in memory so give time
+        // same thing for the one after, if any available there
+        if( act_block_+1 != last &&
+            act_block_+2 <= collector_->max_block_id() )
+        {
+          size_t to_schedule = act_block_+2;
+          auto background_process = [this,to_schedule]() {
+            collector_->process(to_schedule, 10, true);
+            return false;
+          };
+          timer_svc_.schedule(10,  background_process);
+        }
+        
+        // we allow 2 old block to stay in memory so give time
         // to the user to use our buffer
-        if( act_block_ > 1 )
-          collector_->erase(act_block_-2);
+        if( act_block_ > 2 )
+          collector_->erase(act_block_-3);
         
         return vtr::ok_;
       }
