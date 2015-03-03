@@ -28,7 +28,6 @@ namespace virtdb { namespace util {
     
     class block
     {
-      size_t               id_;
       size_t               n_ok_;
       uint64_t             last_updated_ms_;
       row_data             data_;
@@ -37,7 +36,7 @@ namespace virtdb { namespace util {
       
     public:
       block(const block & other);
-      block(size_t id, size_t n_columns);
+      block(size_t n_columns);
       
       row_data & data();
       size_t n_columns() const;
@@ -91,8 +90,7 @@ namespace virtdb { namespace util {
   
   template <typename T>
   table_collector<T>::table_collector::block::block(const block & other)
-  : id_{other.id_},
-    n_ok_{other.n_ok_},
+  : n_ok_{other.n_ok_},
     last_updated_ms_{other.last_updated_ms_},
     data_{other.data_},
     n_columns_{other.n_columns_}
@@ -100,10 +98,8 @@ namespace virtdb { namespace util {
   }
   
   template <typename T>
-  table_collector<T>::table_collector::block::block(size_t id,
-                                                    size_t n_columns)
-  : id_{id},
-    n_ok_{0},
+  table_collector<T>::table_collector::block::block(size_t n_columns)
+  : n_ok_{0},
     last_updated_ms_{0},
     data_(n_columns, item_sptr()),
     n_columns_{n_columns}
@@ -279,8 +275,7 @@ namespace virtdb { namespace util {
     auto it = blocks_.find(block_id);
     if( it == blocks_.end() )
     {
-      size_t id = blocks_.size();
-      auto iit = blocks_.insert(std::make_pair(id,block(id,n_columns_)));
+      auto iit = blocks_.insert(std::make_pair(block_id,block(n_columns_)));
       it = iit.first;
     }
     

@@ -72,8 +72,35 @@ TEST_F(UtilTableCollectorTest, Basic)
 TEST_F(UtilTableCollectorTest, Timeout)
 {
   //MEASURE_ME;
-  //table_collector<int> q(2);
-  //q.get(0,1000);
+  table_collector<int> q(2);
+  q.insert(0, 0, new int{0});
+  q.insert(0, 1, new int{1});
+  q.insert(2, 0, new int{2});
+  q.insert(2, 1, new int{3});
+  q.insert(4, 0, new int{4});
+  q.insert(4, 1, new int{5});
+  
+  // get(0)
+  size_t hundred_ms = 1000;
+  {
+    auto row = q.get(0,hundred_ms);
+    EXPECT_EQ(row.first.size(), 2);
+    EXPECT_EQ(row.second, 2);
+  }
+
+  // get(1)
+  {
+    auto row = q.get(1,hundred_ms);
+    EXPECT_EQ(row.first.size(), 0);
+    EXPECT_EQ(row.second, 0);
+  }
+
+  // get(2)
+  {
+    auto row = q.get(2,hundred_ms);
+    EXPECT_EQ(row.first.size(), 2);
+    EXPECT_EQ(row.second, 2);
+  }
 }
 
 
