@@ -126,13 +126,45 @@ TEST_F(CachedbHashUtilTest, HashQuery)
   EXPECT_EQ(col_hashes.size(), 2);
   EXPECT_FALSE(tab_hash.empty());
   
-  /*
-  std::cout << "h0: " << tab_hash << "\n";
-  for( const auto & it : col_hashes )
+  // add a filter
   {
-    std::cout << " - " << it.first << " = " << it.second << "\n";
+    auto * f = q.add_filter();
+    auto * s = f->mutable_simple();
+    s->set_variable("MANDT");
+    f->set_operand("=");
+    s->set_value("800");
   }
-  */
+
+  std::string tab_hash2;
+  hash_util::colhash_map col_hashes2;
+  res = hash_util::hash_query(q, tab_hash2, col_hashes2);
+  EXPECT_TRUE(res);
+  EXPECT_EQ(col_hashes2.size(), 2);
+  EXPECT_FALSE(tab_hash2.empty());
+  
+  EXPECT_NE(tab_hash, tab_hash2);
+  for( auto const & h : col_hashes2 )
+  {
+    EXPECT_EQ(col_hashes.count(h.first), 1);
+    EXPECT_NE(col_hashes[h.first], h.second );
+  }
+  
+  // add limit too
+  q.set_limit(100);
+  
+  std::string tab_hash3;
+  hash_util::colhash_map col_hashes3;
+  res = hash_util::hash_query(q, tab_hash3, col_hashes3);
+  EXPECT_TRUE(res);
+  EXPECT_EQ(col_hashes3.size(), 2);
+  EXPECT_FALSE(tab_hash3.empty());
+
+  EXPECT_NE(tab_hash2, tab_hash3);
+  for( auto const & h : col_hashes3 )
+  {
+    EXPECT_EQ(col_hashes2.count(h.first), 1);
+    EXPECT_NE(col_hashes2[h.first], h.second );
+  }
 }
 
 TEST_F(CachedbDBTest, InitTests)

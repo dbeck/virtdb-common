@@ -140,20 +140,26 @@ namespace virtdb { namespace util {
     template <uint32_t TAG>
     class buffer_reader : public value_type_reader
     {
+      // next tag will be stored in this variable and be read
+      // before we pass back the pointer and length. this allows
+      // gives the possiblity to the reader to modify it without
+      // ruining the parsing.
+      //   use-case: add termination zero for strings
+      uint32_t next_tag_;
     protected:
       typedef std::pair<char *,size_t> data_t;
       
       virtual inline status
       read(char ** ptr, size_t & rlen)
       {
-        uint32_t tag = is_.ReadTag();
-        if( tag == TAG )
+        if( next_tag_ == TAG )
         {
           uint32_t len = 0;
           is_.ReadVarint32(&len);
           *ptr = buffer_.get()+is_.CurrentPosition();
           rlen = len;
           is_.Skip(len);
+          next_tag_ = is_.ReadTag();
           return ok_;
         }
         else
@@ -163,9 +169,11 @@ namespace virtdb { namespace util {
       }
       
       buffer_reader(buffer && buf, size_t len, size_t start_pos)
-      : value_type_reader(std::move(buf),len)
+      : value_type_reader(std::move(buf),len),
+        next_tag_{0}
       {
         is_.Skip(start_pos);
+        next_tag_ = is_.ReadTag();
       }
       
       virtual ~buffer_reader() {}

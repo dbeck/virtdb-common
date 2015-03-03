@@ -39,7 +39,8 @@ namespace virtdb { namespace engine {
     int orig_size = itm->col_->uncompressedsize();
     if( orig_size <= 0 ) return;
     
-    std::unique_ptr<char[]> buffer{new char[orig_size]};
+    std::unique_ptr<char[]> buffer{new char[orig_size+1]};
+    
     int comp_size = itm->col_->compresseddata().size();
     if( comp_size <= 0 ) return;
     
@@ -58,6 +59,9 @@ namespace virtdb { namespace engine {
                 V_(itm->col_->endofdata()));
       return;
     }
+    
+    // add a trailing zero to terminate the buffer
+    buffer[orig_size] = 0;
     
     // assign reader and update collector
     auto rdr = util::value_type_reader::construct(std::move(buffer), orig_size);

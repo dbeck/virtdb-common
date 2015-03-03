@@ -53,8 +53,10 @@ namespace virtdb { namespace engine {
           });
         }
         
-        if( act_block_ > 0 )
-          collector_->erase(act_block_-1);
+        // we allow 1 old block to stay in memory so give time
+        // to the user to use our buffer
+        if( act_block_ > 1 )
+          collector_->erase(act_block_-2);
         
         return vtr::ok_;
       }

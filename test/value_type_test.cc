@@ -223,7 +223,9 @@ TEST_F(ValueTypeReaderTest, String)
     {
       ++n;
       EXPECT_EQ('H', *p);
+      EXPECT_EQ('d', p[len-1]);
       EXPECT_EQ(len, clen);
+      p[len] = 0;
     }
     EXPECT_EQ(n, 1000000);
     EXPECT_FALSE( rdr->read_null() );
@@ -232,7 +234,6 @@ TEST_F(ValueTypeReaderTest, String)
     EXPECT_TRUE( rdr->read_null() );
     EXPECT_EQ( rdr->n_nulls(), 1000000 );
   }
-
 }
 
 
