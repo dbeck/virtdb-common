@@ -155,7 +155,7 @@ namespace virtdb { namespace engine {
     
     for( auto & c : row.first )
     {
-      if( c->reader_.get() )
+      if( c.get() && c->reader_.get() )
       {
         result.push_back(c->reader_);
         ++n_processed;
