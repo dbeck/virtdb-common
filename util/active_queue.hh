@@ -34,9 +34,9 @@ namespace virtdb { namespace util {
     active_queue(const active_queue&) = delete;
     active_queue & operator=(const active_queue &) = delete;
     
-    mtx             mutex_;
+    mutable mtx     mutex_;
     cond            cond_;
-    mtx             progress_mutex_;
+    mutable mtx     progress_mutex_;
     cond            progress_cond_;
     uint64_t        enqueued_;
     uint64_t        done_;
@@ -70,7 +70,7 @@ namespace virtdb { namespace util {
       std::this_thread::yield();
     }
     
-    uint64_t n_done()
+    uint64_t n_done() const
     {
       uint64_t ret = 0;
       {
@@ -80,7 +80,7 @@ namespace virtdb { namespace util {
       return ret;
     }
 
-    uint64_t n_enqueued()
+    uint64_t n_enqueued() const
     {
       uint64_t ret = 0;
       {

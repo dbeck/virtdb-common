@@ -36,7 +36,7 @@ namespace virtdb { namespace engine {
     {
       bool got_reader = collector_->get(act_block_+1,
                                         readers_,
-                                        20000);
+                                        30000);
       
       if( got_reader )
       {
@@ -90,21 +90,34 @@ namespace virtdb { namespace engine {
                   V_(scheduled_b1) <<
                   V_(scheduled_b2) <<
                   V_(erased_prev) <<
-                  V_(wait_len));
+                  V_(wait_len) <<
+                  V_(collector_->n_queued()) <<
+                  V_(collector_->n_done()));
         
         return vtr::ok_;
       }
       else
       {
-        collector_->process(act_block_+1, 20000, true);
+        collector_->process(act_block_+1, 30000, true);
       }
       
       LOG_TRACE("reader array is not yet ready" <<
-               V_(act_block_) <<
-               V_(collector_->n_columns()));
+                V_(act_block_) <<
+                V_(collector_->n_columns()) <<
+                V_(last) <<
+                V_(collector_->max_block_id()) <<
+                V_(collector_->n_queued()) <<
+                V_(collector_->n_done()));
     }
     
-    LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minutes");
+    LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minutes" <<
+              V_(act_block_) <<
+              V_(collector_->n_columns()) <<
+              V_(last) <<
+              V_(collector_->max_block_id()) <<
+              V_(collector_->n_queued()) <<
+              V_(collector_->n_done()));
+    
     return vtr::end_of_stream_;
   }
   

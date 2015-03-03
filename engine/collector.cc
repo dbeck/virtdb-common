@@ -24,6 +24,19 @@ namespace virtdb { namespace engine {
   {
   }
   
+  size_t
+  collector::n_queued() const
+  {
+    return queue_.n_enqueued();
+    
+  }
+  
+  size_t
+  collector::n_done() const
+  {
+    return queue_.n_done();
+  }
+  
   void
   collector::prrocess(item::sptr itm)
   {

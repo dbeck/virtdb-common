@@ -63,6 +63,8 @@ namespace virtdb { namespace engine {
     int64_t max_block_id() const;
     int64_t last_block_id() const;
     size_t n_columns() const;
+    size_t n_queued() const;
+    size_t n_done() const;
     
     collector(size_t n_cols);
     virtual ~collector();
