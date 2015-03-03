@@ -12,16 +12,25 @@
 
 namespace virtdb { namespace engine {
   
-  collector::collector(size_t n_cols)
+  collector::collector(size_t n_cols,
+                       resend_function resend_fun)
   : collector_{n_cols},
     queue_{4, std::bind(&collector::prrocess,this,std::placeholders::_1)},
     max_block_id_{-1},
-    last_block_id_{-1}
+    last_block_id_{-1},
+    resend_{resend_fun}
   {
   }
   
   collector::~collector()
   {
+  }
+  
+  void
+  collector::resend(size_t block_id,
+                    size_t col_id)
+  {
+    resend_(block_id, col_id);
   }
   
   size_t

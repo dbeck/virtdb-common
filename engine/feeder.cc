@@ -108,9 +108,18 @@ namespace virtdb { namespace engine {
                 V_(collector_->max_block_id()) <<
                 V_(collector_->n_queued()) <<
                 V_(collector_->n_done()));
+      
+      
+      for( size_t i=0; i<readers_.size(); ++i )
+      {
+        if( readers_[i] )
+        {
+          collector_->resend(act_block_+1, i);
+        }        
+      }
     }
     
-    LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minutes" <<
+    LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minute" <<
               V_(act_block_) <<
               V_(collector_->n_columns()) <<
               V_(last) <<

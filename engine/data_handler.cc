@@ -14,7 +14,8 @@
 namespace virtdb { namespace engine {
 
   data_handler::data_handler(const query& query_data, resend_function_t ask_for_resend)
-  : queryid (query_data.id())
+  : queryid (query_data.id()),
+    resend_{ask_for_resend}
   {
     size_t n_columns = query_data.columns_size();
     for (size_t i = 0; i < n_columns; ++i)
@@ -23,12 +24,18 @@ namespace virtdb { namespace engine {
       std::string col_name = query_data.column(i).name();
       name_to_query_col_[col_name]  = i;
       column_id_to_query_col_[col_id] = i;
+      columns_.push_back(col_name);
     }
     
     data_store = new chunk_store(query_data, ask_for_resend);
     
     // initialize collector and feeder
-    collector_.reset(new collector(n_columns));
+    collector_.reset(new collector(n_columns,
+                                   [this](size_t block_id, size_t col_id)
+                                   {
+                                     if( resend_ )
+                                       resend_(columns_[col_id], block_id);
+                                   }));
     feeder_.reset(new feeder(collector_));
   }
 

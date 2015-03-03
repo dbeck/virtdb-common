@@ -26,9 +26,11 @@ namespace virtdb { namespace engine {
     
     std::map<std::string, size_t> name_to_query_col_;
     std::map<column_id_t, size_t> column_id_to_query_col_;
+    std::vector<std::string>      columns_;
     
-    collector::sptr  collector_;
-    feeder::sptr     feeder_;
+    collector::sptr   collector_;
+    feeder::sptr      feeder_;
+    resend_function_t resend_;
     
     void pop_first_chunk();
     bool has_data();
