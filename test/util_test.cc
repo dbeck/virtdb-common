@@ -142,8 +142,6 @@ TEST_F(UtilTableCollectorTest, AllOps)
     auto row = q.get(1,one_ms);
     EXPECT_EQ(row.first.size(), 2);
     EXPECT_EQ(row.second, 0);
-    EXPECT_EQ(row.first[0].get(), nullptr);
-    EXPECT_EQ(row.first[1].get(), nullptr);
   }
 
   // get(2)
@@ -151,7 +149,6 @@ TEST_F(UtilTableCollectorTest, AllOps)
     auto row = q.get(2,one_ms);
     EXPECT_EQ(row.first.size(), 2);
     EXPECT_EQ(row.second, 1);
-    EXPECT_EQ(row.first[0].get(), nullptr);
     EXPECT_EQ(*row.first[1], 4);
   }
 }

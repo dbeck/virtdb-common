@@ -323,21 +323,23 @@ namespace virtdb { namespace util {
     auto wait_till = (std::chrono::steady_clock::now() +
                       std::chrono::milliseconds(timeout_ms));
     
-    while( stopped() == false &&
-           std::chrono::steady_clock::now() < wait_till )
+    while( stopped() == false )
     {
       lock l(mtx_);
       cond_.wait_for(l, std::chrono::milliseconds(1+(timeout_ms/10)));
       
       auto it = blocks_.find(block_id);
-      if( it == blocks_.end() )
-      {
-      }
-      else if( it->second.ok() )
+      if( it != blocks_.end() )
       {
         ret.first  = it->second.data();
         ret.second = it->second.n_ok();
-        return ret;
+        if( it->second.ok() )
+          return ret;
+      }
+      
+      if( std::chrono::steady_clock::now() > wait_till )
+      {
+        break;
       }
     }
     return ret;
