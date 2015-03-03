@@ -100,7 +100,7 @@ namespace virtdb { namespace engine {
     size_t n_cols    = 0;
     size_t n_pushed  = 0;
     
-    if( row.second == collector_.n_columns() )
+    // if( row.second == collector_.n_columns() )
     {
       for( auto & i : row.first )
       {

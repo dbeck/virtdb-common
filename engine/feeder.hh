@@ -2,6 +2,7 @@
 
 #include <engine/collector.hh>
 #include <util/value_type_reader.hh>
+#include <util/timer_service.hh>
 
 namespace virtdb { namespace engine {
 
@@ -19,6 +20,7 @@ namespace virtdb { namespace engine {
     collector::sptr              collector_;
     int64_t                      act_block_;
     collector::reader_sptr_vec   readers_;
+    util::timer_service          timer_svc_;
     
     vtr::status next_block();
     vtr::status get_reader(size_t col_id, vtr::sptr & reader);

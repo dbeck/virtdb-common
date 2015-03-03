@@ -44,9 +44,14 @@ namespace virtdb { namespace engine {
         ++act_block_;
         // schedule the next process to give a chance the next block
         // being ready when needed
-        
-        // if( act_block_ != last )
-        //  collector_->process(act_block_+1, 10, false);
+        if( act_block_ != last )
+        {
+          size_t to_schedule = act_block_+1;
+          timer_svc_.schedule(300, [this,to_schedule]() {
+            collector_->process(to_schedule, 1000, true);
+            return false;
+          });
+        }
         
         if( act_block_ > 0 )
           collector_->erase(act_block_-1);
