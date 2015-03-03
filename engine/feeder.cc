@@ -22,7 +22,6 @@ namespace virtdb { namespace engine {
   {
     // check if we are at the end of stream
     auto last = collector_->last_block_id();
-    LOG_SCOPED("stream" << V_(last) << V_(act_block_) << V_(collector_->max_block_id()));
     
     if( last != -1 && act_block_ == last )
     {
@@ -42,12 +41,16 @@ namespace virtdb { namespace engine {
       if( got_reader )
       {
         ++act_block_;
+        bool scheduled_b1 = false;
+        bool scheduled_b2 = false;
+        bool erased_prev = false;
+        size_t wait_len  = 1000;
+        
         // schedule the next process to give a chance the next block
         // being ready when needed
         if( act_block_ != last )
         {
           size_t to_schedule = act_block_+1;
-          size_t wait_len    = 1000;
           if(collector_->max_block_id() >= to_schedule )
             wait_len = 10;
           
@@ -56,6 +59,7 @@ namespace virtdb { namespace engine {
             return false;
           };
           timer_svc_.schedule(1,  background_process);
+          scheduled_b1 = true;
         }
         
         // same thing for the one after, if any available there
@@ -68,12 +72,25 @@ namespace virtdb { namespace engine {
             return false;
           };
           timer_svc_.schedule(10,  background_process);
+          scheduled_b2 = true;
         }
         
         // we allow 2 old block to stay in memory so give time
         // to the user to use our buffer
         if( act_block_ > 2 )
+        {
           collector_->erase(act_block_-3);
+          erased_prev = true;
+        }
+        
+        LOG_TRACE("stream" <<
+                  V_(last) <<
+                  V_(act_block_) <<
+                  V_(collector_->max_block_id()) <<
+                  V_(scheduled_b1) <<
+                  V_(scheduled_b2) <<
+                  V_(erased_prev) <<
+                  V_(wait_len));
         
         return vtr::ok_;
       }

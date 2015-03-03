@@ -151,11 +151,11 @@ namespace virtdb { namespace dsproxy {
     
     UNLESS_INJECT_FAULT("omit-message", channel)
     {
-      LOG_TRACE("publishing to" <<
+      /*LOG_TRACE("publishing to" <<
                 V_(channel) <<
                 V_(data->seqno()) <<
                 V_(data->name()) <<
-                V_(data->endofdata()));
+                V_(data->endofdata()));*/
 
       server_.publish(channel, data);
     }
@@ -172,12 +172,11 @@ namespace virtdb { namespace dsproxy {
   void
   column_proxy::publish(std::shared_ptr<interface::pb::Column> data)
   {
-    LOG_TRACE("publishing to" <<
+    /* LOG_TRACE("publishing to" <<
               V_(data->queryid()) <<
               V_(data->seqno()) <<
               V_(data->name()) <<
-              V_(data->endofdata()));
-
+              V_(data->endofdata())); */
     server_.publish(data->queryid(), data);
   }
   
