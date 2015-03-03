@@ -115,7 +115,7 @@ namespace virtdb { namespace engine {
         if( readers_[i] )
         {
           collector_->resend(act_block_+1, i);
-        }        
+        }
       }
     }
     
