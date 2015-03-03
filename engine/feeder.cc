@@ -48,7 +48,7 @@ namespace virtdb { namespace engine {
         {
           size_t to_schedule = act_block_+1;
           auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 250, true);
+            collector_->process(to_schedule, 100, true);
             return false;
           };
           
@@ -56,6 +56,18 @@ namespace virtdb { namespace engine {
           timer_svc_.schedule(300, background_process);
           timer_svc_.schedule(600, background_process);
           timer_svc_.schedule(900, background_process);
+        }
+        
+        // same thing for the one after, if any available there
+        if( act_block_+1 != last && act_block_+2 <= collector_->max_block_id() )
+        {
+          size_t to_schedule = act_block_+2;
+          auto background_process = [this,to_schedule]() {
+            collector_->process(to_schedule, 1000, true);
+            return false;
+          };
+          
+          timer_svc_.schedule(1,  background_process);
         }
         
         // we allow 1 old block to stay in memory so give time
