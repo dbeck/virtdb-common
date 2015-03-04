@@ -38,6 +38,7 @@ namespace virtdb { namespace engine {
     process_queue_t        queue_;
     int64_t                max_block_id_;
     int64_t                last_block_id_;
+    size_t                 n_received_;
     mutable std::mutex     mtx_;
     resend_function        resend_;
     
@@ -71,6 +72,7 @@ namespace virtdb { namespace engine {
     size_t n_columns() const;
     size_t n_queued() const;
     size_t n_done() const;
+    size_t n_received() const;
     
     collector(size_t n_cols, resend_function resend_fun = [](size_t,size_t){} );
     virtual ~collector();

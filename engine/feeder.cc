@@ -20,8 +20,14 @@ namespace virtdb { namespace engine {
   feeder::vtr::status
   feeder::next_block()
   {
-    // check if we are at the end of stream
-    auto last = collector_->last_block_id();
+    // check if we are at the end of stream, plus gather collector stats
+    auto last         = collector_->last_block_id();
+    auto n_received   = collector_->n_received();
+    auto n_done       = collector_->n_done();
+    auto n_queued     = collector_->n_queued();
+    auto n_columns    = collector_->n_columns();
+    auto max_block    = collector_->max_block_id();
+    auto missing      = n_columns*(max_block+1)-n_received;
     
     if( last != -1 && act_block_ == last )
     {
@@ -86,13 +92,16 @@ namespace virtdb { namespace engine {
         LOG_TRACE("stream" <<
                   V_(last) <<
                   V_(act_block_) <<
-                  V_(collector_->max_block_id()) <<
+                  V_(max_block) <<
+                  V_(n_columns) <<
+                  V_(n_queued) <<
+                  V_(n_done) <<
+                  V_(n_received) <<
+                  V_(missing) << "---" <<
                   V_(scheduled_b1) <<
                   V_(scheduled_b2) <<
                   V_(erased_prev) <<
-                  V_(wait_len) <<
-                  V_(collector_->n_queued()) <<
-                  V_(collector_->n_done()));
+                  V_(wait_len));
         
         return vtr::ok_;
       }
@@ -102,13 +111,14 @@ namespace virtdb { namespace engine {
       }
       
       LOG_TRACE("reader array is not yet ready" <<
-                V_(act_block_) <<
-                V_(collector_->n_columns()) <<
                 V_(last) <<
-                V_(collector_->max_block_id()) <<
-                V_(collector_->n_queued()) <<
-                V_(collector_->n_done()));
-      
+                V_(act_block_) <<
+                V_(max_block) <<
+                V_(n_columns) <<
+                V_(n_queued) <<
+                V_(n_done) <<
+                V_(n_received) <<
+                V_(missing));
       
       for( size_t i=0; i<readers_.size(); ++i )
       {
@@ -120,12 +130,14 @@ namespace virtdb { namespace engine {
     }
     
     LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minute" <<
-              V_(act_block_) <<
-              V_(collector_->n_columns()) <<
               V_(last) <<
-              V_(collector_->max_block_id()) <<
-              V_(collector_->n_queued()) <<
-              V_(collector_->n_done()));
+              V_(act_block_) <<
+              V_(max_block) <<
+              V_(n_columns) <<
+              V_(n_queued) <<
+              V_(n_done) <<
+              V_(n_received) <<
+              V_(missing));
     
     return vtr::end_of_stream_;
   }

@@ -54,7 +54,9 @@ namespace virtdb { namespace engine {
     {
       LOG_ERROR("cannot find column name mapping" <<
                 V_(name) <<
-                V_(queryid));
+                V_(queryid) <<
+                V_(new_data->queryid()));
+      
       return;
     }
     

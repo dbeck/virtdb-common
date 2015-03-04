@@ -18,7 +18,8 @@ namespace virtdb { namespace engine {
     queue_{4, std::bind(&collector::prrocess,this,std::placeholders::_1)},
     max_block_id_{-1},
     last_block_id_{-1},
-    resend_{resend_fun}
+    resend_{resend_fun},
+    n_received_{0}
   {
   }
   
@@ -102,6 +103,7 @@ namespace virtdb { namespace engine {
     i->col_id_    = col_id;
     {
       lock l(mtx_);
+      ++n_received_;
       if( (int64_t)data->seqno() > max_block_id_ )
       {
         max_block_id_ = data->seqno();
@@ -226,6 +228,17 @@ namespace virtdb { namespace engine {
     {
       lock l(mtx_);
       ret = last_block_id_;
+    }
+    return ret;
+  }
+
+  size_t
+  collector::n_received() const
+  {
+    size_t ret = 0;
+    {
+      lock l(mtx_);
+      ret = n_received_;
     }
     return ret;
   }
