@@ -17,14 +17,12 @@ namespace virtdb { namespace engine {
   
   class data_handler {
 
-    std::mutex mutex;
-    std::condition_variable variable;
-    const std::string queryid;
+    const std::string query_id_;
+    const std::string table_name_;
     
     std::map<std::string, size_t> name_to_query_col_;
     std::map<column_id_t, size_t> column_id_to_query_col_;
     std::vector<std::string>      columns_;
-    std::vector<column_id_t>      column_ids_;
     
     collector::sptr           collector_;
     feeder::sptr              feeder_;
@@ -37,13 +35,9 @@ namespace virtdb { namespace engine {
     data_handler(const query& query_data, query::resend_function_t ask_for_resend);
     virtual ~data_handler() { }
     
-    const std::vector<column_id_t>& column_ids() const
-    {
-      return column_ids_;
-    }
-    
     // new interface
     const std::string& query_id() const;
+    const std::string& table_name() const;
 
     void push(const std::string & name,
               std::shared_ptr<virtdb::interface::pb::Column> new_data);
@@ -51,8 +45,6 @@ namespace virtdb { namespace engine {
     const std::map<column_id_t, size_t> & column_id_map() const;
     
     feeder & get_feeder();
-
-    
   };
 }}
 

@@ -14,7 +14,8 @@
 namespace virtdb { namespace engine {
 
   data_handler::data_handler(const query& query_data, query::resend_function_t ask_for_resend)
-  : queryid (query_data.id()),
+  : query_id_{query_data.id()},
+    table_name_{query_data.table_name()},
     resend_{ask_for_resend}
   {
     size_t n_columns = query_data.columns_size();
@@ -25,7 +26,6 @@ namespace virtdb { namespace engine {
       name_to_query_col_[col_name]  = i;
       column_id_to_query_col_[col_id] = i;
       columns_.push_back(col_name);
-      column_ids_.push_back(col_id);
     }
     
     // initialize collector and feeder
@@ -42,6 +42,7 @@ namespace virtdb { namespace engine {
                                        resend_(colnames, block_id);
                                      }
                                    }));
+    
     feeder_.reset(new feeder(collector_));
   }
 
@@ -60,7 +61,8 @@ namespace virtdb { namespace engine {
     {
       LOG_ERROR("cannot find column name mapping" <<
                 V_(name) <<
-                V_(queryid) <<
+                V_(query_id_) <<
+                V_(table_name_) <<
                 V_(new_data->queryid()));
       
       return;
@@ -74,7 +76,13 @@ namespace virtdb { namespace engine {
   const std::string&
   data_handler::query_id() const
   {
-    return queryid;
+    return query_id_;
+  }
+  
+  const std::string&
+  data_handler::table_name() const
+  {
+    return table_name_;
   }
   
   feeder &
@@ -82,5 +90,5 @@ namespace virtdb { namespace engine {
   {
     return *feeder_;
   }
-
+  
 }} // namespace virtdb::engine

@@ -11,11 +11,24 @@ namespace virtdb { namespace engine {
 
   feeder::feeder(collector::sptr cll)
   : collector_(cll),
-    act_block_{-1}
+    act_block_{-1},
+    n_done_{0}
   {
+    std::unique_ptr<char[]> buffer;
+    for( size_t i=0; i<collector_->n_columns(); ++i)
+    {
+      // add empty readers
+      readers_.push_back(collector::reader_sptr());
+    }
   }
   
   feeder::~feeder() {}
+  
+  const util::relative_time &
+  feeder::timer() const
+  {
+    return timer_;
+  }
   
   feeder::vtr::status
   feeder::next_block()
@@ -112,7 +125,7 @@ namespace virtdb { namespace engine {
                   V_(scheduled_b2) <<
                   V_(erased_prev) <<
                   V_(wait_len));
-        
+
         return vtr::ok_;
       }
       else
@@ -172,84 +185,49 @@ namespace virtdb { namespace engine {
   }
   
   feeder::vtr::status
-  feeder::get_reader(size_t col_id,
-                     vtr::sptr & reader)
-  {
-    feeder::vtr::status ret = vtr::ok_;
-    if( readers_.empty() )
-    {
-      // no reader so far, must initialize
-      // all subsequent next_block() calls will come from
-      // read* calls
-      ret = next_block();
-      LOG_TRACE("next block returned" << V_((int)ret));
-    }
-    if( ret != vtr::ok_ )
-    {
-      // cannot get initial reader
-      return ret;
-    }
-    if( col_id < readers_.size() )
-    {
-      // return valid reader here
-      reader = readers_[col_id];
-      return ret;
-    }
-    else
-    {
-      LOG_ERROR("invalid argument" << V_(readers_.size()) << V_(col_id));
-      ret = vtr::end_of_stream_;
-      return ret;
-    }
-  }
-  
-  feeder::vtr::status
   feeder::read_string(size_t col_id,
                       char ** ptr,
                       size_t & len,
                       bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
 
     // try to read the data
-    ret = reader->read_string(ptr, len);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_string(ptr, len);
+    feeder::vtr::status ret = reader->read_string(ptr, len);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_string(ptr, len);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -258,46 +236,43 @@ namespace virtdb { namespace engine {
                      bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_int32(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_int32(v);
+    feeder::vtr::status ret = reader->read_int32(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_int32(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -306,46 +281,43 @@ namespace virtdb { namespace engine {
                      bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_int64(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_int64(v);
+    feeder::vtr::status ret = reader->read_int64(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_int64(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -354,46 +326,43 @@ namespace virtdb { namespace engine {
                       bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_uint32(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_uint32(v);
+    feeder::vtr::status ret = reader->read_uint32(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_uint32(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -402,46 +371,43 @@ namespace virtdb { namespace engine {
                       bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_uint64(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_uint64(v);
+    feeder::vtr::status ret = reader->read_uint64(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_uint64(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -450,46 +416,43 @@ namespace virtdb { namespace engine {
                       bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_double(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_double(v);
+    feeder::vtr::status ret = reader->read_double(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_double(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -498,46 +461,43 @@ namespace virtdb { namespace engine {
                      bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_float(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_float(v);
+    feeder::vtr::status ret = reader->read_float(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_float(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -546,46 +506,43 @@ namespace virtdb { namespace engine {
                     bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_bool(v);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_bool(v);
+    feeder::vtr::status ret = reader->read_bool(v);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_bool(v);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
   feeder::vtr::status
@@ -595,46 +552,43 @@ namespace virtdb { namespace engine {
                      bool & null)
   {
     vtr::sptr reader;
-    auto ret = get_reader(col_id, reader);
-    
-    // must be able to find a valid reader
-    if( ret != vtr::ok_ ) { return ret; }
+#ifndef RELEASE
+    if( col_id >= readers_.size() )
+    {
+      LOG_ERROR("invalid column id" << V_(col_id));
+      return vtr::status::end_of_stream_;
+    }
+#endif
+    reader = readers_[col_id];
     
     // try to read the data
-    ret = reader->read_bytes(ptr, len);
-    
-    // if failed, try next block
-    if( ret != vtr::ok_ ) {
-      ret = next_block();
-      if( ret == vtr::ok_ )
-        ret = get_reader(col_id, reader);
-    }
-    else
-    {
-      // succeed, let's return
-      null = reader->read_null();
-      return ret;
-    }
-    
-    // no valid reader found
-    if( ret != vtr::ok_ )
-    {
-      LOG_TRACE("no valid reader found" << V_((int)ret));
-      return ret;
-    }
-    
-    // second try for the next block
-    ret = reader->read_bytes(ptr, len);
+    feeder::vtr::status ret = reader->read_bytes(ptr, len);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
+      return ret;
     }
     else
     {
-      LOG_TRACE("last chance read failed" << V_((int)ret));
+      // try next block only once
+      ret = next_block();
+      if( ret == vtr::ok_ )
+      {
+#ifndef RELEASE
+        if( col_id >= readers_.size() )
+        {
+          LOG_ERROR("invalid column id" << V_(col_id));
+          return vtr::status::end_of_stream_;
+        }
+#endif
+        reader = readers_[col_id];
+        ret = reader->read_bytes(ptr, len);
+        if( ret == vtr::ok_ )
+          null = reader->read_null();
+        return ret;
+      }
     }
-    
-    return ret;
+    return vtr::status::end_of_stream_;
   }
   
 }}

@@ -80,6 +80,14 @@ namespace
 
 #define MEASURE_ME(M) measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__, M };
 
+TEST_F(ValueTypeReaderTest, Empty)
+{
+  std::unique_ptr<char[]> buffer;
+  auto rdr = value_type_reader::construct(std::move(buffer), 0);
+  int32_t v;
+  EXPECT_NE(rdr->read_int32(v), value_type_reader::ok_ );
+  EXPECT_FALSE(rdr->read_null());
+}
 
 TEST_F(ValueTypeReaderTest, Double)
 {

@@ -4,6 +4,11 @@
 
 namespace virtdb { namespace util {
   
+  value_type_reader::value_type_reader()
+  : is_(nullptr, 0), null_pos_{0}
+  {
+  }
+  
   value_type_reader::value_type_reader(buffer && buf,
                                        size_t len)
   : buffer_{std::move(buf)},
@@ -16,6 +21,12 @@ namespace virtdb { namespace util {
   value_type_reader::construct(buffer && buf, size_t len)
   {
     value_type_reader::sptr ret;
+    if( buf.get() == nullptr || len == 0 )
+    {
+      ret.reset(new value_type_reader);
+      return ret;
+    }
+    
     std::vector<bool> nulls;
     nulls.reserve(25000);
     size_t start_pos = 0;

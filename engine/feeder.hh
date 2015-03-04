@@ -3,6 +3,7 @@
 #include <engine/collector.hh>
 #include <util/value_type_reader.hh>
 #include <util/timer_service.hh>
+#include <util/relative_time.hh>
 
 namespace virtdb { namespace engine {
 
@@ -19,11 +20,12 @@ namespace virtdb { namespace engine {
     
     collector::sptr              collector_;
     int64_t                      act_block_;
+    size_t                       n_done_;
     collector::reader_sptr_vec   readers_;
     util::timer_service          timer_svc_;
+    util::relative_time          timer_;
     
     vtr::status next_block();
-    vtr::status get_reader(size_t col_id, vtr::sptr & reader);
     
   public:
     feeder(collector::sptr cll);
@@ -39,6 +41,8 @@ namespace virtdb { namespace engine {
     vtr::status read_float(size_t col_id, float & v, bool & null);
     vtr::status read_bool(size_t col_id, bool & v, bool & null);
     vtr::status read_bytes(size_t col_id, char ** ptr, size_t & len, bool & null);
+    
+    const util::relative_time & timer() const;
   };
   
 }}

@@ -21,7 +21,7 @@ namespace virtdb { namespace util {
     };
     
   private:
-    value_type_reader() = delete;
+    value_type_reader();
     value_type_reader(const value_type_reader &) = delete;
     value_type_reader & operator=(const value_type_reader&) = delete;
     
