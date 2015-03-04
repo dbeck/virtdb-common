@@ -201,7 +201,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
 
     // try to read the data
-    feeder::vtr::status ret = reader->read_string(ptr, len);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_string(ptr, len) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -246,7 +248,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_int32(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_int32(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -291,7 +295,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_int64(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_int64(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -336,7 +342,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_uint32(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_uint32(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -381,7 +389,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_uint64(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_uint64(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -426,7 +436,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_double(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_double(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -471,7 +483,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_float(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_float(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -516,7 +530,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_bool(v);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_bool(v) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
@@ -562,7 +578,9 @@ namespace virtdb { namespace engine {
     reader = readers_[col_id];
     
     // try to read the data
-    feeder::vtr::status ret = reader->read_bytes(ptr, len);
+    feeder::vtr::status ret = (reader.get() ?
+                               reader->read_bytes(ptr, len) :
+                               vtr::status::end_of_stream_);
     if( ret == vtr::ok_ )
     {
       null = reader->read_null();
