@@ -5,6 +5,8 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
+#if 0
+
 #include "chunk_store.hh"
 
 #include "data_chunk.hh"
@@ -217,3 +219,5 @@ chunk_store::dump_front(std::ostream & os)
     }
     os << "}";
 }
+
+#endif

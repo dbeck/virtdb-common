@@ -11,6 +11,8 @@
 #include <logger.hh>
 #include <utility>
 
+#if 0
+
 using namespace virtdb::engine;
 
 data_chunk::data_chunk(sequence_id_t _seq_no, uint32_t _n_columns)
@@ -98,3 +100,5 @@ virtdb::interface::pb::Kind data_chunk::get_type(column_id_t column_id)
 {
     return columns.at(column_id).get_type();
 }
+
+#endif

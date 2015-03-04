@@ -1,5 +1,7 @@
 #pragma once
 
+#if 0
+
 #include <list>
 #include <mutex>
 #include <stdint.h>
@@ -57,3 +59,5 @@ namespace virtdb { namespace engine {
             void ask_for_missing_chunks();
     };
 }}
+
+#endif

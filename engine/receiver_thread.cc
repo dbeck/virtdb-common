@@ -137,7 +137,7 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
     lock l(mtx_);
     active_queries_[node] =
       handler_sptr(new data_handler(query_data,
-                                    [query_data, &query_client](const std::vetcor<std::string> & cols,
+                                    [query_data, &query_client](const std::vector<std::string> & cols,
                                                                 sequence_id_t seqno)
                                     {
                                       std::ostringstream os;

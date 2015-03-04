@@ -23,6 +23,8 @@ namespace virtdb {  namespace engine {
                     std::unique_ptr<virtdb::interface::pb::Query>(new virtdb::interface::pb::Query);
 
         public:
+           typedef std::function<void(const std::vector<std::string> &, sequence_id_t)> resend_function_t;
+
             query();
             query(const std::string& id);
             query(const query& source)

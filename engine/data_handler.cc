@@ -13,7 +13,7 @@
 
 namespace virtdb { namespace engine {
 
-  data_handler::data_handler(const query& query_data, resend_function_t ask_for_resend)
+  data_handler::data_handler(const query& query_data, query::resend_function_t ask_for_resend)
   : queryid (query_data.id()),
     resend_{ask_for_resend}
   {
@@ -25,9 +25,8 @@ namespace virtdb { namespace engine {
       name_to_query_col_[col_name]  = i;
       column_id_to_query_col_[col_id] = i;
       columns_.push_back(col_name);
+      column_ids_.push_back(col_id);
     }
-    
-    data_store = new chunk_store(query_data, ask_for_resend);
     
     // initialize collector and feeder
     collector_.reset(new collector(n_columns,
@@ -83,105 +82,5 @@ namespace virtdb { namespace engine {
   {
     return *feeder_;
   }
-
-
-#if 0
-virtdb::interface::pb::Kind data_handler::get_type(int column_id)
-{
-    return current_chunk->get_type(column_id);
-}
-
-  bool data_handler::received_data() const
-  {
-    return (current_chunk != nullptr or data_store->is_next_chunk_available());
-  }
-  
-  bool data_handler::wait_for_data()
-  {
-    int tries = 0;
-    static const int max_tries = 5;
-    static const int data_timeout = 10000;
-    while ( true )
-    {
-      // locking inside the loop so we give more chance to others to acquire the lock
-      std::unique_lock<std::mutex> cv_lock(mutex);
-      if( received_data() )
-      {
-        break;
-      }
-      
-      if (variable.wait_for(cv_lock, std::chrono::milliseconds(data_timeout)) == std::cv_status::timeout)
-      {
-        // check that we are not missing any notifications
-        if( !received_data() )
-        {
-          if (tries++ > max_tries)
-          {
-            std::ostringstream os;
-            data_store->dump_front(os);
-            LOG_ERROR(P_(current_chunk) <<
-                      V_(os.str()));
-            THROW_("Timed out while waiting for data.");
-          }
-          else
-          {
-            LOG_INFO("Asking for missing chunks: " << V_(queryid) << V_(tries) << P_(current_chunk));
-            data_store->ask_for_missing_chunks();
-          }
-        }
-      }
-    }
-    if (current_chunk == nullptr)
-    {
-      current_chunk = data_store->pop();
-    }
-    return true;
-  }
-
-  bool data_handler::has_more_data()
-  {
-    if (current_chunk != nullptr and current_chunk->is_complete())
-    {
-      return true;
-    }
-    if (current_chunk == nullptr and data_store->did_pop_last())
-    {
-      return false;
-    }
-    else if (not wait_for_data())
-    {
-      return false;
-    }
-    return true;
-  }
-
-bool data_handler::read_next()
-{
-    if (not has_more_data())
-    {
-        return false;
-    }
-
-    if (current_chunk != nullptr)
-    {
-        if (not current_chunk->read_next())
-        {
-            bool last = current_chunk->is_last();
-            delete current_chunk;
-            current_chunk = nullptr;
-            if (last)
-            {
-                return false;
-            }
-        }
-    }
-    if (current_chunk == nullptr)
-    {
-        return read_next();
-    }
-
-    return true;
-}
-#endif
 
 }} // namespace virtdb::engine
