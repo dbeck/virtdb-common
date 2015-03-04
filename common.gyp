@@ -98,9 +98,7 @@
                           'datasrc/int64_column.cc',     'datasrc/int64_column.hh',
                           'datasrc/pool.cc',             'datasrc/pool.hh',
                           # engine
-                          'engine/chunk_store.cc',       'engine/chunk_store.hh',
                           'engine/column_chunk.cc',      'engine/column_chunk.hh',
-                          'engine/data_chunk.cc',        'engine/data_chunk.hh',
                           'engine/data_handler.cc',      'engine/data_handler.hh',
                           'engine/expression.cc',        'engine/expression.hh',
                           'engine/query.cc',             'engine/query.hh',

@@ -39,7 +39,7 @@ namespace virtdb { namespace engine {
     
     const std::vector<column_id_t>& column_ids() const
     {
-      column_ids_;
+      return column_ids_;
     }
     
     // new interface

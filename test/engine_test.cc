@@ -1,7 +1,5 @@
 #include "engine_test.hh"
-#include <engine/chunk_store.hh>
 #include <engine/column_chunk.hh>
-#include <engine/data_chunk.hh>
 #include <engine/data_handler.hh>
 #include <engine/expression.hh>
 #include <engine/query.hh>
