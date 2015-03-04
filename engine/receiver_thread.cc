@@ -1,5 +1,6 @@
 // Standard headers
 #include <chrono>
+#include <vector>
 
 // Google Protocol Buffers
 #include "data.pb.h"
@@ -136,10 +137,14 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
     lock l(mtx_);
     active_queries_[node] =
       handler_sptr(new data_handler(query_data,
-                                    [query_data, &query_client](std::string colname, sequence_id_t seqno)
+                                    [query_data, &query_client](const std::vetcor<std::string> & cols,
+                                                                sequence_id_t seqno)
                                     {
+                                      std::ostringstream os;
+                                      for( auto const & c : cols ) { os << c << " "; }
                                       LOG_INFO("Asking for missing chunks." <<
-                                               V_(colname) <<
+                                               V_(cols.size()) <<
+                                               V_(os.str()) <<
                                                V_(seqno) <<
                                                V_(query_data.segment_id()));
                                       
@@ -147,9 +152,12 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
                                       new_query.set_queryid(query_data.id());
                                       new_query.set_table(query_data.table_name());
                                       new_query.set_segmentid(query_data.segment_id());
-                                      auto * field = new_query.add_fields();
-                                      auto const & tmp_field = query_data.get_field(colname);
-                                      field->CopyFrom(tmp_field);
+                                      for( auto const & colname : cols )
+                                      {
+                                        auto * field = new_query.add_fields();
+                                        auto const & tmp_field = query_data.get_field(colname);
+                                        field->CopyFrom(tmp_field);
+                                      }
                                       new_query.add_seqnos(seqno);
                                       new_query.set_querycontrol(virtdb::interface::pb::Query_Command_RESEND_CHUNK);
                                       query_client.send_request(new_query);

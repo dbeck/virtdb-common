@@ -14,7 +14,7 @@ namespace virtdb { namespace engine {
 
     class query;
 
-    typedef std::function<void(std::string, sequence_id_t)> resend_function_t;
+    typedef std::function<void(const std::vector<std::string> &, sequence_id_t)> resend_function_t;
 
     class chunk_store {
         private:
@@ -33,7 +33,7 @@ namespace virtdb { namespace engine {
       
       
             data_chunk* get_chunk(sequence_id_t sequence_number);
-            void ask_for_missing_chunks(std::string, sequence_id_t);
+            void ask_for_missing_chunks(const std::vector<std::string> &, sequence_id_t);
             void mark_as_received(column_id_t, sequence_id_t);
 
         public:

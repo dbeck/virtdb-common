@@ -63,7 +63,7 @@ namespace virtdb { namespace engine {
         // being ready when needed
         if( act_block_ != last )
         {
-          size_t to_schedule = act_block_+1;
+          auto to_schedule = act_block_+1;
           if(collector_->max_block_id() >= to_schedule )
             wait_len = 10;
           
@@ -142,13 +142,16 @@ namespace virtdb { namespace engine {
       if( blocks_needed > n_received &&
           n_proc_stared == n_proc_done )
       {
+        std::vector<size_t> cols;
         for( size_t i=0; i<readers_.size(); ++i )
         {
           if( readers_[i] )
           {
-            collector_->resend(act_block_+1, i);
+            cols.push_back(i);
           }
         }
+        if( cols.size() )
+          collector_->resend(act_block_+1, cols);
       }
     }
     

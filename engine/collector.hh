@@ -18,8 +18,9 @@ namespace virtdb { namespace engine {
     typedef util::value_type_reader::sptr              reader_sptr;
     typedef std::vector<reader_sptr>                   reader_sptr_vec;
     typedef std::unique_lock<std::mutex>               lock;
+    typedef std::vector<size_t>                        col_vec;
     typedef std::function<void(size_t block_id,
-                               size_t col_id)>         resend_function;
+                               const col_vec & cols)>  resend_function;
     
   private:
     struct item
@@ -68,7 +69,7 @@ namespace virtdb { namespace engine {
     void erase(size_t block_id);
     
     void resend(size_t block_id,
-                size_t col_id);
+                const col_vec & cols);
     
     int64_t max_block_id() const;
     int64_t last_block_id() const;
@@ -80,7 +81,7 @@ namespace virtdb { namespace engine {
     size_t n_process_done() const;
     size_t n_process_succeed() const;
     
-    collector(size_t n_cols, resend_function resend_fun = [](size_t,size_t){} );
+    collector(size_t n_cols, resend_function resend_fun = [](size_t,const col_vec & ){} );
     virtual ~collector();
   };
   

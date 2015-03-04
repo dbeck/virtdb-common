@@ -32,9 +32,9 @@ namespace virtdb { namespace engine {
   
   void
   collector::resend(size_t block_id,
-                    size_t col_id)
+                    const col_vec & cols)
   {
-    resend_(block_id, col_id);
+    resend_(block_id, cols);
   }
   
   size_t

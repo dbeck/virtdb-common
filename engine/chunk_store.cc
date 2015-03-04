@@ -44,7 +44,9 @@ void chunk_store::push(std::string name,
   {
     if( recvd_set.count(i) == 0 )
     {
-      ask_for_missing_chunks(name, i);
+      std::vector<std::string> cols;
+      cols.push_back(name);
+      ask_for_missing_chunks(cols, i);
     }
   }
 }
@@ -104,12 +106,12 @@ data_chunk* chunk_store::pop()
     return front_chunk;
 }
 
-void chunk_store::ask_for_missing_chunks(std::string col_name,
+void chunk_store::ask_for_missing_chunks(const std::vector<std::string> & cols,
                                          sequence_id_t current_sequence_id)
 {
   try
   {
-    ask_for_resend(col_name, current_sequence_id);
+    ask_for_resend(cols, current_sequence_id);
   }
   catch( const std::exception & e )
   {
@@ -131,19 +133,24 @@ void chunk_store::ask_for_missing_chunks()
       received_columns.insert(id);
     });
   }
-  
-  for( auto & it : column_names )
+
+  auto i = max_inserted_sequence_id;
+  for( i = 0; i<=max_inserted_sequence_id; ++i )
   {
-    // TODO : optimize me
-    auto recvd_set = received_ids[it.second];
-    auto i = max_inserted_sequence_id;
-    for( i = 0; i<=max_inserted_sequence_id; ++i )
+    std::vector<std::string> cols;
+
+    for( auto & it : column_names )
     {
+      // TODO : optimize me
+      auto recvd_set = received_ids[it.second];
       if( recvd_set.count(i) == 0 )
       {
-        ask_for_missing_chunks(it.first, i);
+        cols.push_back(it.first);
       }
     }
+    
+    if( cols.size()> 0 )
+      ask_for_missing_chunks(cols, i);
   }
 }
 
