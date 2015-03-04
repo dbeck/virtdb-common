@@ -38,10 +38,20 @@ namespace virtdb { namespace connector {
     typedef std::vector<sub_monitor>                monitor_vector;
     typedef std::map<std::string,monitor_vector>    monitor_map;
     
+    struct raw_message
+    {
+      typedef std::shared_ptr<zmq::message_t> msg_sptr;
+      std::string             subscription_;
+      std::vector<msg_sptr>   messages_;
+    };
+    
+    typedef std::shared_ptr<raw_message> raw_msg_sptr;
+    
     endpoint_client                                                * ep_clnt_;
     zmq::context_t                                                   zmqctx_;
     util::zmq_socket_wrapper                                         socket_;
     util::async_worker                                               worker_;
+    util::active_queue<raw_msg_sptr,util::TINY_TIMEOUT_MS>           raw_msg_queue_;
     util::active_queue<channel_item_sptr,util::DEFAULT_TIMEOUT_MS>   queue_;
     monitor_map                                                      monitors_;
     mutable std::mutex                                               sockets_mtx_;
@@ -72,6 +82,8 @@ namespace virtdb { namespace connector {
       
       try
       {
+        raw_msg_sptr raw_msg{new raw_message};
+        
         // poll said we have data ...
         zmq::message_t message;
         
@@ -93,31 +105,35 @@ namespace virtdb { namespace connector {
           return true;
         }
         
-        std::string subscription;
-        util::zmq_socket_wrapper::valid_subscription(message, subscription);
+        util::zmq_socket_wrapper::valid_subscription(message, raw_msg->subscription_);
         
-        do
+        while( true )
         {
-          message.rebuild();
-          if( !socket_.get().recv(&message) )
+          typename raw_message::msg_sptr msg_item{new zmq::message_t()};
+          
+          if( !socket_.get().recv(msg_item.get()) )
           {
             LOG_ERROR("failed to recv() message - while reading data" <<
                       V_(dbg.GetTypeName()) <<
                       V_(this->server()) <<
-                      V_(subscription));
+                      V_(raw_msg->subscription_));
             return true;
           }
-          auto i = sub_item_sptr{new sub_item};
-          if( i->ParseFromArray(message.data(), message.size()) )
-          {
-            queue_.push(std::move(std::make_pair(subscription,i)));
-          }
-          else
-          {
-            LOG_ERROR("failed to parse message" << V_(dbg.GetTypeName()) << V_(this->server()));
-          }
+          
+          raw_msg->messages_.push_back(msg_item);
         }
-        while( message.more() );
+        
+        if( raw_msg->messages_.size() > 0 )
+        {
+          raw_msg_queue_.push(std::move(raw_msg));
+        }
+        else
+        {
+          LOG_ERROR("failed to construct raw message" <<
+                    V_(dbg.GetTypeName()) <<
+                    V_(this->server()) <<
+                    V_(raw_msg->subscription_));
+        }
         
       }
       catch (const zmq::error_t & e)
@@ -143,6 +159,25 @@ namespace virtdb { namespace connector {
                   V_(this->server()));
       }
       return true;
+    }
+    
+    void process_raw_message(raw_msg_sptr msg)
+    {
+      for( auto & m : msg->messages_ )
+      {
+        auto i = sub_item_sptr{new sub_item};
+        if( i->ParseFromArray(m->data(), m->size()) )
+        {
+          queue_.push(std::move(std::make_pair(msg->subscription_,i)));
+        }
+        else
+        {
+          LOG_ERROR("failed to parse message" <<
+                    V_(i->GetTypeName()) <<
+                    V_(this->server()) <<
+                    V_(msg->subscription_));
+        }
+      }
     }
     
     void dispatch_function(channel_item_sptr it)
@@ -186,6 +221,9 @@ namespace virtdb { namespace connector {
       worker_(std::bind(&sub_client::worker_function, this),
               n_retries_on_worker_exception,
               die_on_worker_exception),
+      raw_msg_queue_(4,std::bind(&sub_client::process_raw_message,
+                                 this,
+                                 std::placeholders::_1)),
       queue_(1,std::bind(&sub_client::dispatch_function,
                          this,
                          std::placeholders::_1))
