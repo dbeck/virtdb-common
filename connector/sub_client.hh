@@ -49,6 +49,8 @@ namespace virtdb { namespace connector {
     
     bool worker_function()
     {
+      sub_item dbg;
+
       try
       {
         if( !socket_.wait_valid(util::DEFAULT_TIMEOUT_MS) )
@@ -60,7 +62,9 @@ namespace virtdb { namespace connector {
       catch (const zmq::error_t & e)
       {
         std::string text{e.what()};
-        LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop");
+        LOG_ERROR("zmq::poll failed with exception" << V_(text) << "delaying subscription loop" <<
+                  V_(dbg.GetTypeName()) <<
+                  V_(this->server()));
         lock l(sockets_mtx_);
         socket_.disconnect_all();
         return true;
@@ -72,10 +76,22 @@ namespace virtdb { namespace connector {
         zmq::message_t message;
         
         if( !socket_.get().recv(&message) )
+        {
+          LOG_ERROR("failed to recv() message - while reading subscription" <<
+                    V_(dbg.GetTypeName()) <<
+                    V_(this->server()));
           return true;
+        }
         
         if( !message.data() || !message.size() || !message.more())
+        {
+          LOG_ERROR("invalid message received" <<
+                    V_(dbg.GetTypeName()) <<
+                    V_(this->server()) <<
+                    V_(message.size()) <<
+                    V_(message.more()));
           return true;
+        }
         
         std::string subscription;
         util::zmq_socket_wrapper::valid_subscription(message, subscription);
@@ -84,8 +100,13 @@ namespace virtdb { namespace connector {
         {
           message.rebuild();
           if( !socket_.get().recv(&message) )
+          {
+            LOG_ERROR("failed to recv() message - while reading data" <<
+                      V_(dbg.GetTypeName()) <<
+                      V_(this->server()) <<
+                      V_(subscription));
             return true;
-
+          }
           auto i = sub_item_sptr{new sub_item};
           if( i->ParseFromArray(message.data(), message.size()) )
           {
@@ -93,7 +114,7 @@ namespace virtdb { namespace connector {
           }
           else
           {
-            LOG_ERROR("failed to parse message" << V_(i->GetTypeName()));
+            LOG_ERROR("failed to parse message" << V_(dbg.GetTypeName()) << V_(this->server()));
           }
         }
         while( message.more() );
@@ -101,18 +122,25 @@ namespace virtdb { namespace connector {
       }
       catch (const zmq::error_t & e)
       {
-        LOG_ERROR("zmq::poll failed with exception" << E_(e) << "delaying subscription loop");
+        LOG_ERROR("zmq::poll failed with exception" << E_(e) << "delaying subscription loop" <<
+                  V_(dbg.GetTypeName()) <<
+                  V_(this->server()));
         lock l(sockets_mtx_);
         socket_.disconnect_all();
         return true;
       }
       catch (const std::exception & e)
       {
-        LOG_ERROR("couldn't parse message" << E_(e));
+        LOG_ERROR("couldn't parse message" <<
+                  E_(e) <<
+                  V_(dbg.GetTypeName()) <<
+                  V_(this->server()));
       }
       catch( ... )
       {
-        LOG_ERROR("unknown exception");
+        LOG_ERROR("unknown exception" <<
+                  V_(dbg.GetTypeName()) <<
+                  V_(this->server()));
       }
       return true;
     }
@@ -135,7 +163,11 @@ namespace virtdb { namespace connector {
             catch( const std::exception & e )
             {
               std::string text{e.what()};
-              LOG_ERROR("exception thrown by subscriber function" << V_(text));
+              sub_item dbg;
+              LOG_ERROR("exception thrown by subscriber function" <<
+                        V_(text) <<
+                        V_(dbg.GetTypeName()) <<
+                        V_(this->server()));
             }
           }
         }
