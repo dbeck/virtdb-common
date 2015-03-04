@@ -21,13 +21,16 @@ namespace virtdb { namespace engine {
   feeder::next_block()
   {
     // check if we are at the end of stream, plus gather collector stats
-    auto last         = collector_->last_block_id();
-    auto n_received   = collector_->n_received();
-    auto n_done       = collector_->n_done();
-    auto n_queued     = collector_->n_queued();
-    auto n_columns    = collector_->n_columns();
-    auto max_block    = collector_->max_block_id();
-    auto missing      = n_columns*(max_block+1)-n_received;
+    auto last            = collector_->last_block_id();
+    auto n_received      = collector_->n_received();
+    auto n_done          = collector_->n_done();
+    auto n_queued        = collector_->n_queued();
+    auto n_columns       = collector_->n_columns();
+    auto max_block       = collector_->max_block_id();
+    auto blocks_needed   = n_columns*(max_block+1);
+    auto n_proc_stared   = collector_->n_process_started();
+    auto n_proc_done     = collector_->n_done();
+    auto n_proc_succeed  = collector_->n_process_succeed();
     
     if( last != -1 && act_block_ == last )
     {
@@ -38,12 +41,16 @@ namespace virtdb { namespace engine {
     collector_->process(act_block_+1, 10, false);
     
     // will need to wait for the next block
-    for( int i=0; i<3; ++i )
+    for( int i=0; i<10; ++i )
     {
       bool got_reader = collector_->get(act_block_+1,
                                         readers_,
                                         30000);
       
+      n_proc_stared   = collector_->n_process_started();
+      n_proc_done     = collector_->n_done();
+      n_proc_succeed  = collector_->n_process_succeed();
+
       if( got_reader )
       {
         ++act_block_;
@@ -97,7 +104,10 @@ namespace virtdb { namespace engine {
                   V_(n_queued) <<
                   V_(n_done) <<
                   V_(n_received) <<
-                  V_(missing) << "---" <<
+                  V_(blocks_needed) <<
+                  V_(n_proc_stared) <<
+                  V_(n_proc_done) <<
+                  V_(n_proc_succeed) << "---" <<
                   V_(scheduled_b1) <<
                   V_(scheduled_b2) <<
                   V_(erased_prev) <<
@@ -108,6 +118,10 @@ namespace virtdb { namespace engine {
       else
       {
         collector_->process(act_block_+1, 30000, true);
+        
+        n_proc_stared   = collector_->n_process_started();
+        n_proc_done     = collector_->n_done();
+        n_proc_succeed  = collector_->n_process_succeed();
       }
       
       LOG_TRACE("reader array is not yet ready" <<
@@ -118,18 +132,27 @@ namespace virtdb { namespace engine {
                 V_(n_queued) <<
                 V_(n_done) <<
                 V_(n_received) <<
-                V_(missing));
-      
-      for( size_t i=0; i<readers_.size(); ++i )
+                V_(blocks_needed) <<
+                V_(n_proc_stared) <<
+                V_(n_proc_done) <<
+                V_(n_proc_succeed) << "---" );
+
+      // only ask for chunks if there are missing and we processed
+      // everything
+      if( blocks_needed > n_received &&
+          n_proc_stared == n_proc_done )
       {
-        if( readers_[i] )
+        for( size_t i=0; i<readers_.size(); ++i )
         {
-          collector_->resend(act_block_+1, i);
+          if( readers_[i] )
+          {
+            collector_->resend(act_block_+1, i);
+          }
         }
       }
     }
     
-    LOG_ERROR("aborting read, couldn't get a valid reader array in 3 minute" <<
+    LOG_ERROR("aborting read, couldn't get a valid reader array in 10 minutes" <<
               V_(last) <<
               V_(act_block_) <<
               V_(max_block) <<
@@ -137,7 +160,10 @@ namespace virtdb { namespace engine {
               V_(n_queued) <<
               V_(n_done) <<
               V_(n_received) <<
-              V_(missing));
+              V_(blocks_needed) <<
+              V_(n_proc_stared) <<
+              V_(n_proc_done) <<
+              V_(n_proc_succeed) << "---" );
     
     return vtr::end_of_stream_;
   }

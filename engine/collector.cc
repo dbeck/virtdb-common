@@ -18,8 +18,11 @@ namespace virtdb { namespace engine {
     queue_{4, std::bind(&collector::prrocess,this,std::placeholders::_1)},
     max_block_id_{-1},
     last_block_id_{-1},
-    resend_{resend_fun},
-    n_received_{0}
+    n_received_{0},
+    n_process_started_{0},
+    n_process_done_{0},
+    n_process_succeed_{0},
+    resend_{resend_fun}
   {
   }
   
@@ -51,21 +54,21 @@ namespace virtdb { namespace engine {
   collector::prrocess(item::sptr itm)
   {
     // cannot process invalid ptr
-    if( itm.get() == nullptr ) return;
+    if( itm.get() == nullptr ) { ++n_process_done_; return; }
     
     // need a column to be processed
-    if( itm->col_ == nullptr ) return;
+    if( itm->col_ == nullptr ) { ++n_process_done_; return; }
     
     // already processed
-    if( itm->reader_.get() != nullptr ) return;
+    if( itm->reader_.get() != nullptr ) { ++n_process_done_; return; }
     
     int orig_size = itm->col_->uncompressedsize();
-    if( orig_size <= 0 ) return;
+    if( orig_size <= 0 ) { ++n_process_done_; return; }
     
     std::unique_ptr<char[]> buffer{new char[orig_size+1]};
     
     int comp_size = itm->col_->compresseddata().size();
-    if( comp_size <= 0 ) return;
+    if( comp_size <= 0 ) { ++n_process_done_; return; }
     
     char* res_bufer = buffer.get();
     int comp_ret = LZ4_decompress_safe(itm->col_->compresseddata().c_str(),
@@ -80,6 +83,9 @@ namespace virtdb { namespace engine {
                 V_(itm->col_->queryid()) <<
                 V_(itm->col_->name()) <<
                 V_(itm->col_->endofdata()));
+      
+      ++n_process_done_;
+      ++n_process_succeed_;
       return;
     }
     
@@ -90,6 +96,9 @@ namespace virtdb { namespace engine {
     auto rdr = util::value_type_reader::construct(std::move(buffer), orig_size);
     itm->reader_ = rdr;
     // collector_.insert(itm->block_id_, itm->col_id_, itm);
+    
+    ++n_process_done_;
+    return;
   }
   
   void
@@ -136,6 +145,7 @@ namespace virtdb { namespace engine {
         {
           if( !i->reader_ )
           {
+            ++n_process_started_;
             queue_.push(i);
             ++n_pushed;
           }
@@ -248,6 +258,23 @@ namespace virtdb { namespace engine {
   {
     return collector_.n_columns();
   }
+  
+  size_t
+  collector::n_process_started() const
+  {
+    return n_process_started_.load();
+  }
+  
+  size_t
+  collector::n_process_done() const
+  {
+    return n_process_done_.load();
+  }
 
+  size_t
+  collector::n_process_succeed() const
+  {
+    return n_process_succeed_.load();
+  }
   
 }}
