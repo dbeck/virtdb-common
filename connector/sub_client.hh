@@ -121,6 +121,8 @@ namespace virtdb { namespace connector {
           }
           
           raw_msg->messages_.push_back(msg_item);
+          
+          if( !msg_item->more() ) break;
         }
         
         if( raw_msg->messages_.size() > 0 )
