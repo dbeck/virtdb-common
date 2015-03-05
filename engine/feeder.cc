@@ -62,11 +62,11 @@ namespace virtdb { namespace engine {
     collector_->process(act_block_+1, 10, false);
     
     // will need to wait for the next block
-    for( int i=0; i<10; ++i )
+    for( int i=0; i<120; ++i )
     {
       bool got_reader = collector_->get(act_block_+1,
                                         readers_,
-                                        30000);
+                                        1000);
       
       n_proc_stared   = collector_->n_process_started();
       n_proc_done     = collector_->n_done();
@@ -143,7 +143,7 @@ namespace virtdb { namespace engine {
       }
       else
       {
-        collector_->process(act_block_+1, 30000, true);
+        collector_->process(act_block_+1, 1000, true);
         
         n_proc_stared   = collector_->n_process_started();
         n_proc_done     = collector_->n_done();
@@ -183,7 +183,7 @@ namespace virtdb { namespace engine {
       }
     }
     
-    LOG_ERROR("aborting read, couldn't get a valid reader array in 10 minutes" <<
+    LOG_ERROR("aborting read, couldn't get a valid reader array in 4 minutes" <<
               V_(last) <<
               V_(act_block_) <<
               V_(max_block) <<
