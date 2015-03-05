@@ -28,6 +28,7 @@ namespace virtdb { namespace engine {
   
   collector::~collector()
   {
+    queue_.stop();
   }
   
   void
