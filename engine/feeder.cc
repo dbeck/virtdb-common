@@ -66,9 +66,6 @@ namespace virtdb { namespace engine {
       if( got_reader )
       {
         ++act_block_;
-        bool scheduled_b1  = false;
-        bool scheduled_b2  = false;
-        bool erased_prev   = false;
         
         // schedule the next process to give a chance the next block
         // being ready when needed
@@ -77,11 +74,10 @@ namespace virtdb { namespace engine {
           auto to_schedule = act_block_+1;
           
           auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 100, false);
+            collector_->process(to_schedule, 30, false);
             return false;
           };
           timer_svc_.schedule(1,  background_process);
-          scheduled_b1 = true;
         }
         
         // same thing for the one after, if any available there
@@ -90,11 +86,22 @@ namespace virtdb { namespace engine {
         {
           size_t to_schedule = act_block_+2;
           auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 100, false);
+            collector_->process(to_schedule, 40, false);
             return false;
           };
           timer_svc_.schedule(10,  background_process);
-          scheduled_b2 = true;
+        }
+
+        // same thing for the second after, if any available there
+        if( act_block_+2 != last &&
+           act_block_+3 <= collector_->max_block_id() )
+        {
+          size_t to_schedule = act_block_+3;
+          auto background_process = [this,to_schedule]() {
+            collector_->process(to_schedule, 50, false);
+            return false;
+          };
+          timer_svc_.schedule(10,  background_process);
         }
         
         // we allow 2 old block to stay in memory so give time
@@ -102,10 +109,9 @@ namespace virtdb { namespace engine {
         if( act_block_ > 2 )
         {
           collector_->erase(act_block_-3);
-          erased_prev = true;
         }
         
-        if( rt.get_msec() > 800 )
+        if( rt.get_msec() > 2000 )
         {
           double msec = ((0.0+rt.get_usec())/1000.0);
           LOG_INFO("stream" <<
@@ -120,9 +126,6 @@ namespace virtdb { namespace engine {
                     V_(n_proc_stared) <<
                     V_(n_proc_done) <<
                     V_(n_proc_succeed) << "---" <<
-                    V_(scheduled_b1) <<
-                    V_(scheduled_b2) <<
-                    V_(erased_prev) <<
                     "took" << V_(msec));
         }
 
