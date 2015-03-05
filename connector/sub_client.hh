@@ -52,7 +52,7 @@ namespace virtdb { namespace connector {
     util::zmq_socket_wrapper                                         socket_;
     util::async_worker                                               worker_;
     util::active_queue<raw_msg_sptr,util::TINY_TIMEOUT_MS>           raw_msg_queue_;
-    util::active_queue<channel_item_sptr,util::SHORT_TIMEOUT_MS>     queue_;
+    util::active_queue<channel_item_sptr,util::DEFAULT_TIMEOUT_MS>   queue_;
     monitor_map                                                      monitors_;
     mutable std::mutex                                               sockets_mtx_;
     mutable std::mutex                                               monitors_mtx_;

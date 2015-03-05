@@ -66,21 +66,18 @@ namespace virtdb { namespace engine {
       if( got_reader )
       {
         ++act_block_;
-        bool scheduled_b1 = false;
-        bool scheduled_b2 = false;
-        bool erased_prev = false;
-        size_t wait_len  = 1000;
+        bool scheduled_b1  = false;
+        bool scheduled_b2  = false;
+        bool erased_prev   = false;
         
         // schedule the next process to give a chance the next block
         // being ready when needed
         if( act_block_ != last )
         {
           auto to_schedule = act_block_+1;
-          if(collector_->max_block_id() >= to_schedule )
-            wait_len = 10;
           
-          auto background_process = [this,to_schedule, wait_len]() {
-            collector_->process(to_schedule, wait_len, true);
+          auto background_process = [this,to_schedule]() {
+            collector_->process(to_schedule, 100, false);
             return false;
           };
           timer_svc_.schedule(1,  background_process);
@@ -93,7 +90,7 @@ namespace virtdb { namespace engine {
         {
           size_t to_schedule = act_block_+2;
           auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 10, true);
+            collector_->process(to_schedule, 100, false);
             return false;
           };
           timer_svc_.schedule(10,  background_process);
@@ -126,7 +123,6 @@ namespace virtdb { namespace engine {
                     V_(scheduled_b1) <<
                     V_(scheduled_b2) <<
                     V_(erased_prev) <<
-                    V_(wait_len) <<
                     "took" << V_(msec));
         }
 
