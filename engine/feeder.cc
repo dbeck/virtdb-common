@@ -11,8 +11,7 @@ namespace virtdb { namespace engine {
 
   feeder::feeder(collector::sptr cll)
   : collector_(cll),
-    act_block_{-1},
-    n_done_{0}
+    act_block_{-1}
   {
     std::unique_ptr<char[]> buffer;
     for( size_t i=0; i<collector_->n_columns(); ++i)
@@ -28,12 +27,6 @@ namespace virtdb { namespace engine {
   feeder::timer() const
   {
     return timer_;
-  }
-  
-  size_t
-  feeder::n_done() const
-  {
-    return n_done_.load();
   }
   
   feeder::vtr::status
@@ -64,7 +57,7 @@ namespace virtdb { namespace engine {
     // will need to wait for the next block
     for( int i=0; i<60; ++i )
     {
-      bool got_reader = collector_->get(act_block_+1, readers_, 1000);
+      bool got_reader = collector_->get(act_block_+1, readers_, 50);
       
       n_proc_stared   = collector_->n_process_started();
       n_proc_done     = collector_->n_done();
@@ -134,8 +127,7 @@ namespace virtdb { namespace engine {
                     V_(scheduled_b2) <<
                     V_(erased_prev) <<
                     V_(wait_len) <<
-                    "took" << V_(msec) <<
-                    V_(this->n_done()));
+                    "took" << V_(msec));
         }
 
         return vtr::ok_;
