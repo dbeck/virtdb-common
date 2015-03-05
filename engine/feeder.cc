@@ -62,11 +62,9 @@ namespace virtdb { namespace engine {
     collector_->process(act_block_+1, 10, false);
     
     // will need to wait for the next block
-    for( int i=0; i<120; ++i )
+    for( int i=0; i<60; ++i )
     {
-      bool got_reader = collector_->get(act_block_+1,
-                                        readers_,
-                                        1000);
+      bool got_reader = collector_->get(act_block_+1, readers_, 1000);
       
       n_proc_stared   = collector_->n_process_started();
       n_proc_done     = collector_->n_done();
@@ -117,6 +115,7 @@ namespace virtdb { namespace engine {
           erased_prev = true;
         }
         
+        if( rt.get_msec() > 800 )
         {
           double msec = ((0.0+rt.get_usec())/1000.0);
           LOG_INFO("stream" <<
@@ -143,7 +142,7 @@ namespace virtdb { namespace engine {
       }
       else
       {
-        collector_->process(act_block_+1, 1000, true);
+        collector_->process(act_block_+1, 3000, true);
         
         n_proc_stared   = collector_->n_process_started();
         n_proc_done     = collector_->n_done();
@@ -163,7 +162,7 @@ namespace virtdb { namespace engine {
                 V_(n_proc_done) <<
                 V_(n_proc_succeed) << "---" );
 
-      // only ask for chunks if there are missing and we processed
+      // only ask for chunks if there are missing and we have processed
       // everything
       if( blocks_needed > n_received &&
           n_proc_stared == n_proc_done )
@@ -171,7 +170,7 @@ namespace virtdb { namespace engine {
         std::vector<size_t> cols;
         for( size_t i=0; i<readers_.size(); ++i )
         {
-          if( readers_[i] )
+          if( readers_[i].get() == nullptr )
           {
             cols.push_back(i);
           }
