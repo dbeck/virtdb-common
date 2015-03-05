@@ -143,6 +143,8 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
                                       std::ostringstream os;
                                       for( auto const & c : cols ) { os << c << " "; }
                                       LOG_INFO("Asking for missing chunks." <<
+                                               V_(query_data.id()) <<
+                                               V_(query_data.table_name()) <<
                                                V_(cols.size()) <<
                                                V_(os.str()) <<
                                                V_(seqno) <<

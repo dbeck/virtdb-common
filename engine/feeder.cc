@@ -30,6 +30,12 @@ namespace virtdb { namespace engine {
     return timer_;
   }
   
+  size_t
+  feeder::n_done() const
+  {
+    return n_done_.load();
+  }
+  
   feeder::vtr::status
   feeder::next_block()
   {
@@ -50,6 +56,8 @@ namespace virtdb { namespace engine {
       // no more data to be read
       return vtr::end_of_stream_;
     }
+    
+    util::relative_time rt;
     
     collector_->process(act_block_+1, 10, false);
     
@@ -109,22 +117,27 @@ namespace virtdb { namespace engine {
           erased_prev = true;
         }
         
-        LOG_TRACE("stream" <<
-                  V_(last) <<
-                  V_(act_block_) <<
-                  V_(max_block) <<
-                  V_(n_columns) <<
-                  V_(n_queued) <<
-                  V_(n_done) <<
-                  V_(n_received) <<
-                  V_(blocks_needed) <<
-                  V_(n_proc_stared) <<
-                  V_(n_proc_done) <<
-                  V_(n_proc_succeed) << "---" <<
-                  V_(scheduled_b1) <<
-                  V_(scheduled_b2) <<
-                  V_(erased_prev) <<
-                  V_(wait_len));
+        {
+          double msec = ((0.0+rt.get_usec())/1000.0);
+          LOG_INFO("stream" <<
+                    V_(last) <<
+                    V_(act_block_) <<
+                    V_(max_block) <<
+                    V_(n_columns) <<
+                    V_(n_queued) <<
+                    V_(n_done) <<
+                    V_(n_received) <<
+                    V_(blocks_needed) <<
+                    V_(n_proc_stared) <<
+                    V_(n_proc_done) <<
+                    V_(n_proc_succeed) << "---" <<
+                    V_(scheduled_b1) <<
+                    V_(scheduled_b2) <<
+                    V_(erased_prev) <<
+                    V_(wait_len) <<
+                    "took" << V_(msec) <<
+                    V_(this->n_done()));
+        }
 
         return vtr::ok_;
       }
@@ -164,7 +177,9 @@ namespace virtdb { namespace engine {
           }
         }
         if( cols.size() )
+        {
           collector_->resend(act_block_+1, cols);
+        }
       }
     }
     

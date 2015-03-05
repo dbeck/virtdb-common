@@ -20,7 +20,7 @@ namespace virtdb { namespace engine {
     
     collector::sptr              collector_;
     int64_t                      act_block_;
-    size_t                       n_done_;
+    std::atomic<size_t>          n_done_;
     collector::reader_sptr_vec   readers_;
     util::timer_service          timer_svc_;
     util::relative_time          timer_;
@@ -43,6 +43,7 @@ namespace virtdb { namespace engine {
     vtr::status read_bytes(size_t col_id, char ** ptr, size_t & len, bool & null);
     
     const util::relative_time & timer() const;
+    size_t n_done() const;
   };
   
 }}
