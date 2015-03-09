@@ -73,6 +73,11 @@ namespace virtdb { namespace engine {
           // schedule next block's processing (decompres+PB decode)
           collector_->background_process(act_block_+1);
         }
+        
+        // erase old data
+        if( act_block_ > 1 )
+          collector_->erase(act_block_-2);
+        
         return true;
       }
       else if( got_columns == 0 && max_block == -1 )
