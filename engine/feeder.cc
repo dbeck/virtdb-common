@@ -44,13 +44,7 @@ namespace virtdb { namespace engine {
       return false;
     }
     
-    size_t timeout_ms = 30000;
-    if( max_block >= 0 )
-    {
-      // we have seen data, so there is a chance to receive more
-      timeout_ms = 5000;
-    }
-    
+    size_t timeout_ms = 3000;
     size_t got_columns = 0;
     int i = 0;
     
@@ -80,10 +74,23 @@ namespace virtdb { namespace engine {
         
         return true;
       }
-      else if( got_columns == 0 && max_block == -1 )
+      
+      last            = collector_->last_block_id();
+      max_block       = collector_->max_block_id();
+      n_columns       = collector_->n_columns();
+      blocks_needed   = n_columns*(max_block+1);
+      n_received      = collector_->n_received();
+
+      if( got_columns == 0 && max_block == -1 )
       {
         // nothing arrived so the query is most likely dead
-        return false;
+        LOG_INFO("Waiting for the first block to arrive" <<
+                 V_(timeout_ms) <<
+                 V_(got_columns) <<
+                 V_(max_block) <<
+                 V_(n_columns) <<
+                 V_(blocks_needed) <<
+                 V_(n_received));
       }
       else
       {
