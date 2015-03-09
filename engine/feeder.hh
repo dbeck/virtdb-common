@@ -91,6 +91,12 @@ namespace virtdb { namespace engine {
       return readers_[0]->has_more();
     }
     
+    inline bool
+    started() const
+    {
+      return (act_block_ != -1);
+    }
+    
     bool fetch_next();
     
     const util::relative_time & timer() const;
