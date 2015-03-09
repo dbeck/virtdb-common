@@ -58,13 +58,12 @@ namespace virtdb { namespace engine {
               size_t col_id,
               column_sptr data);
     
-    bool process(size_t block_id,
-                 uint64_t timeout_ms,
-                 bool wait_ready);
-    
-    bool get(size_t block_id,
-             reader_sptr_vec & rdrs,
-             uint64_t timeout_ms);
+    size_t get(size_t block_id,
+               uint64_t data_timeout_ms,
+               uint64_t process_timeout_ms,
+               reader_sptr_vec & rdrs);
+
+    void background_process(size_t block_id);
     
     void erase(size_t block_id);
     

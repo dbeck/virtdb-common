@@ -29,20 +29,14 @@ namespace virtdb { namespace engine {
     return timer_;
   }
   
-  feeder::vtr::status
-  feeder::next_block()
+  bool
+  feeder::fetch_next()
   {
-    // check if we are at the end of stream, plus gather collector stats
     auto last            = collector_->last_block_id();
-    auto n_received      = collector_->n_received();
-    auto n_done          = collector_->n_done();
-    auto n_queued        = collector_->n_queued();
-    auto n_columns       = collector_->n_columns();
     auto max_block       = collector_->max_block_id();
+    auto n_columns       = collector_->n_columns();
     auto blocks_needed   = n_columns*(max_block+1);
-    auto n_proc_stared   = collector_->n_process_started();
-    auto n_proc_done     = collector_->n_done();
-    auto n_proc_succeed  = collector_->n_process_succeed();
+    auto n_received      = collector_->n_received();
     
     if( last != -1 && act_block_ == last )
     {
@@ -50,114 +44,45 @@ namespace virtdb { namespace engine {
       return vtr::end_of_stream_;
     }
     
-    util::relative_time rt;
-    
-    collector_->process(act_block_+1, 10, false);
-    
-    // will need to wait for the next block
-    for( int i=0; i<60; ++i )
+    size_t timeout_ms = 30000;
+    if( max_block >= 0 )
     {
-      bool got_reader = collector_->get(act_block_+1, readers_, 50);
+      // we have seen data, so there is a chance to receive more
+      timeout_ms = 5000;
+    }
+    
+    size_t got_columns = 0;
+    int i = 0;
+    
+    // we try a few times to gather the data
+    for( i=0; i<10; ++i )
+    {
+      got_columns = collector_->get(act_block_+1,
+                                    timeout_ms,
+                                    1000,
+                                    readers_);
       
-      n_proc_stared   = collector_->n_process_started();
-      n_proc_done     = collector_->n_done();
-      n_proc_succeed  = collector_->n_process_succeed();
-
-      if( got_reader )
+      max_block = collector_->max_block_id();
+      
+      if( got_columns == n_columns )
       {
         ++act_block_;
-        
-        // schedule the next process to give a chance the next block
-        // being ready when needed
-        if( act_block_ != last )
+        max_block = collector_->max_block_id();
+        if( max_block > act_block_ )
         {
-          auto to_schedule = act_block_+1;
-          
-          auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 30, false);
-            return false;
-          };
-          timer_svc_.schedule(1,  background_process);
+          // schedule next block's processing (decompres+PB decode)
+          collector_->background_process(act_block_+1);
         }
-        
-        // same thing for the one after, if any available there
-        if( act_block_+1 != last &&
-            act_block_+2 <= collector_->max_block_id() )
-        {
-          size_t to_schedule = act_block_+2;
-          auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 40, false);
-            return false;
-          };
-          timer_svc_.schedule(10,  background_process);
-        }
-
-        // same thing for the second after, if any available there
-        if( act_block_+2 != last &&
-           act_block_+3 <= collector_->max_block_id() )
-        {
-          size_t to_schedule = act_block_+3;
-          auto background_process = [this,to_schedule]() {
-            collector_->process(to_schedule, 50, false);
-            return false;
-          };
-          timer_svc_.schedule(10,  background_process);
-        }
-        
-        // we allow 2 old block to stay in memory so give time
-        // to the user to use our buffer
-        if( act_block_ > 2 )
-        {
-          collector_->erase(act_block_-3);
-        }
-        
-        if( rt.get_msec() > 2000 )
-        {
-          double msec = ((0.0+rt.get_usec())/1000.0);
-          LOG_INFO("stream" <<
-                    V_(last) <<
-                    V_(act_block_) <<
-                    V_(max_block) <<
-                    V_(n_columns) <<
-                    V_(n_queued) <<
-                    V_(n_done) <<
-                    V_(n_received) <<
-                    V_(blocks_needed) <<
-                    V_(n_proc_stared) <<
-                    V_(n_proc_done) <<
-                    V_(n_proc_succeed) << "---" <<
-                    "took" << V_(msec));
-        }
-
-        return vtr::ok_;
+        return true;
+      }
+      else if( got_columns == 0 && max_block == -1 )
+      {
+        // nothing arrived so the query is most likely dead
+        return false;
       }
       else
       {
-        collector_->process(act_block_+1, 3000, true);
-        
-        n_proc_stared   = collector_->n_process_started();
-        n_proc_done     = collector_->n_done();
-        n_proc_succeed  = collector_->n_process_succeed();
-      }
-      
-      LOG_TRACE("reader array is not yet ready" <<
-                V_(last) <<
-                V_(act_block_) <<
-                V_(max_block) <<
-                V_(n_columns) <<
-                V_(n_queued) <<
-                V_(n_done) <<
-                V_(n_received) <<
-                V_(blocks_needed) <<
-                V_(n_proc_stared) <<
-                V_(n_proc_done) <<
-                V_(n_proc_succeed) << "---" );
-
-      // only ask for chunks if there are missing and we have processed
-      // everything
-      if( blocks_needed > n_received &&
-          n_proc_stared == n_proc_done )
-      {
+        // start a resend request
         std::vector<size_t> cols;
         for( size_t i=0; i<readers_.size(); ++i )
         {
@@ -173,445 +98,17 @@ namespace virtdb { namespace engine {
       }
     }
     
-    LOG_ERROR("aborting read, couldn't get a valid reader array in 4 minutes" <<
-              V_(last) <<
-              V_(act_block_) <<
-              V_(max_block) <<
+    LOG_ERROR("timed out while waiting for data" <<
               V_(n_columns) <<
-              V_(n_queued) <<
-              V_(n_done) <<
-              V_(n_received) <<
+              V_(got_columns) <<
+              V_(max_block) <<
+              V_(last) <<
               V_(blocks_needed) <<
-              V_(n_proc_stared) <<
-              V_(n_proc_done) <<
-              V_(n_proc_succeed) << "---" );
+              V_(n_received) <<
+              V_(i) <<
+              V_(i*timeout_ms));
     
-    return vtr::end_of_stream_;
+    return false;
   }
-  
-  feeder::vtr::status
-  feeder::read_string(size_t col_id,
-                      char ** ptr,
-                      size_t & len,
-                      bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_string(ptr, len) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_string(ptr, len);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_int32(size_t col_id,
-                     int32_t & v,
-                     bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
     
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_int32(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_int32(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_int64(size_t col_id,
-                     int64_t & v,
-                     bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_int64(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_int64(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_uint32(size_t col_id,
-                      uint32_t & v,
-                      bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_uint32(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_uint32(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_uint64(size_t col_id,
-                      uint64_t & v,
-                      bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_uint64(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_uint64(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_double(size_t col_id,
-                      double & v,
-                      bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_double(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_double(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_float(size_t col_id,
-                     float & v,
-                     bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_float(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_float(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_bool(size_t col_id,
-                    bool & v,
-                    bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_bool(v) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_bool(v);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
-  feeder::vtr::status
-  feeder::read_bytes(size_t col_id,
-                     char ** ptr,
-                     size_t & len,
-                     bool & null)
-  {
-    vtr::sptr reader;
-#ifndef RELEASE
-    if( col_id >= readers_.size() )
-    {
-      LOG_ERROR("invalid column id" << V_(col_id));
-      return vtr::status::end_of_stream_;
-    }
-#endif
-    reader = readers_[col_id];
-    
-    // try to read the data
-    feeder::vtr::status ret = (reader.get() ?
-                               reader->read_bytes(ptr, len) :
-                               vtr::status::end_of_stream_);
-    if( ret == vtr::ok_ )
-    {
-      null = reader->read_null();
-      return ret;
-    }
-    else
-    {
-      // try next block only once
-      ret = next_block();
-      if( ret == vtr::ok_ )
-      {
-#ifndef RELEASE
-        if( col_id >= readers_.size() )
-        {
-          LOG_ERROR("invalid column id" << V_(col_id));
-          return vtr::status::end_of_stream_;
-        }
-#endif
-        reader = readers_[col_id];
-        ret = reader->read_bytes(ptr, len);
-        if( ret == vtr::ok_ )
-          null = reader->read_null();
-        return ret;
-      }
-    }
-    return vtr::status::end_of_stream_;
-  }
-  
 }}

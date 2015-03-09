@@ -31,15 +31,67 @@ namespace virtdb { namespace engine {
     virtual ~feeder();
     
     // value_type_reader interface
-    vtr::status read_string(size_t col_id, char ** ptr, size_t & len, bool & null);
-    vtr::status read_int32(size_t col_id, int32_t & v, bool & null);
-    vtr::status read_int64(size_t col_id, int64_t & v, bool & null);
-    vtr::status read_uint32(size_t col_id, uint32_t & v, bool & null);
-    vtr::status read_uint64(size_t col_id, uint64_t & v, bool & null);
-    vtr::status read_double(size_t col_id, double & v, bool & null);
-    vtr::status read_float(size_t col_id, float & v, bool & null);
-    vtr::status read_bool(size_t col_id, bool & v, bool & null);
-    vtr::status read_bytes(size_t col_id, char ** ptr, size_t & len, bool & null);
+    inline vtr::status
+    read_string(size_t col_id, char ** ptr, size_t & len, bool & null)
+    {
+      return readers_[col_id]->read_string(ptr, len, null);
+    }
+    
+    inline vtr::status
+    read_int32(size_t col_id, int32_t & v, bool & null)
+    {
+      return readers_[col_id]->read_int32(v, null);
+    }
+    
+    inline vtr::status
+    read_int64(size_t col_id, int64_t & v, bool & null)
+    {
+      return readers_[col_id]->read_int64(v, null);
+    }
+    
+    inline vtr::status
+    read_uint32(size_t col_id, uint32_t & v, bool & null)
+    {
+      return readers_[col_id]->read_uint32(v, null);
+    }
+    
+    inline vtr::status
+    read_uint64(size_t col_id, uint64_t & v, bool & null)
+    {
+      return readers_[col_id]->read_uint64(v, null);
+    }
+    
+    inline vtr::status
+    read_double(size_t col_id, double & v, bool & null)
+    {
+      return readers_[col_id]->read_double(v, null);
+    }
+    
+    inline vtr::status
+    read_float(size_t col_id, float & v, bool & null)
+    {
+      return readers_[col_id]->read_float(v, null);
+    }
+    
+    inline vtr::status
+    read_bool(size_t col_id, bool & v, bool & null)
+    {
+      return readers_[col_id]->read_bool(v, null);
+    }
+    
+    inline vtr::status
+    read_bytes(size_t col_id, char ** ptr, size_t & len, bool & null)
+    {
+      return readers_[col_id]->read_bytes(ptr, len, null);
+    }
+    
+    inline bool
+    has_more() const
+    {
+      return readers_[0]->has_more();
+    }
+    
+    bool fetch_next();
     
     const util::relative_time & timer() const;
   };

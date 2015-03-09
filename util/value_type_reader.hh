@@ -48,6 +48,7 @@ namespace virtdb { namespace util {
     virtual inline status read_float(float & v)                   { return type_mismatch_; }
     virtual inline status read_bool(bool & v)                     { return type_mismatch_; }
     virtual inline status read_bytes(char ** ptr, size_t & len)   { return type_mismatch_; }
+    virtual inline bool   has_more() const                        { return false;          }
     
     inline size_t null_pos() const { return null_pos_; }
     inline size_t n_nulls()  const { return nulls_.size(); }
@@ -60,6 +61,18 @@ namespace virtdb { namespace util {
       ++null_pos_;
       return ret;
     }
+    
+    // return the null value too
+    // all input types have a corresponding reader class
+    virtual inline status read_string(char ** ptr, size_t & len, bool & null)  { return type_mismatch_; }
+    virtual inline status read_int32(int32_t & v, bool & null)                 { return type_mismatch_; }
+    virtual inline status read_int64(int64_t & v, bool & null)                 { return type_mismatch_; }
+    virtual inline status read_uint32(uint32_t & v, bool & null)               { return type_mismatch_; }
+    virtual inline status read_uint64(uint64_t & v, bool & null)               { return type_mismatch_; }
+    virtual inline status read_double(double & v, bool & null)                 { return type_mismatch_; }
+    virtual inline status read_float(float & v, bool & null)                   { return type_mismatch_; }
+    virtual inline status read_bool(bool & v, bool & null)                     { return type_mismatch_; }
+    virtual inline status read_bytes(char ** ptr, size_t & len, bool & null)   { return type_mismatch_; }
     
     virtual ~value_type_reader() {}
   };
@@ -92,12 +105,51 @@ namespace virtdb { namespace util {
 
       template <typename X>
       inline status
+      read32(X & v, bool & null)
+      {
+        int pos = is_.CurrentPosition();
+        if( pos < endpos_ )
+        {
+          null = read_null();
+          is_.ReadVarint32(&v);
+          return ok_;
+        }
+        else
+        {
+          return end_of_stream_;
+        }
+      }
+      
+      inline bool has_more() const
+      {
+        return ( is_.CurrentPosition() < endpos_ );
+      }
+      
+      template <typename X>
+      inline status
       read64(X & v)
       {
         int pos = is_.CurrentPosition();
         if( pos < endpos_ )
         {
           is_.ReadVarint64(&v);
+          return ok_;
+        }
+        else
+        {
+          return end_of_stream_;
+        }
+      }
+
+      template <typename X>
+      inline status
+      read64(X & v, bool & null)
+      {
+        int pos = is_.CurrentPosition();
+        if( pos < endpos_ )
+        {
+          is_.ReadVarint64(&v);
+          null = read_null();
           return ok_;
         }
         else
@@ -113,6 +165,22 @@ namespace virtdb { namespace util {
         if( pos < endpos_ )
         {
           is_.ReadRaw(&v, sizeof(data_t));
+          return ok_;
+        }
+        else
+        {
+          return end_of_stream_;
+        }
+      }
+
+      inline status
+      read(data_t & v, bool & null)
+      {
+        int pos = is_.CurrentPosition();
+        if( pos < endpos_ )
+        {
+          is_.ReadRaw(&v, sizeof(data_t));
+          null = read_null();
           return ok_;
         }
         else
@@ -167,6 +235,31 @@ namespace virtdb { namespace util {
           return end_of_stream_;
         }
       }
+
+      virtual inline status
+      read(char ** ptr, size_t & rlen, bool & null)
+      {
+        if( next_tag_ == TAG )
+        {
+          uint32_t len = 0;
+          is_.ReadVarint32(&len);
+          *ptr = buffer_.get()+is_.CurrentPosition();
+          rlen = len;
+          is_.Skip(len);
+          next_tag_ = is_.ReadTag();
+          null = read_null();
+          return ok_;
+        }
+        else
+        {
+          return end_of_stream_;
+        }
+      }
+      
+      inline bool has_more() const
+      {
+        return ( next_tag_ == TAG );
+      }
       
       buffer_reader(buffer && buf, size_t len, size_t start_pos)
       : value_type_reader(std::move(buf),len),
@@ -184,6 +277,7 @@ namespace virtdb { namespace util {
     public:
       typedef buffer_reader<((2<<3)+2)> parent_t;
       virtual inline status read_string(char ** ptr, size_t & len) { return read(ptr,len); }
+      virtual inline status read_string(char ** ptr, size_t & len, bool & null) { return read(ptr,len, null); }
       string_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~string_reader() {}
     };
@@ -196,6 +290,13 @@ namespace virtdb { namespace util {
       {
         uint32_t n = 0;
         auto ret = read32(n);
+        v = n;
+        return ret;
+      }
+      virtual inline status read_int32(int32_t & v, bool & null)
+      {
+        uint32_t n = 0;
+        auto ret = read32(n, null);
         v = n;
         return ret;
       }
@@ -214,6 +315,13 @@ namespace virtdb { namespace util {
         v = n;
         return ret;
       }
+      virtual inline status read_int64(int64_t & v, bool & null)
+      {
+        uint64_t n = 0;
+        auto ret = read64(n, null);
+        v = n;
+        return ret;
+      }
       int64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~int64_reader() {}
     };
@@ -223,6 +331,7 @@ namespace virtdb { namespace util {
     public:
       typedef packed_reader<uint32_t,((5<<3)+2)> parent_t;
       virtual inline status read_uint32(uint32_t & v) { return read32(v); }
+      virtual inline status read_uint32(uint32_t & v, bool & null) { return read32(v,null); }
       uint32_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~uint32_reader() {}
     };
@@ -232,6 +341,7 @@ namespace virtdb { namespace util {
     public:
       typedef packed_reader<uint64_t,((6<<3)+2)> parent_t;
       virtual inline status read_uint64(uint64_t & v) { return read64(v); }
+      virtual inline status read_uint64(uint64_t & v, bool & null) { return read64(v,null); }
       uint64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~uint64_reader() {}
     };
@@ -241,6 +351,7 @@ namespace virtdb { namespace util {
     public:
       typedef packed_reader<double,((7<<3)+2)> parent_t;
       virtual inline status read_double(double & v) { return read(v); }
+      virtual inline status read_double(double & v, bool & null) { return read(v,null); }
       double_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~double_reader() {}
     };
@@ -250,6 +361,7 @@ namespace virtdb { namespace util {
     public:
       typedef packed_reader<float,((8<<3)+2)> parent_t;
       virtual inline status read_float(float & v) { return read(v); }
+      virtual inline status read_float(float & v, bool & null) { return read(v,null); }
       float_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~float_reader() {}
     };
@@ -265,6 +377,13 @@ namespace virtdb { namespace util {
         v = (v32 != 0);
         return ret;
       }
+      virtual inline status read_bool(bool & v, bool & null)
+      {
+        uint32_t v32 = 0;
+        auto ret = read32(v32, null);
+        v = (v32 != 0);
+        return ret;
+      }
       bool_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~bool_reader() {}
     };
@@ -274,6 +393,7 @@ namespace virtdb { namespace util {
     public:
       typedef buffer_reader<((10<<3)+2)> parent_t;
       virtual inline status read_bytes(char ** ptr, size_t & len) { return read(ptr,len); }
+      virtual inline status read_bytes(char ** ptr, size_t & len, bool & null) { return read(ptr,len,null); }
       bytes_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~bytes_reader() {}
     };

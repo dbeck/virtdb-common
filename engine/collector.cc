@@ -9,6 +9,7 @@
 #include <logger.hh>
 #include <functional>
 #include <lz4/lib/lz4.h>
+#include <util/relative_time.hh>
 
 namespace virtdb { namespace engine {
   
@@ -126,93 +127,99 @@ namespace virtdb { namespace engine {
     collector_.insert(block_id, col_id, i);
   }
   
-  bool
-  collector::process(size_t block_id,
-                     uint64_t timeout_ms,
-                     bool wait_ready)
+  void
+  collector::background_process(size_t block_id)
   {
-    LOG_SCOPED("processing" << V_(block_id) << V_(timeout_ms) << V_(wait_ready));
+    auto row = collector_.get(block_id, 1);
     
-    auto row = collector_.get(block_id, timeout_ms);
-    
-    size_t n_cols    = 0;
-    size_t n_pushed  = 0;
-    
-    // if( row.second == collector_.n_columns() )
+    for( auto & i : row.first )
     {
-      for( auto & i : row.first )
+      if( i.get() )
       {
-        if( i.get() )
+        if( !i->reader_ )
         {
-          if( !i->reader_ )
-          {
-            ++n_process_started_;
-            queue_.push(i);
-            ++n_pushed;
-          }
-          ++n_cols;
+          ++n_process_started_;
+          queue_.push(i);
         }
-      }
-    }
-    
-    if( wait_ready == false )
-    {
-      return (n_cols == collector_.n_columns());
-    }
-    else if( n_pushed == 0 )
-    {
-      return (n_cols == collector_.n_columns());
-    }
-    else
-    {
-      bool wait_res = queue_.wait_empty(std::chrono::milliseconds(timeout_ms));
-      if( !wait_res )
-      {
-        return false;
-      }
-      else
-      {
-        return (n_cols == collector_.n_columns());
       }
     }
   }
   
-  bool
+  size_t
   collector::get(size_t block_id,
-                 reader_sptr_vec & rdrs,
-                 uint64_t timeout_ms)
+                 uint64_t data_timeout_ms,
+                 uint64_t process_timeout_ms,
+                 reader_sptr_vec & results)
   {
-    LOG_SCOPED(V_(block_id) << V_(timeout_ms) << V_(collector_.missing_columns(block_id)));
-    size_t n_processed = 0;
-    reader_sptr_vec result;
+    LOG_SCOPED("processing" << V_(block_id) << V_(data_timeout_ms) << V_(process_timeout_ms));
     
-    auto row = collector_.get(block_id, timeout_ms);
+    auto row = collector_.get(block_id, data_timeout_ms);
     
-    for( auto & c : row.first )
+    if( row.second != collector_.n_columns() )
     {
-      if( c.get() && c->reader_.get() )
+      LOG_ERROR("timed out while waiting for data" <<
+                V_(block_id)  <<
+                V_(data_timeout_ms) <<
+                V_(row.second) );
+      return false;
+    }
+    
+    size_t n_ok      = 0;
+    size_t n_pushed  = 0;
+    
+    results.clear();
+    
+    for( auto & i : row.first )
+    {
+      if( i.get() )
       {
-        result.push_back(c->reader_);
-        ++n_processed;
+        if( !i->reader_ )
+        {
+          ++n_process_started_;
+          queue_.push(i);
+          ++n_pushed;
+          results.push_back(reader_sptr());
+        }
+        else
+        {
+          ++n_ok;
+          results.push_back(i->reader_);
+        }
       }
       else
       {
-        result.push_back(reader_sptr());
+        results.push_back(reader_sptr());
       }
     }
     
-    bool retval = ((row.second == collector_.n_columns()) &&
-                   (n_processed == collector_.n_columns()));
-    
-    LOG_TRACE("get result" <<
-              V_(row.second) <<
-              V_(n_processed) <<
-              V_(collector_.n_columns()) <<
-              V_(retval));
-    
-    if( retval ) result.swap(rdrs);
-    
-    return retval;
+    if( n_pushed == 0 &&
+        n_process_started() == n_process_done() )
+    {
+      return n_ok;
+    }
+    else
+    {
+      results.clear();
+      queue_.wait_empty(std::chrono::milliseconds(process_timeout_ms));
+
+      n_ok = 0;
+      row = collector_.get(block_id, 1);
+      
+      for( auto & i : row.first )
+      {
+        if( i.get() && i->reader_ )
+        {
+          ++n_ok;
+          results.push_back(i->reader_);
+        }
+        else
+        {
+          results.push_back(reader_sptr());
+        }
+      }
+      
+      return n_ok;
+    }
   }
   
   void
