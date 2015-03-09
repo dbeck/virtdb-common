@@ -42,14 +42,11 @@ TEST_F(UtilTableCollectorTest, Basic)
 {
   table_collector<int> q(3);
   EXPECT_FALSE(q.stopped());
-  EXPECT_EQ(q.last_updated(0), 0);
-  EXPECT_EQ(q.last_updated(1000), 0);
   auto const & val0 = q.get(0,200);
   EXPECT_EQ(val0.first.empty(), true);
   EXPECT_EQ(val0.second, 0);
   std::shared_ptr<int> i(new int{1});
   q.insert(0, 0, i);
-  EXPECT_NE(q.last_updated(0), 0);
   q.insert(0, 1, i);
   auto const & val1 = q.get(0,200);
   EXPECT_FALSE(val1.first.empty());

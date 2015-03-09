@@ -29,10 +29,9 @@ namespace virtdb { namespace util {
     class block
     {
       size_t               n_ok_;
-      uint64_t             last_updated_ms_;
       row_data             data_;
       size_t               n_columns_;
-      mutable std::mutex   mtx_;
+      // mutable std::mutex   mtx_;
       
     public:
       block(const block & other);
@@ -49,8 +48,8 @@ namespace virtdb { namespace util {
       size_t count_non_nil() const;
       size_t count_nil() const;
 
-      void set_col(size_t col_id,
-                   item_sptr b);
+      size_t set_col(size_t col_id,
+                     item_sptr b);
       
     private:
       block() = delete;
@@ -91,7 +90,6 @@ namespace virtdb { namespace util {
   template <typename T>
   table_collector<T>::table_collector::block::block(const block & other)
   : n_ok_{other.n_ok_},
-    last_updated_ms_{other.last_updated_ms_},
     data_{other.data_},
     n_columns_{other.n_columns_}
   {
@@ -100,7 +98,6 @@ namespace virtdb { namespace util {
   template <typename T>
   table_collector<T>::table_collector::block::block(size_t n_columns)
   : n_ok_{0},
-    last_updated_ms_{0},
     data_(n_columns, item_sptr()),
     n_columns_{n_columns}
   {
@@ -128,32 +125,10 @@ namespace virtdb { namespace util {
   }
   
   template <typename T>
-  uint64_t
-  table_collector<T>::table_collector::block::last_updated_ms() const
-  {
-    uint64_t ret = 0;
-    {
-      lock l(mtx_);
-      ret = last_updated_ms_;
-    }
-    return ret;
-  }
-
-  template <typename T>
-  void
-  table_collector<T>::table_collector::block::last_updated_ms(uint64_t last_updated)
-  {
-    lock l(mtx_);
-    last_updated_ms_ = last_updated;
-  }
-  
-  template <typename T>
   void
   table_collector<T>::table_collector::block::reset()
   {
-    std::unique_lock<std::mutex> l(mtx_);
     n_ok_             = 0;
-    last_updated_ms_  = 0;
     for( auto & d : data_ )
       d.reset();
   }
@@ -162,12 +137,7 @@ namespace virtdb { namespace util {
   bool
   table_collector<T>::table_collector::block::ok() const
   {
-    bool ret = false;
-    {
-      lock l(mtx_);
-      ret = (n_ok_ == n_columns_);
-    }
-    return ret;
+    return (n_ok_ == n_columns_);
   }
   
   template <typename T>
@@ -176,7 +146,6 @@ namespace virtdb { namespace util {
   {
     size_t ret = 0;
     {
-      lock l(mtx_);
       for( auto const & r : data_ )
         if( r.get() ) ++ret;
     }
@@ -189,7 +158,6 @@ namespace virtdb { namespace util {
   {
     size_t ret = 0;
     {
-      lock l(mtx_);
       for( auto const & r : data_ )
         if( !r.get() ) ++ret;
     }
@@ -198,12 +166,10 @@ namespace virtdb { namespace util {
 
 
   template <typename T>
-  void
+  size_t
   table_collector<T>::table_collector::block::set_col(size_t col_id,
                                                       item_sptr b)
   {
-    lock l(mtx_);
-    
     auto & dptr = data_[col_id];
     if( !dptr && b )
     {
@@ -213,7 +179,7 @@ namespace virtdb { namespace util {
     
     // update pointer and timestamp
     dptr = b;
-    last_updated_ms_ = relative_time::instance().get_msec();
+    return n_ok_;
   }
   
   // implementation of table_collector
@@ -280,9 +246,10 @@ namespace virtdb { namespace util {
     }
     
     // set column
-    it->second.set_col(col_id, b);
+    size_t prev_ok = it->second.n_ok();
+    size_t n_ok    = it->second.set_col(col_id, b);
     
-    if( it->second.ok() )
+    if( prev_ok != n_ok )
     {
       // we have enough columns for this block, tell everyone waiting
       cond_.notify_all();
