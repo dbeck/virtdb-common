@@ -41,7 +41,7 @@ namespace virtdb { namespace engine {
     if( last != -1 && act_block_ == last )
     {
       // no more data to be read
-      return vtr::end_of_stream_;
+      return false;
     }
     
     size_t timeout_ms = 30000;
