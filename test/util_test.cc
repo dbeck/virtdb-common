@@ -38,6 +38,60 @@ namespace
 
 #define MEASURE_ME measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
 
+TEST_F(UtilTableCollectorTest, MultiThreaded)
+{
+  table_collector<int> q{3};
+  auto entry = [&q] {
+    for( size_t i = 0; i < 10000; ++i )
+    {
+      for( size_t ii = 0; ii<3; ++ii )
+      {
+        q.insert(i, ii, std::shared_ptr<int>(new int {(int)((10000*ii)+i)}));
+      }
+    }
+  };
+  {
+    std::thread publisher(entry);
+    MEASURE_ME;
+    {
+      MEASURE_ME;
+      for( size_t i=0; i<10000; ++i )
+      {
+        auto ro = q.get(i,30000);
+      }
+    }
+    publisher.join();
+  }
+}
+
+TEST_F(UtilTableCollectorTest, MultiThreaded2)
+{
+  table_collector<int> q{3};
+  auto entry = [&q] {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    for( size_t i = 0; i < 10000; ++i )
+    {
+      for( size_t ii = 0; ii<3; ++ii )
+      {
+        q.insert(i, ii, std::shared_ptr<int>(new int {(int)((10000*ii)+i)}));
+      }
+    }
+  };
+  {
+    std::thread publisher(entry);
+    MEASURE_ME;
+    {
+      MEASURE_ME;
+      for( size_t i=0; i<10000; ++i )
+      {
+        auto ro = q.get(i,30000);
+      }
+    }
+    publisher.join();
+  }
+}
+
+
 TEST_F(UtilTableCollectorTest, Basic)
 {
   table_collector<int> q(3);
