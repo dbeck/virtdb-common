@@ -50,6 +50,11 @@ namespace virtdb { namespace engine {
     size_t got_columns = 0;
     int i = 0;
     
+    // resend map
+    std::map<size_t, size_t> next_resend;
+    for( size_t i=0; i<n_columns; ++i )
+      next_resend[i] = 0;
+    
     // we try for 30 seconds
     while( rt.get_msec() < 30000 )
     {
@@ -82,7 +87,6 @@ namespace virtdb { namespace engine {
       n_columns       = collector_->n_columns();
       blocks_needed   = n_columns*(max_block+1);
       n_received      = collector_->n_received();
-      
 
       if( got_columns == 0 && max_block == -1 )
       {
@@ -97,27 +101,31 @@ namespace virtdb { namespace engine {
                    V_(blocks_needed) <<
                    V_(n_received));
         }
-        
-        timeout_ms += 50;
       }
-      else
+      else if( rt.get_msec() > 2000 )
       {
-        // start a resend request
+        // start a resend requests after 2 seconds
         std::vector<size_t> cols;
         for( size_t i=0; i<readers_.size(); ++i )
         {
           if( readers_[i].get() == nullptr )
           {
-            cols.push_back(i);
+            // check if resending of this column is allowed
+            if( next_resend[i] < rt.get_msec() )
+            {
+              cols.push_back(i);
+              // never resend more often than 5 seconds
+              next_resend[i] = rt.get_msec() + 5000;
+            }
           }
         }
         
         if( cols.size() )
         {
           collector_->resend(act_block_+1, cols);
-          timeout_ms += 100;
         }
       }
+      timeout_ms += 50;
     }
     
     LOG_ERROR("timed out while waiting for data" <<
