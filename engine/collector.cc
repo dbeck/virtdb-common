@@ -157,11 +157,10 @@ namespace virtdb { namespace engine {
     
     if( row.second != collector_.n_columns() )
     {
-      LOG_ERROR("timed out while waiting for data" <<
+      LOG_TRACE("timed out while waiting for data" <<
                 V_(block_id)  <<
                 V_(data_timeout_ms) <<
                 V_(row.second) );
-      return false;
     }
     
     size_t n_ok      = 0;
