@@ -38,18 +38,20 @@ namespace virtdb { namespace engine {
     auto blocks_needed   = n_columns*(max_block+1);
     auto n_received      = collector_->n_received();
     
+    util::relative_time rt;
+    
     if( last != -1 && act_block_ == last )
     {
       // no more data to be read
       return false;
     }
     
-    size_t timeout_ms = 3000;
+    size_t timeout_ms = 50;
     size_t got_columns = 0;
     int i = 0;
     
-    // we try a few times to gather the data
-    for( i=0; i<10; ++i )
+    // we try for 30 seconds
+    while( rt.get_msec() < 30000 )
     {
       got_columns = collector_->get(act_block_+1,
                                     timeout_ms,
@@ -74,23 +76,28 @@ namespace virtdb { namespace engine {
         
         return true;
       }
-      
       last            = collector_->last_block_id();
       max_block       = collector_->max_block_id();
       n_columns       = collector_->n_columns();
       blocks_needed   = n_columns*(max_block+1);
       n_received      = collector_->n_received();
+      
 
       if( got_columns == 0 && max_block == -1 )
       {
-        // nothing arrived so the query is most likely dead
-        LOG_INFO("Waiting for the first block to arrive" <<
-                 V_(timeout_ms) <<
-                 V_(got_columns) <<
-                 V_(max_block) <<
-                 V_(n_columns) <<
-                 V_(blocks_needed) <<
-                 V_(n_received));
+        if( rt.get_msec() > 5000 )
+        {
+          // nothing arrived so the query is most likely dead
+          LOG_INFO("Waiting for the first block to arrive" <<
+                   V_(timeout_ms) <<
+                   V_(got_columns) <<
+                   V_(max_block) <<
+                   V_(n_columns) <<
+                   V_(blocks_needed) <<
+                   V_(n_received));
+        }
+        
+        timeout_ms += 50;
       }
       else
       {
@@ -107,6 +114,9 @@ namespace virtdb { namespace engine {
         {
           collector_->resend(act_block_+1, cols);
         }
+        
+        if( cols.size() ) { timeout_ms += 100; }
+        else              { timeout_ms  = 100;  }
       }
     }
     
