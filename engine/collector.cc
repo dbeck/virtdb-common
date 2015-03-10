@@ -192,9 +192,15 @@ namespace virtdb { namespace engine {
       }
     }
     
-    if( n_pushed == 0 &&
-        n_process_started() == n_process_done() )
+    if( n_ok == n_columns() )
     {
+      // we have all readers here
+      return n_ok;
+    }
+    else if( n_pushed == 0 &&
+             n_process_started() == n_process_done() )
+    {
+      // pushed none and all blocks processed
       return n_ok;
     }
     else
