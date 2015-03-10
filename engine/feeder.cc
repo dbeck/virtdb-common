@@ -117,18 +117,6 @@ namespace virtdb { namespace engine {
           collector_->resend(act_block_+1, cols);
           timeout_ms += 100;
         }
-        else if( readers_.size() == n_columns )
-        {
-          LOG_INFO("breaking loop because all readers arrived" <<
-                   V_(timeout_ms) <<
-                   V_(got_columns) <<
-                   V_(max_block) <<
-                   V_(n_columns) <<
-                   V_(blocks_needed) <<
-                   V_(n_received));
-          
-          return true;
-        }
       }
     }
     
