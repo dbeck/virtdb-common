@@ -56,7 +56,8 @@ namespace virtdb { namespace connector {
     std::mutex                              log_mtx_;
 
     void
-    publish_log(rep_base_type::rep_item_sptr rep_sptr);
+    publish_log(const rep_base_type::req_item& req,
+                rep_base_type::rep_item_sptr rep_sptr);
     
     void process_replies(const rep_base_type::req_item & req,
                          rep_base_type::send_rep_handler handler);

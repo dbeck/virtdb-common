@@ -27,7 +27,8 @@ namespace virtdb { namespace connector {
                             std::placeholders::_2),
                   std::bind(&log_record_server::publish_log,
                             this,
-                            std::placeholders::_1),
+                            std::placeholders::_1,
+                            std::placeholders::_2),
                   pb::ServiceType::GET_LOGS),
     log_process_queue_(1,
                        std::bind(&log_record_server::process_function,
@@ -67,7 +68,8 @@ namespace virtdb { namespace connector {
   }
                   
   void
-  log_record_server::publish_log(rep_base_type::rep_item_sptr rep_sptr)
+  log_record_server::publish_log(const rep_base_type::req_item& req,
+                                 rep_base_type::rep_item_sptr rep_sptr)
   {
     // Nothing to do here
   }

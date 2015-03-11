@@ -19,7 +19,8 @@ namespace virtdb { namespace connector {
                             std::placeholders::_2),
                   std::bind(&meta_data_server::publish_meta,
                             this,
-                            std::placeholders::_1),
+                            std::placeholders::_1,
+                            std::placeholders::_2),
                   pb::ServiceType::META_DATA),
     pub_base_type(cfg_client,
                   pb::ServiceType::META_DATA)
@@ -40,7 +41,8 @@ namespace virtdb { namespace connector {
   }
   
   void
-  meta_data_server::publish_meta(rep_base_type::rep_item_sptr rep_sptr)
+  meta_data_server::publish_meta(const rep_base_type::req_item&,
+                                 rep_base_type::rep_item_sptr)
   {
     // TODO : what do we publish here ... ????
   }

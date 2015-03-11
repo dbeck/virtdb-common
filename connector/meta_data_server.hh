@@ -34,7 +34,8 @@ namespace virtdb { namespace connector {
     std::mutex                    watch_mtx_;
     std::mutex                    wildcard_cache_mtx_;
     
-    void publish_meta(rep_base_type::rep_item_sptr);
+    void publish_meta(const rep_base_type::req_item&,
+                      rep_base_type::rep_item_sptr);
     void process_replies(const rep_base_type::req_item & req,
                          rep_base_type::send_rep_handler handler);
     
