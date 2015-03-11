@@ -86,7 +86,8 @@ namespace virtdb { namespace connector {
       }
       
       LOG_INFO("publishing config" << V_(subscription) << V_(rep->name()) << V_(hash) << V_(suppress));
-      publish(subscription,rep);
+      if( !suppress )
+        publish(subscription,rep);
     }
   }
   
