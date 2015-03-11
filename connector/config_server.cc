@@ -79,21 +79,14 @@ namespace virtdb { namespace connector {
       {
         lock l(mtx_);
         auto it = hashes_.find(request.name());
-        if( it != hashes_.end() && it->second == hash )
+        if( it != hashes_.end() && it->second == hash && !hash.empty() )
           suppress = true;
         else
           hashes_[request.name()] = hash;
       }
       
-      if( !suppress )
-      {
-        LOG_TRACE("publishing" << V_(subscription) << M_(*rep) << V_(hash));
-        publish(subscription,rep);
-      }
-      else
-      {
-        LOG_TRACE("not publishing" << V_(subscription) << M_(*rep) << V_(hash));
-      }
+      LOG_INFO("publishing config" << V_(subscription) << V_(rep->name()) << V_(hash) << V_(suppress));
+      publish(subscription,rep);
     }
   }
   
@@ -104,27 +97,29 @@ namespace virtdb { namespace connector {
     rep_base_type::rep_item_sptr ret;
     LOG_TRACE("config request arrived" << M_(request));
     
-    lock l(mtx_);
-    auto cfg_it = configs_.find(request.name());
-    
-    if( cfg_it != configs_.end() && !request.configdata_size() )
     {
-      ret = rep_item_sptr{new rep_base_type::rep_item(cfg_it->second)};
-    }
-    
-    if( request.configdata_size() )
-    {
-      // save config data
-      if( cfg_it != configs_.end() )
-        configs_.erase(cfg_it);
+      lock l(mtx_);
+      auto cfg_it = configs_.find(request.name());
       
-      configs_[request.name()] = request;
-    }
-    
-    if( !ret )
-    {
-      // send back the original request
-      ret = rep_item_sptr{new rep_base_type::rep_item(request)};
+      if( cfg_it != configs_.end() && !request.configdata_size() )
+      {
+        ret = rep_item_sptr{new rep_base_type::rep_item(cfg_it->second)};
+      }
+      
+      if( request.configdata_size() )
+      {
+        // save config data
+        if( cfg_it != configs_.end() )
+          configs_.erase(cfg_it);
+        
+        configs_[request.name()] = request;
+      }
+      
+      if( !ret )
+      {
+        // send back the original request
+        ret = rep_item_sptr{new rep_base_type::rep_item(request)};
+      }
     }
     
     handler(ret,false);
