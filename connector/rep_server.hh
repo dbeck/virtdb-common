@@ -25,7 +25,8 @@ namespace virtdb { namespace connector {
                                bool has_more)>              send_rep_handler;
     typedef std::function<void(const req_item & request,
                                send_rep_handler sender)>    rep_handler;
-    typedef std::function<void(rep_item_sptr)>              on_reply;
+    typedef std::function<void(const req_item & request,
+                               rep_item_sptr reply)>        on_reply;
     
   private:
     zmq::context_t                   zmqctx_;
@@ -67,8 +68,8 @@ namespace virtdb { namespace connector {
         {
           try
           {
-            rep_handler_(req,[this](const rep_item_sptr & rep,
-                                    bool has_more) {
+            rep_handler_(req,[this,&req](const rep_item_sptr & rep,
+                                         bool has_more) {
               if( rep )
               {
                 int rep_size = rep->ByteSize();
@@ -91,7 +92,7 @@ namespace virtdb { namespace connector {
                     }
                   }
                   
-                  on_reply_(std::move(rep));
+                  on_reply_(req, std::move(rep));
                 }
                 else
                 {

@@ -7,6 +7,8 @@
 #include <logger.hh>
 #include <util/net.hh>
 #include <util/flex_alloc.hh>
+#include <util/hex_util.hh>
+#include <xxhash.h>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -37,7 +39,8 @@ namespace virtdb { namespace connector {
                             std::placeholders::_2),
                   std::bind(&config_server::publish_config,
                             this,
-                            std::placeholders::_1),
+                            std::placeholders::_1,
+                            std::placeholders::_2),
                   pb::ServiceType::CONFIG),
     pub_base_type(cfg_client,
                   pb::ServiceType::CONFIG),
@@ -60,13 +63,37 @@ namespace virtdb { namespace connector {
   }
   
   void
-  config_server::publish_config(rep_base_type::rep_item_sptr rep)
+  config_server::publish_config(const rep_base_type::req_item & request,
+                                rep_base_type::rep_item_sptr rep)
   {
     if( rep && rep->has_name() )
     {
+      // generate a hash on the request
+      std::string hash;
+      std::string msg_string{request.DebugString()};
+      util::hex_util(XXH64(msg_string.c_str(), msg_string.size(), 0), hash);
+      
       std::string subscription{rep->name()};
-      LOG_SCOPED("publishing" << V_(subscription) << M_(*rep));
-      publish(subscription,rep);
+      
+      bool suppress = false;
+      {
+        lock l(mtx_);
+        auto it = hashes_.find(request.name());
+        if( it != hashes_.end() && it->second == hash )
+          suppress = true;
+        else
+          hashes_[request.name()] = hash;
+      }
+      
+      if( !suppress )
+      {
+        LOG_TRACE("publishing" << V_(subscription) << M_(*rep) << V_(hash));
+        publish(subscription,rep);
+      }
+      else
+      {
+        LOG_TRACE("not publishing" << V_(subscription) << M_(*rep) << V_(hash));
+      }
     }
   }
   

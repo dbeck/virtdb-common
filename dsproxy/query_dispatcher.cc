@@ -91,7 +91,21 @@ namespace virtdb { namespace dsproxy {
   {
     if( !q )
     {
-      LOG_ERROR("invalid queue ptr");
+      LOG_ERROR("invalid query ptr");
+      return;
+    }
+    
+    if( !q->has_queryid() ||
+       !q->has_table() ||
+       !q->fields_size() )
+    {
+      LOG_ERROR("cannot handle invalid query" <<
+                V_(q->queryid()) <<
+                V_(q->table()) <<
+                V_(q->schema()) <<
+                V_(q->fields_size()) <<
+                V_(q->limit()) <<
+                V_(q->filter_size()));
       return;
     }
     

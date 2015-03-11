@@ -21,7 +21,7 @@ namespace virtdb { namespace engine {
     typedef std::vector<size_t>                        col_vec;
     typedef std::function<void(size_t block_id,
                                const col_vec & cols)>  resend_function;
-    
+
   private:
     struct item
     {
@@ -32,7 +32,7 @@ namespace virtdb { namespace engine {
       size_t         col_id_;
     };
     
-    typedef util::table_collector<item>         collector_t;
+    typedef util::table_collector<item,23>      collector_t;
     typedef util::active_queue<item::sptr,50>   process_queue_t;
 
     collector_t            collector_;

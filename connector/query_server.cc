@@ -80,6 +80,22 @@ namespace virtdb { namespace connector {
   query_server::handler_function(query_sptr qsptr)
   {
     lock l(monitors_mtx_);
+    
+    if( !qsptr->has_queryid() ||
+        !qsptr->has_table()   ||
+        !qsptr->fields_size() )
+    {
+      auto q = qsptr;
+      LOG_ERROR("cannot handle invalid query" <<
+                V_(q->queryid()) <<
+                V_(q->table()) <<
+                V_(q->schema()) <<
+                V_(q->fields_size()) <<
+                V_(q->limit()) <<
+                V_(q->filter_size()));
+      return;
+    }
+    
     // query monitors
     const std::string & n = name();
     fire_monitors(query_monitors_, qsptr, qsptr->queryid(), n);

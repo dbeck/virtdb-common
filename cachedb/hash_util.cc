@@ -101,7 +101,14 @@ namespace virtdb { namespace cachedb {
     catch (char non_important)
     {
       const char txt[2] = { non_important, 0 };
-      LOG_ERROR("failed to hash query" << M_(in) << V_((const char *)txt));
+      LOG_ERROR("failed to hash query" <<
+                V_(in.queryid()) <<
+                V_(in.has_table()) <<
+                V_(in.has_schema()) <<
+                V_(in.fields_size()) <<
+                V_(in.filter_size()) <<
+                V_(in.has_limit()) <<
+                V_((const char *)txt));
       tmp_tab_out = xxh_error;
       tmp_cols_out.clear();
       ret = false;

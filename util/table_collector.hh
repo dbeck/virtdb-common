@@ -14,7 +14,7 @@
 
 namespace virtdb { namespace util {
 
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS=50>
   class table_collector final
   {
     typedef std::unique_lock<std::mutex>     lock;
@@ -28,10 +28,8 @@ namespace virtdb { namespace util {
     
     class block
     {
-      size_t               n_ok_;
       row_data             data_;
       size_t               n_columns_;
-      // mutable std::mutex   mtx_;
       
     public:
       block(const block & other);
@@ -43,13 +41,11 @@ namespace virtdb { namespace util {
       
       void last_updated_ms(uint64_t last_updated);
       void reset();
-      bool ok() const;
-      size_t n_ok() const;
       size_t count_non_nil() const;
       size_t count_nil() const;
 
-      size_t set_col(size_t col_id,
-                     item_sptr b);
+      void set_col(size_t col_id,
+                   item_sptr b);
       
     private:
       block() = delete;
@@ -87,62 +83,45 @@ namespace virtdb { namespace util {
   
   // implementation of table_collector::block
   
-  template <typename T>
-  table_collector<T>::table_collector::block::block(const block & other)
-  : n_ok_{other.n_ok_},
-    data_{other.data_},
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::block(const block & other)
+  : data_{other.data_},
     n_columns_{other.n_columns_}
   {
   }
   
-  template <typename T>
-  table_collector<T>::table_collector::block::block(size_t n_columns)
-  : n_ok_{0},
-    data_(n_columns, item_sptr()),
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::block(size_t n_columns)
+  : data_(n_columns, item_sptr()),
     n_columns_{n_columns}
   {
   }
   
-  template <typename T>
-  typename table_collector<T>::row_data &
-  table_collector<T>::table_collector::block::data()
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  typename table_collector<T,CHECK_TIMEOUT_MS>::row_data &
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::data()
   {
     return data_;
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   size_t
-  table_collector<T>::table_collector::block::n_columns() const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::n_columns() const
   {
     return n_columns_;
   }
-
-  template <typename T>
-  size_t
-  table_collector<T>::table_collector::block::n_ok() const
-  {
-    return n_ok_;
-  }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   void
-  table_collector<T>::table_collector::block::reset()
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::reset()
   {
-    n_ok_             = 0;
     for( auto & d : data_ )
       d.reset();
   }
   
-  template <typename T>
-  bool
-  table_collector<T>::table_collector::block::ok() const
-  {
-    return (n_ok_ == n_columns_);
-  }
-  
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   size_t
-  table_collector<T>::table_collector::block::count_non_nil() const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::count_non_nil() const
   {
     size_t ret = 0;
     {
@@ -152,9 +131,9 @@ namespace virtdb { namespace util {
     return ret;
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   size_t
-  table_collector<T>::table_collector::block::count_nil() const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::count_nil() const
   {
     size_t ret = 0;
     {
@@ -165,56 +144,47 @@ namespace virtdb { namespace util {
   }
 
 
-  template <typename T>
-  size_t
-  table_collector<T>::table_collector::block::set_col(size_t col_id,
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  void
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::block::set_col(size_t col_id,
                                                       item_sptr b)
   {
-    auto & dptr = data_[col_id];
-    if( !dptr && b )
-    {
-      // update counter of columns we have
-      ++n_ok_;
-    }
-    
-    // update pointer and timestamp
-    dptr = b;
-    return n_ok_;
+    data_[col_id] = b;
   }
   
   // implementation of table_collector
   
-  template <typename T>
-  table_collector<T>::table_collector::table_collector(size_t n_columns)
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::table_collector(size_t n_columns)
   : n_columns_{n_columns},
     stop_{false}
   {
   }
   
-  template <typename T>
-  table_collector<T>::table_collector::~table_collector()
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::~table_collector()
   {
     stop();
   }
 
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   void
-  table_collector<T>::table_collector::stop()
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::stop()
   {
     stop_ = true;
     cond_.notify_all();
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   bool
-  table_collector<T>::table_collector::stopped() const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::stopped() const
   {
     return stop_.load();
   }
 
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   void
-  table_collector<T>::table_collector::insert(size_t block_id,
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::insert(size_t block_id,
                                               size_t col_id,
                                               item_ptr b)
   {
@@ -222,9 +192,9 @@ namespace virtdb { namespace util {
     insert(block_id, col_id, isptr);
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   void
-  table_collector<T>::table_collector::insert(size_t block_id,
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::insert(size_t block_id,
                                               size_t col_id,
                                               item_sptr b)
   {
@@ -245,20 +215,14 @@ namespace virtdb { namespace util {
       it = iit.first;
     }
     
-    // set column
-    size_t prev_ok = it->second.n_ok();
-    size_t n_ok    = it->second.set_col(col_id, b);
+    it->second.set_col(col_id, b);
     
-    if( prev_ok != n_ok )
-    {
-      // we have enough columns for this block, tell everyone waiting
-      cond_.notify_all();
-    }
+    cond_.notify_all();
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   void
-  table_collector<T>::table_collector::erase(size_t block_id)
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::erase(size_t block_id)
   {
     lock l(mtx_);
     auto it = blocks_.find(block_id);
@@ -268,9 +232,9 @@ namespace virtdb { namespace util {
     }
   }
   
-  template <typename T>
-  typename table_collector<T>::row_data_ret
-  table_collector<T>::get(size_t block_id,
+  template <typename T, size_t CHECK_TIMEOUT_MS>
+  typename table_collector<T,CHECK_TIMEOUT_MS>::row_data_ret
+  table_collector<T,CHECK_TIMEOUT_MS>::get(size_t block_id,
                           uint64_t timeout_ms)
   {
     row_data_ret ret;
@@ -279,10 +243,11 @@ namespace virtdb { namespace util {
       lock l(mtx_);
       
       auto it = blocks_.find(block_id);
-      if( it != blocks_.end() && it->second.ok() )
+      if( it != blocks_.end() &&
+          it->second.count_non_nil() == n_columns_ )
       {
         ret.first  = it->second.data();
-        ret.second = it->second.n_ok();
+        ret.second = it->second.count_non_nil();
         return ret;
       }
     }
@@ -293,14 +258,14 @@ namespace virtdb { namespace util {
     while( stopped() == false )
     {
       lock l(mtx_);
-      cond_.wait_for(l, std::chrono::milliseconds(1+(timeout_ms/10)));
+      cond_.wait_for(l, std::chrono::milliseconds(CHECK_TIMEOUT_MS));
       
       auto it = blocks_.find(block_id);
       if( it != blocks_.end() )
       {
         ret.first  = it->second.data();
-        ret.second = it->second.n_ok();
-        if( it->second.ok() )
+        ret.second = it->second.count_non_nil();
+        if( ret.second == n_columns_ )
           return ret;
       }
       
@@ -312,9 +277,9 @@ namespace virtdb { namespace util {
     return ret;
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   uint64_t
-  table_collector<T>::table_collector::last_updated(size_t block_id) const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::last_updated(size_t block_id) const
   {
     lock l(mtx_);
     auto it = blocks_.find(block_id);
@@ -328,9 +293,9 @@ namespace virtdb { namespace util {
     }
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   size_t
-  table_collector<T>::table_collector::missing_columns(size_t block_id) const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::missing_columns(size_t block_id) const
   {
     lock l(mtx_);
     auto it = blocks_.find(block_id);
@@ -344,9 +309,9 @@ namespace virtdb { namespace util {
     }
   }
   
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   size_t
-  table_collector<T>::table_collector::max_block_id() const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::max_block_id() const
   {
     lock l(mtx_);
     auto it = blocks_.rbegin();
@@ -356,9 +321,9 @@ namespace virtdb { namespace util {
       return it->first;
   }
 
-  template <typename T>
+  template <typename T, size_t CHECK_TIMEOUT_MS>
   size_t
-  table_collector<T>::table_collector::n_columns() const
+  table_collector<T,CHECK_TIMEOUT_MS>::table_collector::n_columns() const
   {
     return n_columns_;
   }
