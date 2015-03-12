@@ -31,6 +31,8 @@ namespace virtdb { namespace connector {
     std::mutex                  mtx_;
     
     bool worker_function();
+    void add_endpoint_data(const interface::pb::EndpointData & dta);
+    void publish_endpoint(const interface::pb::EndpointData & dta);
     
   public:
     endpoint_server(const std::string & svc_endpoint,
@@ -39,6 +41,9 @@ namespace virtdb { namespace connector {
     const std::string & local_ep() const;
     const std::string & global_ep() const;
     const std::string & name() const;
+    
+    void reload_from(const std::string & path);
+    void save_to(const std::string & path);
     
     ~endpoint_server();
     void cleanup();

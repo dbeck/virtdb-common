@@ -26,17 +26,22 @@ namespace virtdb { namespace connector {
     util::zmq_socket_wrapper::host_set   additional_hosts_;
     config_map                           configs_;
     cfg_hash_map                         hashes_;
-    std::mutex                           mtx_;
+    mutable std::mutex                   mtx_;
 
     void publish_config(const rep_base_type::req_item&,
                         rep_base_type::rep_item_sptr);
+    
     void process_replies(const rep_base_type::req_item & req,
                          rep_base_type::send_rep_handler handler);
-    virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
     
+    virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
+        
   public:
     config_server(config_client & cfg_client,
                   endpoint_server & ep_server);
     virtual ~config_server();
+    
+    void reload_from(const std::string & path);
+    void save_to(const std::string & path);
   };
 }}

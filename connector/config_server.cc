@@ -4,11 +4,14 @@
 #endif //RELEASE
 
 #include "config_server.hh"
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <logger.hh>
 #include <util/net.hh>
 #include <util/flex_alloc.hh>
 #include <util/hex_util.hh>
 #include <xxhash.h>
+#include <fstream>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -125,7 +128,64 @@ namespace virtdb { namespace connector {
     
     handler(ret,false);
   }
+  
+  void
+  config_server::reload_from(const std::string & path)
+  {
+    std::string inpath{path};
+    inpath += "/config.data";
     
+    std::ifstream ifs{inpath};
+    if( ifs.good() )
+    {
+      google::protobuf::io::IstreamInputStream fs(&ifs);
+      google::protobuf::io::CodedInputStream stream(&fs);
+      
+      while( true )
+      {
+        uint64_t size = 0;
+        if( !stream.ReadVarint64(&size) ) break;
+        if( size == 0 ) break;
+        pb::Config cfg;
+        if( cfg.ParseFromCodedStream(&stream) )
+        {
+          //
+          lock l(mtx_);
+          configs_[cfg.name()] = cfg;
+        }
+      }
+    }
+  }
+  
+  void
+  config_server::save_to(const std::string & path)
+  {
+    std::string outpath{path};
+    outpath += "/config.data";
+    
+    
+    std::ofstream of{outpath};
+    if( of.good() )
+    {
+      google::protobuf::io::OstreamOutputStream fs(&of);
+      google::protobuf::io::CodedOutputStream stream(&fs);
+      
+      // eps.SerializeToOstream(&of);
+      lock l(mtx_);
+      for( auto const & cfg : configs_ )
+      {
+        if( cfg.second.name() != rep_base_type::name() )
+        {
+          int bs = cfg.second.ByteSize();
+          if( bs <= 0 ) continue;
+          
+          stream.WriteVarint64((uint64_t)bs);
+          cfg.second.SerializeToCodedStream(&stream);
+        }
+      }
+    }
+  }
+  
   const util::zmq_socket_wrapper::host_set &
   config_server::additional_hosts() const
   {

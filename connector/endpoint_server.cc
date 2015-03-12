@@ -11,6 +11,7 @@
 #include <logger.hh>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 using namespace virtdb::util;
 using namespace virtdb::interface;
@@ -130,6 +131,59 @@ namespace virtdb { namespace connector {
     }
   }
   
+  void
+  endpoint_server::add_endpoint_data(const interface::pb::EndpointData & epr)
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    // ignore endpoints with no connections
+    if( epr.connections_size() > 0 &&
+       epr.svctype() != pb::ServiceType::NONE )
+    {
+      // remove old endpoints if exists
+      auto it = endpoints_.find(epr);
+      if( it != endpoints_.end() )
+        endpoints_.erase(it);
+      
+      // insert endpoint
+      endpoints_.insert(epr);
+    }
+    
+    if( epr.has_validforms() )
+    {
+      std::string exp_svc_name{epr.name()};
+      pb::ServiceType exp_svc_type{epr.svctype()};
+      
+      uint64_t now     = util::relative_time::instance().get_msec();
+      uint64_t expiry  = now + epr.validforms();
+      
+      // set maximum vaildity for the component
+      keep_alive_[exp_svc_name] = expiry;
+      
+      // schedule removal
+      timer_svc_.schedule(epr.validforms()+SHORT_TIMEOUT_MS,
+                          [this,
+                           exp_svc_name,
+                           exp_svc_type]() {
+                            {
+                              std::unique_lock<std::mutex> l(mtx_);
+                              uint64_t now     = util::relative_time::instance().get_msec();
+                              uint64_t expiry  = keep_alive_[exp_svc_name];
+                              if( now >= expiry )
+                              {
+                                pb::EndpointData to_remove;
+                                to_remove.set_name(exp_svc_name);
+                                to_remove.set_svctype(exp_svc_type);
+                                endpoints_.erase(to_remove);
+                                LOG_INFO("Endpoint expired" << M_(to_remove));
+                              }
+                            }
+                            // non-periodic check it is
+                            return false;
+                          });
+    }
+  }
+
+  
   bool
   endpoint_server::worker_function()
   {
@@ -150,55 +204,7 @@ namespace virtdb { namespace connector {
       {
         for( int i=0; i<request.endpoints_size(); ++i )
         {
-          std::unique_lock<std::mutex> l(mtx_);
-          auto const & epr = request.endpoints(i);
-          // ignore endpoints with no connections
-          if( epr.connections_size() > 0 &&
-              epr.svctype() != pb::ServiceType::NONE )
-          {
-            // remove old endpoints if exists
-            auto it = endpoints_.find(epr);
-            if( it != endpoints_.end() )
-              endpoints_.erase(it);
-            
-            // insert endpoint
-            endpoints_.insert(epr);
-          }
-          
-          if( epr.has_validforms() )
-          {
-            std::string exp_svc_name{epr.name()};
-            pb::ServiceType exp_svc_type{epr.svctype()};
-            
-            uint64_t now     = util::relative_time::instance().get_msec();
-            uint64_t expiry  = now + epr.validforms();
-            
-            // set maximum vaildity for the component
-            keep_alive_[exp_svc_name] = expiry;
-            
-            // schedule removal
-            timer_svc_.schedule(epr.validforms()+SHORT_TIMEOUT_MS,
-                                [this,
-                                 exp_svc_name,
-                                 exp_svc_type]() {
-              {
-                std::unique_lock<std::mutex> l(mtx_);
-                uint64_t now     = util::relative_time::instance().get_msec();
-                uint64_t expiry  = keep_alive_[exp_svc_name];
-                if( now >= expiry )
-                {
-                  pb::EndpointData to_remove;
-                  to_remove.set_name(exp_svc_name);
-                  to_remove.set_svctype(exp_svc_type);
-                  endpoints_.erase(to_remove);
-                  LOG_INFO("Endpoint expired" << M_(to_remove));
-                }
-              }
-              // non-periodic check it is
-              return false;              
-            });
-           }
-          
+          add_endpoint_data(request.endpoints(i));
         }
         LOG_TRACE("endpoint request arrived" << M_(request));
       }
@@ -249,37 +255,7 @@ namespace virtdb { namespace connector {
         // receive
         for( int i=0; i<request.endpoints_size(); ++i )
         {
-          auto ep = request.endpoints(i);
-          if( ep.svctype() != pb::ServiceType::NONE &&
-              ep.connections_size() > 0 )
-          {
-            pb::Endpoint publish_ep;
-            publish_ep.add_endpoints()->MergeFrom(request.endpoints(i));
-            
-            int pub_size = publish_ep.ByteSize();
-            util::flex_alloc<unsigned char, 512> pub_buffer(pub_size);
-            if( publish_ep.SerializeToArray(pub_buffer.get(), pub_size) )
-            {
-              // generate channel key for subscribers
-              std::ostringstream os;
-              os << ep.svctype() << ' ' << ep.name();
-              std::string subscription{os.str()};
-              
-              if( !ep_pub_socket_.send(subscription.c_str(),
-                                       subscription.length(),
-                                       ZMQ_SNDMORE) )
-              {
-                LOG_ERROR("cannot send data" << V_(subscription));
-                continue;
-              }
-              if( !ep_pub_socket_.send(pub_buffer.get(),
-                                       pub_size) )
-              {
-                LOG_ERROR("cannot send data" << M_(publish_ep));
-                continue;
-              }
-            }
-          }
+          publish_endpoint(request.endpoints(i));
         }
       }
       else
@@ -287,8 +263,91 @@ namespace virtdb { namespace connector {
         LOG_ERROR( "couldn't serialize Endpoint reply message." << V_(reply_size) );
       }
     }
-
     return true;
+  }
+  
+  void
+  endpoint_server::publish_endpoint(const interface::pb::EndpointData & ep)
+  {
+    if( ep.svctype() != pb::ServiceType::NONE && ep.connections_size() > 0 )
+    {
+      pb::Endpoint publish_ep;
+      publish_ep.add_endpoints()->MergeFrom(ep);
+      
+      int pub_size = publish_ep.ByteSize();
+      util::flex_alloc<unsigned char, 512> pub_buffer(pub_size);
+      if( publish_ep.SerializeToArray(pub_buffer.get(), pub_size) )
+      {
+        // generate channel key for subscribers
+        std::ostringstream os;
+        os << ep.svctype() << ' ' << ep.name();
+        std::string subscription{os.str()};
+        
+        if( !ep_pub_socket_.send(subscription.c_str(),
+                                 subscription.length(),
+                                 ZMQ_SNDMORE) )
+        {
+          LOG_ERROR("cannot send data" << V_(subscription));
+          return;
+        }
+        if( !ep_pub_socket_.send(pub_buffer.get(),
+                                 pub_size) )
+        {
+          LOG_ERROR("cannot send data" << M_(publish_ep));
+          return;
+        }
+      }
+    }
+  }
+  
+  void
+  endpoint_server::reload_from(const std::string & path)
+  {
+    std::string inpath{path};
+    inpath += "/endpoint.data";
+    
+    std::ifstream ifs{inpath};
+    if( ifs.good() )
+    {
+      pb::Endpoint eps;
+      if( eps.ParseFromIstream(&ifs) )
+      {
+        for( auto const & ep: eps.endpoints() )
+        {
+          if( ep.name() != this->name() &&
+              ep.name() != "ip_discovery" )
+          {
+            add_endpoint_data(ep);
+            publish_endpoint(ep);
+          }
+        }
+      }
+    }
+  }
+  
+  void
+  endpoint_server::save_to(const std::string & path)
+  {
+    pb::Endpoint eps;
+    
+    // filling the database data
+    {
+      std::unique_lock<std::mutex> l(mtx_);
+      for( auto const & ep : endpoints_ )
+      {
+        auto ep_ptr = eps.add_endpoints();
+        ep_ptr->MergeFrom(ep);
+      }
+    }
+    
+    std::string outpath{path};
+    outpath += "/endpoint.data";
+    
+    std::ofstream of{outpath};
+    if( of.good() )
+    {
+      eps.SerializeToOstream(&of);
+    }
   }
 
   endpoint_server::~endpoint_server()
