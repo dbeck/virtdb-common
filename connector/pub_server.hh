@@ -90,6 +90,12 @@ namespace virtdb { namespace connector {
         ep_set{registered_endpoints(ep_client,
                                     st,
                                     interface::pb::ConnectionType::PUB_SUB)};
+      {
+        // better to consume memory than asking for retransmission
+        zmq::socket_t & sock = socket_.get();
+        int hwm = 100000;
+        sock.setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+      }
       
       if( !socket_.batch_ep_rebind(ep_set, true) )
       {
@@ -104,11 +110,6 @@ namespace virtdb { namespace connector {
       conn().set_type(interface::pb::ConnectionType::PUB_SUB);
       for( auto const & ep : socket_.endpoints() )
         *(conn().add_address()) = ep;
-      
-      // better to consume memory than asking for retransmission
-      zmq::socket_t & sock = socket_.get();
-      int hwm = 100000;
-      sock.setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
     }
     
     void publish(const std::string & channel,
