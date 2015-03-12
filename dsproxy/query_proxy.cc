@@ -125,11 +125,8 @@ namespace virtdb { namespace dsproxy {
         }
         else if( q->querycontrol() == interface::pb::Query::RESEND_CHUNK )
         {
-          if( q->has_segmentid() )
-          {
-            resend_chunk = true;
-            resend_chunk_copy = on_resend_chunk_;
-          }
+          resend_chunk = true;
+          resend_chunk_copy = on_resend_chunk_;
         }
       }
     }
