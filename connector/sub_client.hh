@@ -252,6 +252,12 @@ namespace virtdb { namespace connector {
                   {
                     LOG_INFO("connecting to" << V_(server_name) <<  V_(addr));
                     lock l(sockets_mtx_);
+                    {
+                      // better to consume memory than asking for retransmission
+                      zmq::socket_t & sock = socket_.get();
+                      int hwm = 100000;
+                      sock.setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+                    }
                     socket_.reconnect(addr.c_str());
                     break;
                   }
