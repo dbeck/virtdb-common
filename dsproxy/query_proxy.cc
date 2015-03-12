@@ -226,7 +226,7 @@ namespace virtdb { namespace dsproxy {
                   V_(q->schema()) <<
                   V_(q->table()) <<
                   V_(q->has_querycontrol()) <<
-                  V_(q->querycontrol()) <<
+                  V_((int)q->querycontrol()) <<
                   V_(q->seqnos_size()));
       }
       else
@@ -258,7 +258,7 @@ namespace virtdb { namespace dsproxy {
                 V_(q->filter_size()) <<
                 V_(segment_id) <<
                 V_(q->has_querycontrol()) <<
-                V_(q->querycontrol()) <<
+                V_((int)q->querycontrol()) <<
                 V_(q->seqnos_size()));
    
       handle_query(std::move(q));
