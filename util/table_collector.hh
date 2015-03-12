@@ -237,7 +237,8 @@ namespace virtdb { namespace util {
   table_collector<T,CHECK_TIMEOUT_MS>::get(size_t block_id,
                           uint64_t timeout_ms)
   {
-    row_data_ret ret;
+    row_data_ret ret{row_data(n_columns_, item_sptr()), 0};
+    
     {
       // initial check for block state
       lock l(mtx_);

@@ -77,8 +77,9 @@ namespace virtdb { namespace engine {
         
         // erase old data
         if( act_block_ > 1 )
+        {
           collector_->erase(act_block_-2);
-        
+        }
         return true;
       }
       
@@ -87,10 +88,25 @@ namespace virtdb { namespace engine {
       n_columns       = collector_->n_columns();
       blocks_needed   = n_columns*(max_block+1);
       n_received      = collector_->n_received();
+      
+      // never resend more often than 3 seconds
+      int64_t elapsed_ms  = rt.get_msec();
+      int64_t next_ms     = elapsed_ms + 3000;
+      int64_t resend_wait = 10+(2000/(1+max_block-act_block_));
 
+      LOG_TRACE(V_(elapsed_ms) <<
+                V_(next_ms) <<
+                V_(got_columns) <<
+                V_(n_columns) <<
+                V_(act_block_) <<
+                V_(max_block) <<
+                V_(n_received) <<
+                V_(readers_.size()) <<
+                V_(resend_wait));
+      
       if( got_columns == 0 && max_block == -1 )
       {
-        if( rt.get_msec() > 5000 )
+        if( elapsed_ms > 5000 )
         {
           // nothing arrived so the query is most likely dead
           LOG_INFO("Waiting for the first block to arrive" <<
@@ -99,23 +115,23 @@ namespace virtdb { namespace engine {
                    V_(max_block) <<
                    V_(n_columns) <<
                    V_(blocks_needed) <<
-                   V_(n_received));
+                   V_(n_received) <<
+                   V_(elapsed_ms));
         }
       }
-      else if( rt.get_msec() > 2000 )
+      else if( elapsed_ms > resend_wait )
       {
-        // start a resend requests after 2 seconds
+        // start a resend requests after 1 second
         std::vector<size_t> cols;
         for( size_t i=0; i<readers_.size(); ++i )
         {
           if( readers_[i].get() == nullptr )
           {
             // check if resending of this column is allowed
-            if( next_resend[i] < rt.get_msec() )
+            if( next_resend[i] < elapsed_ms )
             {
               cols.push_back(i);
-              // never resend more often than 5 seconds
-              next_resend[i] = rt.get_msec() + 5000;
+              next_resend[i] = next_ms;
             }
           }
         }

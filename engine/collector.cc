@@ -151,8 +151,6 @@ namespace virtdb { namespace engine {
                  uint64_t process_timeout_ms,
                  reader_sptr_vec & results)
   {
-    LOG_SCOPED("processing" << V_(block_id) << V_(data_timeout_ms) << V_(process_timeout_ms));
-    
     auto row = collector_.get(block_id, data_timeout_ms);
     
     if( row.second != collector_.n_columns() )
@@ -160,7 +158,8 @@ namespace virtdb { namespace engine {
       LOG_TRACE("timed out while waiting for data" <<
                 V_(block_id)  <<
                 V_(data_timeout_ms) <<
-                V_(row.second) );
+                V_(row.second) <<
+                V_(row.first.size()));
     }
     
     size_t n_ok      = 0;
