@@ -39,6 +39,7 @@
                           # generic utils
                           'util.hh',                    'util/constants.hh',
                           'util/active_queue.hh',       'util/flex_alloc.hh',
+                          'util/mempool.hh',
                           'util/barrier.cc',            'util/barrier.hh',
                           'util/relative_time.cc',      'util/relative_time.hh',
                           'util/exception.hh',          'util/value_type.hh',

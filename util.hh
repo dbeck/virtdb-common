@@ -15,4 +15,5 @@
 #include "util/timer_service.hh"
 #include "util/utf8.hh"
 #include "util/value_type_reader.hh"
+#include "util/mempool.hh"
 
