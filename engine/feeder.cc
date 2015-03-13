@@ -90,9 +90,9 @@ namespace virtdb { namespace engine {
       n_received      = collector_->n_received();
       
       // never resend more often than 3 seconds
-      int64_t elapsed_ms  = rt.get_msec();
-      int64_t next_ms     = elapsed_ms + 3000;
-      int64_t resend_wait = 10+(2000/(1+max_block-act_block_));
+      uint64_t elapsed_ms  = rt.get_msec();
+      uint64_t next_ms     = elapsed_ms + 3000;
+      uint64_t resend_wait = 10+(2000/(1+max_block-act_block_));
 
       LOG_TRACE(V_(elapsed_ms) <<
                 V_(next_ms) <<
