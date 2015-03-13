@@ -5,7 +5,7 @@
 namespace virtdb { namespace util {
   
   value_type_reader::value_type_reader()
-  : is_(nullptr, 0), null_pos_{0}
+  : is_(nullptr, 0), null_pos_{0}, n_nulls_{0}
   {
   }
   
@@ -13,7 +13,8 @@ namespace virtdb { namespace util {
                                        size_t len)
   : buffer_{std::move(buf)},
     is_((uint8_t *)buffer_.get(), len),
-    null_pos_{0}
+    null_pos_{0},
+    n_nulls_{0}
   {
   }
 
@@ -27,8 +28,8 @@ namespace virtdb { namespace util {
       return ret;
     }
     
-    std::vector<bool> nulls;
-    nulls.reserve(25000);
+    std::unique_ptr<uint32_t[]> tmp_nulls;
+    size_t n_nulls = 0;
     size_t start_pos = 0;
     
     uint32_t typ = 0;
@@ -54,13 +55,18 @@ namespace virtdb { namespace util {
       }
       
       bool null_ok = false;
-
+      
       auto read_nulls = [&]() {
         if( null_ok ) return;
         uint32_t payload = 0;
         bool rv = tmp_is.ReadVarint32(&payload);
         if( rv )
         {
+          size_t null_size = 1+((payload+31)/32);
+          tmp_nulls.reset(new uint32_t[null_size]);
+          uint32_t * p = tmp_nulls.get();
+          ::memset(tmp_nulls.get(),0,(null_size*sizeof(uint32_t)));
+          
           int pos = tmp_is.CurrentPosition();
           int endpos = pos + payload;
           while( pos < endpos )
@@ -68,7 +74,13 @@ namespace virtdb { namespace util {
             uint32_t val = 0;
             tmp_is.ReadVarint32(&val);
             pos = tmp_is.CurrentPosition();
-            nulls.push_back(val!=0);
+            if( val )
+            {
+              uint32_t * px = p+(n_nulls/32);
+              uint32_t nval = (1<<(n_nulls&31));
+              *px = *px | nval;
+            }
+            ++n_nulls;
           }
         }
         null_ok = true;
@@ -161,7 +173,8 @@ namespace virtdb { namespace util {
         break;
     };
     
-    ret->nulls_.swap(nulls);
+    ret->nulls_.swap(tmp_nulls);
+    ret->n_nulls_ = n_nulls;
     return ret;
   }
   

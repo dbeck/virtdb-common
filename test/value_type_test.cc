@@ -236,10 +236,18 @@ TEST_F(ValueTypeReaderTest, String)
       p[len] = 0;
     }
     EXPECT_EQ(n, 1000000);
-    EXPECT_FALSE( rdr->read_null() );
-    EXPECT_FALSE( rdr->read_null() );
-    EXPECT_FALSE( rdr->read_null() );
-    EXPECT_TRUE( rdr->read_null() );
+    
+    for( size_t i=0; i<rdr->n_nulls(); ++i )
+    {
+      if( i==999999 || i==3 )
+      {
+        EXPECT_TRUE( rdr->read_null() );
+      }
+      else
+      {
+        EXPECT_FALSE( rdr->read_null() );
+      }
+    }
     EXPECT_EQ( rdr->n_nulls(), 1000000 );
   }
 }

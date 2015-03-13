@@ -30,10 +30,11 @@ namespace virtdb { namespace util {
     
     value_type_reader(buffer && buf, size_t len);
     
-    buffer             buffer_;
-    stream_t           is_;
-    size_t             null_pos_;
-    std::vector<bool>  nulls_;
+    buffer                        buffer_;
+    stream_t                      is_;
+    size_t                        null_pos_;
+    size_t                        n_nulls_;
+    std::unique_ptr<uint32_t[]>   nulls_;
     
   public:
     static sptr construct(buffer && buf, size_t len);
@@ -51,13 +52,16 @@ namespace virtdb { namespace util {
     virtual inline bool   has_more() const                        { return false;          }
     
     inline size_t null_pos() const { return null_pos_; }
-    inline size_t n_nulls()  const { return nulls_.size(); }
+    inline size_t n_nulls()  const { return n_nulls_; }
     
     inline bool read_null()
     {
       bool ret = false;
-      if( null_pos_ < nulls_.size() )
-        ret = nulls_[null_pos_];
+      if( null_pos_ < n_nulls_ )
+      {
+        uint32_t p = nulls_.get()[null_pos_/32];
+        ret = (((p>>(null_pos_&(31)))&1) == 1);
+      }
       ++null_pos_;
       return ret;
     }
