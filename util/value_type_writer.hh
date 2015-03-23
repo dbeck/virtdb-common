@@ -413,7 +413,6 @@ namespace virtdb { namespace util {
         // have enough space, do the write
         if( act_free_bytes_ >= (LEN+2) )
         {
-          auto * prev_buffer = act_buffer_;
           act_buffer_ = CodedOutputStream::WriteTagToArray(TAG, act_buffer_);
           // save the payload position so we can write it later
           auto * payload_pos = act_buffer_;
