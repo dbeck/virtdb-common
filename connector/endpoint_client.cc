@@ -16,8 +16,8 @@ using namespace virtdb::logger;
 
 namespace virtdb { namespace connector {
   
-  const std::string & endpoint_client::name() const { return name_; }
-  const std::string & endpoint_client::service_ep() const { return name_; }
+  const std::string & endpoint_client::name()        const { return name_; }
+  const std::string & endpoint_client::service_ep()  const { return service_ep_; }
   
   endpoint_client::endpoint_client(const std::string & svc_config_ep,
                                    const std::string & service_name)
