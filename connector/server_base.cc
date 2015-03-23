@@ -2,14 +2,30 @@
 #include "config_client.hh"
 #include "ip_discovery_client.hh"
 #include <util/net.hh>
+#include <util/hex_util.hh>
+#include <xxhash.h>
 
 using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
+  std::string
+  server_base::hash_ep(const std::string & ep_string)
+  {
+    std::string ret;
+    util::hex_util(XXH64(ep_string.c_str(), ep_string.size(), 0), ret);
+    return ret;
+  }
+  
   server_base::server_base(config_client & cfg_client)
   : name_(cfg_client.get_endpoint_client().name())
   {
+    
+    auto const & epcli = cfg_client.get_endpoint_client();
+    
+    // generate a hash on the endpoint service
+    ep_hash_ = hash_ep(epcli.service_ep());
+    
     // add additional hosts if any
     auto const & add_hosts = additional_hosts();
     hosts_.insert(add_hosts.begin(), add_hosts.end());
@@ -60,6 +76,12 @@ namespace virtdb { namespace connector {
   server_base::hosts() const
   {
     return hosts_;
+  }
+  
+  const std::string &
+  server_base::ep_hash() const
+  {
+    return ep_hash_;    
   }
   
   const util::zmq_socket_wrapper::host_set &

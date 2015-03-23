@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <google/protobuf/io/coded_stream.h>
-#include <vector>
 #include <util/exception.hh>
 #include <common.pb.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <memory>
+#include <vector>
 
 namespace virtdb { namespace util {
   
@@ -260,11 +260,13 @@ namespace virtdb { namespace util {
         }
       }
       
-      inline bool has_more() const
+      inline bool
+      has_more() const
       {
         return ( next_tag_ == TAG );
       }
       
+      inline
       buffer_reader(buffer && buf, size_t len, size_t start_pos)
       : value_type_reader(std::move(buf),len),
         next_tag_{0}
@@ -276,20 +278,25 @@ namespace virtdb { namespace util {
       virtual ~buffer_reader() {}
     };
     
+    // concrete type readers constructed by construct() in value_type_reader
+    
     class string_reader : public buffer_reader<((2<<3)+2)>
     {
-    public:
       typedef buffer_reader<((2<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline string_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_string(char ** ptr, size_t & len) { return read(ptr,len); }
       virtual inline status read_string(char ** ptr, size_t & len, bool & null) { return read(ptr,len, null); }
-      string_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~string_reader() {}
     };
     
     class int32_reader : public packed_reader<int32_t,((3<<3)+2)>
     {
-    public:
       typedef packed_reader<int32_t,((3<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline int32_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_int32(int32_t & v)
       {
         uint32_t n = 0;
@@ -304,14 +311,15 @@ namespace virtdb { namespace util {
         v = n;
         return ret;
       }
-      int32_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~int32_reader() {}
     };
     
     class int64_reader : public packed_reader<int64_t,((4<<3)+2)>
     {
-    public:
       typedef packed_reader<int64_t,((4<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline int64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_int64(int64_t & v)
       {
         uint64_t n = 0;
@@ -326,54 +334,59 @@ namespace virtdb { namespace util {
         v = n;
         return ret;
       }
-      int64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~int64_reader() {}
     };
     
     class uint32_reader : public packed_reader<uint32_t,((5<<3)+2)>
     {
-    public:
       typedef packed_reader<uint32_t,((5<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline uint32_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_uint32(uint32_t & v) { return read32(v); }
       virtual inline status read_uint32(uint32_t & v, bool & null) { return read32(v,null); }
-      uint32_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~uint32_reader() {}
     };
     
     class uint64_reader : public packed_reader<uint64_t,((6<<3)+2)>
     {
-    public:
       typedef packed_reader<uint64_t,((6<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline uint64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_uint64(uint64_t & v) { return read64(v); }
       virtual inline status read_uint64(uint64_t & v, bool & null) { return read64(v,null); }
-      uint64_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~uint64_reader() {}
     };
     
     class double_reader : public packed_reader<double,((7<<3)+2)>
     {
-    public:
       typedef packed_reader<double,((7<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline double_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_double(double & v) { return read(v); }
       virtual inline status read_double(double & v, bool & null) { return read(v,null); }
-      double_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~double_reader() {}
     };
     
     class float_reader : public packed_reader<float,((8<<3)+2)>
     {
-    public:
       typedef packed_reader<float,((8<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline float_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_float(float & v) { return read(v); }
       virtual inline status read_float(float & v, bool & null) { return read(v,null); }
-      float_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~float_reader() {}
     };
     
     class bool_reader : public packed_reader<bool,((9<<3)+2)>
     {
-    public:
       typedef packed_reader<bool,((9<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline bool_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_bool(bool & v)
       {
         uint32_t v32 = 0;
@@ -388,17 +401,17 @@ namespace virtdb { namespace util {
         v = (v32 != 0);
         return ret;
       }
-      bool_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~bool_reader() {}
     };
     
     class bytes_reader : public buffer_reader<((10<<3)+2)>
     {
-    public:
       typedef buffer_reader<((10<<3)+2)> parent_t;
+      friend class value_type_reader;
+      inline bytes_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
+    public:
       virtual inline status read_bytes(char ** ptr, size_t & len) { return read(ptr,len); }
       virtual inline status read_bytes(char ** ptr, size_t & len, bool & null) { return read(ptr,len,null); }
-      bytes_reader(buffer && buf, size_t len, size_t start_pos) : parent_t(std::move(buf),len,start_pos) {}
       virtual ~bytes_reader() {}
     };
   }

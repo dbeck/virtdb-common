@@ -1,6 +1,8 @@
 #include "value_type_test.hh"
 #include <util/relative_time.hh>
 #include <util/value_type_reader.hh>
+#include <util/value_type_writer.hh>
+#include <util/mempool.hh>
 #include <google/protobuf/io/coded_stream.h>
 #include <logger.hh>
 #include <list>
@@ -14,6 +16,7 @@
 using namespace virtdb::test;
 using namespace virtdb::interface;
 using namespace virtdb::util;
+using namespace google::protobuf;
 
 namespace
 {
@@ -40,6 +43,8 @@ namespace
       std::cout << "[" << file_ << ':' << line_ << "] " << function_ << "() '" << msg_ << "' " << tm << " ms\n";
     }
   };
+  
+#define MEASURE_ME(M) measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__, M };
   
   void fill_int32(pb::ValueType & vt)
   {
@@ -76,9 +81,305 @@ namespace
     value_type<std::string>::set_null(vt, 3);
     ASSERT_EQ(v.size(), 1000000);
   }
+  
+  void print_parts(value_type_writer::sptr wr)
+  {
+    auto const * parts = wr->get_parts();
+    auto const * p = parts;
+    while( p )
+    {
+      std::cout << "allocated:" << p->n_allocated_ << " n:" << p->n_parts_ << "\n";
+      for( size_t i=0; i<p->n_parts_; ++i )
+      {
+        auto const & t = p->parts_[i];
+        if( (t.n_used_ + t.n_allocated_) > 0 )
+        {
+          std::cout << "  head:" << (const void *)t.head_
+          << "  data:" << (const void *)t.data_
+          << "  used:" << t.n_used_
+          << "  allocated:" << t.n_allocated_
+          << " [" << i << "]\n";
+        }
+      }
+      p = p->next_;
+    }
+  }
+  
+  std::pair< std::unique_ptr<char []>, int>
+  copy_parts(value_type_writer::sptr wr)
+  {
+    int sz = 0;
+    {
+      auto const * parts = wr->get_parts();
+      auto const * p = parts;
+      while( p )
+      {
+        for( size_t i=0; i<p->n_parts_; ++i )
+        {
+          auto const & t = p->parts_[i];
+          if( (t.n_used_ + t.n_allocated_) > 0 )
+          {
+            sz += t.n_used_;
+          }
+        }
+        p = p->next_;
+      }
+    }
+    std::unique_ptr<char[]> ret{new char[sz]};
+    {
+      auto const * parts = wr->get_parts();
+      auto const * p = parts;
+      char * tmp = ret.get();
+      while( p )
+      {
+        for( size_t i=0; i<p->n_parts_; ++i )
+        {
+          auto const & t = p->parts_[i];
+          if( (t.n_used_ + t.n_allocated_) > 0 )
+          {
+            ::memcpy(tmp, t.data_, t.n_used_);
+            tmp += t.n_used_;
+          }
+        }
+        p = p->next_;
+      }
+    }
+    return std::move(std::make_pair(std::move(ret), sz));
+  }
+  
+  
+  void print_compare(std::pair<char *, int> baseline,
+                     std::pair<char *, int> result)
+  {
+    int minsz = std::min(baseline.second, result.second);
+    int step = 24;
+    bool print = false;
+    
+    for( int i=0; i<minsz; ++i)
+    {
+      if( baseline.first[i] != result.first[i] )
+        print = true;
+      
+      if( print )
+      {
+        std::cout << "\nbaseline: -------------- \n  ";
+        
+        for( int ii=0; ii<step && (i+ii)<minsz; ++ii )
+        {
+          int b = baseline.first[i+ii];
+          char x = baseline.first[i+ii];
+          for( int q=0; q<8; ++q )
+            std::cout << (((b>>(7-q))&1)==1?"1":"0");
+          std::cout << "  [" << i+ii << "] " << x << " \n  ";
+        }
+        
+        std::cout << "\nresult:   -------------- \n  ";
+        
+        for( int ii=0; ii<step && (i+ii)<minsz; ++ii )
+        {
+          int r = result.first[i+ii];
+          char x = result.first[i+ii];
+          for( int q=0; q<8; ++q )
+            std::cout << (((r>>(7-q))&1)==1?"1":"0");
+          std::cout << "  [" << i+ii << "] " << x << " \n  ";
+        }
+        
+        i+=(step-1);
+        print = false;
+      }
+    }
+  }
+  
+  std::pair< std::unique_ptr<char []>, int >
+  int4_baseline()
+  {
+    MEASURE_ME("Int4 - 1000000 - PB");
+    {
+      pb::ValueType vt;
+      vt.set_type(pb::Kind::INT32);
+      for( int32_t i=0; i<1000000; ++i )
+      {
+        vt.add_int32value(i);
+        if( i%3 == 0 )
+          value_type_base::set_null(vt, i);
+      }
+      int message_size = vt.ByteSize();
+      std::unique_ptr<char []> buf(new char[message_size]);
+      EXPECT_TRUE(vt.SerializeToArray(buf.get(),message_size));
+      return std::move(std::make_pair(std::move(buf), message_size));
+    }
+  }
+  
+  std::pair< std::unique_ptr<char []>, int >
+  date_baseline()
+  {
+    MEASURE_ME("Date - 1000000 - PB");
+    {
+      pb::ValueType vt;
+      {
+        MEASURE_ME("Date - 1000000 - PB - input");
+        vt.set_type(pb::Kind::DATE);
+        auto mvsv = vt.mutable_stringvalue();
+        mvsv->Reserve(1000000);
+        for( int32_t i=0; i<1000000; ++i )
+        {
+          auto * v = vt.add_stringvalue();
+          *v = "20150101";
+          if( i%3 == 0 )
+            value_type_base::set_null(vt, i);
+        }
+      }
+      {
+        MEASURE_ME("Date - 1000000 - PB - serialize");
+        int message_size = vt.ByteSize();
+        std::unique_ptr<char []> buf(new char[message_size]);
+        EXPECT_TRUE(vt.SerializeToArray(buf.get(),message_size));
+        return std::move(std::make_pair(std::move(buf), message_size));
+      }
+    }
+  }
+  
+  std::pair< std::unique_ptr<char []>, int>
+  string_baseline()
+  {
+    MEASURE_ME("String - 1000000 - PB");
+    {
+      pb::ValueType vt;
+      {
+        MEASURE_ME("String - 1000000 - PB - input");
+        vt.set_type(pb::Kind::STRING);
+        auto mvsv = vt.mutable_stringvalue();
+        mvsv->Reserve(1000000);
+        for( int32_t i=0; i<1000000; ++i )
+        {
+          auto * v = vt.add_stringvalue();
+          *v = "Hello World";
+          if( i%3 == 0 )
+            value_type_base::set_null(vt, i);
+        }
+      }
+      {
+        MEASURE_ME("String - 1000000 - PB - serialize");
+        int message_size = vt.ByteSize();
+        std::unique_ptr<char []> buf(new char[message_size]);
+        EXPECT_TRUE(vt.SerializeToArray(buf.get(),message_size));
+        return std::move(std::make_pair(std::move(buf), message_size));
+      }
+    }
+  }
 }
 
-#define MEASURE_ME(M) measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__, M };
+TEST_F(ValueTypeWriterTest, SimpleInt4_Writer)
+{
+  auto baseline = int4_baseline();
+  value_type_writer::sptr wr;
+  {
+    MEASURE_ME("Int4 - 1000000 - Writer");
+    {
+      wr = value_type_writer::construct(pb::Kind::INT32, 1000000);
+      auto * w = wr.get();
+      {
+        MEASURE_ME("Int4 - 1000000 - Writer - Loop");
+        for( int32_t i=0; i<1000000; ++i )
+        {
+          w->write_int32(i);
+          if( i%3 == 0 )
+            w->set_null(i);
+        }
+      }
+    }
+  }
+  auto result = copy_parts(wr);
+  EXPECT_EQ(baseline.second, result.second);
+  if( baseline.second != result.second )
+  {
+    print_compare(std::make_pair(baseline.first.get(),
+                                 baseline.second),
+                  std::make_pair(result.first.get(),
+                                 result.second));
+  }
+  EXPECT_EQ(::memcmp(baseline.first.get(),
+                     result.first.get(),
+                     std::min(baseline.second,
+                              result.second)),0);
+}
+
+TEST_F(ValueTypeWriterTest, SimpleString_Writer)
+{
+  auto baseline = string_baseline();
+  value_type_writer::sptr wr;
+  {
+    MEASURE_ME("String - 1000000 - Writer");
+    {
+      wr = value_type_writer::construct(pb::Kind::STRING, 1000000);
+      auto * w = wr.get();
+      {
+        MEASURE_ME("String - 1000000 - Writer - Loop");
+        for( uint32_t i=0; i<1000000; ++i )
+        {
+          w->write_string(40, [](char * ptr,
+                                 size_t sz) {
+            ::strncpy(ptr,"Hello World", sz);
+            return ::strlen(ptr);
+          });
+          if( i%3 == 0 )
+            w->set_null(i);
+        }
+      }
+    }
+  }
+  auto result = copy_parts(wr);
+  EXPECT_EQ(baseline.second, result.second);
+  if( baseline.second != result.second )
+    print_compare(std::make_pair(baseline.first.get(),
+                                 baseline.second),
+                  std::make_pair(result.first.get(),
+                                 result.second));
+  EXPECT_EQ(::memcmp(baseline.first.get(),
+                     result.first.get(),
+                     std::min(baseline.second,
+                              result.second)),0);
+}
+
+TEST_F(ValueTypeWriterTest, SimpleDate_Writer)
+{
+  auto baseline = date_baseline();
+  value_type_writer::sptr wr;
+  {
+    MEASURE_ME("Date - 1000000 - Writer");
+    {
+      wr = value_type_writer::construct(pb::Kind::DATE, 1000000);
+      auto * w = wr.get();
+      {
+        MEASURE_ME("Date - 1000000 - Writer - Loop");
+        for( uint32_t i=0; i<1000000; ++i )
+        {
+          w->write_fixlen([](char * ptr) {
+            ::memcpy(ptr,"20150101", 8);
+            return 8;
+          });
+          if( i%3 == 0 )
+            w->set_null(i);
+        }
+      }
+    }
+  }
+  auto result = copy_parts(wr);
+  EXPECT_EQ(baseline.second, result.second);
+  if( baseline.second != result.second )
+  {
+    print_parts(wr);
+    print_compare(std::make_pair(baseline.first.get(),
+                                 baseline.second),
+                  std::make_pair(result.first.get(),
+                                 result.second));
+  }
+  EXPECT_EQ(::memcmp(baseline.first.get(),
+                     result.first.get(),
+                     std::min(baseline.second,
+                              result.second)),0);
+}
+
 
 TEST_F(ValueTypeReaderTest, Empty)
 {
@@ -227,7 +528,8 @@ TEST_F(ValueTypeReaderTest, String)
     uint32_t n = 0;
     char * p = nullptr;
     size_t len = 0;
-    while( rdr->read_string(&p, len) == value_type_reader::ok_ )
+    auto * srdr = dynamic_cast<vtr_impl::string_reader*>(rdr.get());
+    while( srdr->string_reader::read_string(&p, len) == value_type_reader::ok_ )
     {
       ++n;
       EXPECT_EQ('H', *p);
@@ -371,7 +673,8 @@ TEST_F(ValueTypeReaderTest, Int32)
     auto rdr = value_type_reader::construct(std::move(buffer), buffer_size);
     int32_t v = 0;
     int i=0;
-    while( rdr->read_int32(v) == value_type_reader::ok_ )
+    auto * irdr = dynamic_cast<vtr_impl::int32_reader *>(rdr.get());
+    while( irdr->int32_reader::read_int32(v) == value_type_reader::ok_ )
     {
       EXPECT_EQ(v, (i-500000));
       ++i;

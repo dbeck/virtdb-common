@@ -13,6 +13,7 @@ namespace virtdb { namespace connector {
     std::string                             name_;
     util::zmq_socket_wrapper::host_set      hosts_;
     interface::pb::Connection               conn_;
+    std::string                             ep_hash_;
     
   protected:
     virtual interface::pb::Connection & conn();
@@ -29,7 +30,9 @@ namespace virtdb { namespace connector {
     
     virtual const interface::pb::Connection & conn() const;
     virtual const std::string & name() const;
+    virtual const std::string & ep_hash() const;
     virtual ~server_base() {}
+    static std::string hash_ep(const std::string & ep);
     
   private:
     server_base() = delete;

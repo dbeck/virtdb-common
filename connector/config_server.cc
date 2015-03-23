@@ -132,9 +132,7 @@ namespace virtdb { namespace connector {
   void
   config_server::reload_from(const std::string & path)
   {
-    std::string inpath{path};
-    inpath += "/config.data";
-    
+    std::string inpath{path + "/" + pub_base_type::ep_hash() + "-" + "config.data"};
     std::ifstream ifs{inpath};
     if( ifs.good() )
     {
@@ -160,10 +158,7 @@ namespace virtdb { namespace connector {
   void
   config_server::save_to(const std::string & path)
   {
-    std::string outpath{path};
-    outpath += "/config.data";
-    
-    
+    std::string outpath{path + "/" + pub_base_type::ep_hash() + "-" + "config.data"};
     std::ofstream of{outpath};
     if( of.good() )
     {

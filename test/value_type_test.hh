@@ -7,6 +7,7 @@
 namespace virtdb { namespace test {
 
   class ValueTypeReaderTest : public ::testing::Test {};
+  class ValueTypeWriterTest : public ::testing::Test {};
   class ValueTypeTest : public ::testing::Test
   {
   protected:
