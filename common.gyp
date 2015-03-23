@@ -52,6 +52,7 @@
                           'util/utf8.cc',               'util/utf8.hh',
                           'util/value_type_reader.cc',  'util/value_type_reader.hh',
                           'util/value_type_writer.cc',  'util/value_type_writer.hh',
+                          'util/hash_file.cc',          'util/hash_file.hh',
                           # logger support
                           'logger.hh',
                           'logger/macros.hh',        'logger/on_return.hh',

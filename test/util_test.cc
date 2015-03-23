@@ -6,6 +6,7 @@
 #include <util/utf8.hh>
 #include <util/table_collector.hh>
 #include <util/relative_time.hh>
+#include <util/hash_file.hh>
 #include <future>
 #include <thread>
 

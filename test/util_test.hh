@@ -32,5 +32,6 @@ namespace virtdb { namespace test {
   class UtilZmqTest : public ::testing::Test { };
   class UtilTableCollectorTest : public ::testing::Test { };
   class UtilUtf8Test : public ::testing::Test { };
+  class UtilHashFileTest : public ::testing::Test { };
 }}
 
