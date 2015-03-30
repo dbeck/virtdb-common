@@ -39,6 +39,8 @@ namespace
 
 #define MEASURE_ME measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
 
+// UtilLZ4UtilTest
+
 TEST_F(UtilTableCollectorTest, MultiThreaded)
 {
   table_collector<int> q{3};

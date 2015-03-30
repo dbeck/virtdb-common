@@ -64,7 +64,7 @@ namespace virtdb { namespace connector {
       pb::EndpointData   discovery_endpoint;
       
       size_t discovery_address_count = 0;
-      discovery_endpoint.set_name("ip_discovery");
+      discovery_endpoint.set_name(service_name); // "ip_discovery"
       discovery_endpoint.set_svctype(pb::ServiceType::IP_DISCOVERY);
       {
         auto disc_ep = discovery_.endpoints();

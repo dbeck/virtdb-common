@@ -33,5 +33,6 @@ namespace virtdb { namespace test {
   class UtilTableCollectorTest : public ::testing::Test { };
   class UtilUtf8Test : public ::testing::Test { };
   class UtilHashFileTest : public ::testing::Test { };
+  class UtilLZ4UtilTest : public ::testing::Test { };
 }}
 
