@@ -14,8 +14,8 @@ rm -f rocksdb/make_config.mk
 echo XP=$XP
 cd $XP/rocksdb
 echo $PWD
-echo "CFLAGS=\"$ALI\" CXXFLAGS=\"$ALI\" LDFLAGS=\"$ALL\" make static_lib"
-CFLAGS="$ALI" CXXFLAGS="$ALI" LDFLAGS="$ALL" make static_lib 
+echo "CFLAGS=\"$ALI\" CXXFLAGS=\"$ALI\" LDFLAGS=\"$ALL\" PORTABLE=1 make static_lib PORTABLE=1"
+CFLAGS="$ALI" CXXFLAGS="$ALI" LDFLAGS="$ALL" PORTABLE=1 make static_lib PORTABLE=1
 RET=$?
 cd $XP
 export MAKEFLAGS=$MF
