@@ -53,7 +53,7 @@ $(info $$LDFLAGS is [${LDFLAGS}])
 UTIL_SRCS            := $(wildcard util/*.cc)
 LOGGER_SRCS          := $(wildcard logger/*.cc)
 CONNECTOR_SRCS       := $(wildcard connector/*.cc)
-ENGINE_SRCS			 := $(wildcard engine/*.cc)
+ENGINE_SRCS          := $(wildcard engine/*.cc)
 DATASRC_SRCS         := $(wildcard datasrc/*.cc)
 FAULT_SRCS           := $(wildcard fault/*.cc)
 LZ4_SRCS             := lz4/lib/lz4.c lz4/lib/lz4hc.c lz4/lib/lz4frame.c lz4/lib/xxhash.c

@@ -16,4 +16,10 @@
 #include "connector/meta_data_server.hh"
 #include "connector/query_client.hh"
 #include "connector/query_server.hh"
+#include "connector/user_manager_server.hh"
+#include "connector/user_manager_client.hh"
+#include "connector/srcsys_credential_server.hh"
+#include "connector/srcsys_credential_client.hh"
+#include "connector/cert_store_server.hh"
+#include "connector/cert_store_client.hh"
 
