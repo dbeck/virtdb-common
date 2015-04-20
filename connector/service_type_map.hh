@@ -4,6 +4,7 @@
 #include <meta_data.pb.h>
 #include <data.pb.h>
 #include <diag.pb.h>
+#include <security.pb.h>
 
 namespace virtdb { namespace connector {
 
@@ -66,5 +67,28 @@ namespace virtdb { namespace connector {
       interface::pb::ServiceType::LOG_RECORD;
   };
 
+  template <>
+  struct service_type_map<interface::pb::CertStoreRequest,
+                          interface::pb::ConnectionType::REQ_REP>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::CERT_STORE;
+  };
+
+  template <>
+  struct service_type_map<interface::pb::UserManagerRequest,
+                          interface::pb::ConnectionType::REQ_REP>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::USER_MGR;
+  };
+
+  template <>
+  struct service_type_map<interface::pb::SourceSystemCredentialRequest,
+                          interface::pb::ConnectionType::REQ_REP>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::SRCSYS_CRED_MGR;
+  };
   
 }}

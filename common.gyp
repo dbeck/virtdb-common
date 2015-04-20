@@ -65,7 +65,7 @@
                           'logger/signature.cc',     'logger/signature.hh',
                           'logger/end_msg.hh',       'logger/variable.hh',
                           # connector helpers
-                          'connector.hh',
+                          'connector.hh',                            'connector/service_type_map.hh',
                           'connector/server_base.cc',                'connector/server_base.hh',
                           'connector/client_base.cc',                'connector/client_base.hh',
                           'connector/sub_client.hh',                 'connector/req_client.hh',
