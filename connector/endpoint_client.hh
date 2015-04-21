@@ -14,7 +14,7 @@
 
 namespace virtdb { namespace connector {
 
-  class endpoint_client final
+  class endpoint_client
   {
   public:
     typedef std::function<void(const interface::pb::EndpointData &)> monitor;
@@ -45,7 +45,7 @@ namespace virtdb { namespace connector {
   public:
     endpoint_client(const std::string & svc_config_ep,
                     const std::string & service_name);
-    ~endpoint_client();
+    virtual ~endpoint_client();
     
     void watch(interface::pb::ServiceType, monitor);
     void remove_watches(interface::pb::ServiceType);
@@ -61,6 +61,12 @@ namespace virtdb { namespace connector {
     const std::string & service_ep() const;
     void cleanup();
     void rethrow_error();
+    
+    void wait_valid_req();
+    void wait_valid_sub();
+    
+    bool wait_valid_req(uint64_t timeout_ms);
+    bool wait_valid_sub(uint64_t timeout_ms);
     
   private:
     endpoint_client() = delete;

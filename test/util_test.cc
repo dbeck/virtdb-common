@@ -94,13 +94,12 @@ TEST_F(UtilTableCollectorTest, MultiThreaded2)
   }
 }
 
-
 TEST_F(UtilTableCollectorTest, Basic)
 {
   table_collector<int> q(3);
   EXPECT_FALSE(q.stopped());
   auto const & val0 = q.get(0,200);
-  EXPECT_EQ(val0.first.empty(), true);
+  EXPECT_EQ(val0.first.size(), 3);
   EXPECT_EQ(val0.second, 0);
   std::shared_ptr<int> i(new int{1});
   q.insert(0, 0, i);
@@ -135,23 +134,23 @@ TEST_F(UtilTableCollectorTest, Timeout)
   q.insert(4, 1, new int{5});
   
   // get(0)
-  size_t hundred_ms = 1000;
+  size_t thousand_ms = 1000;
   {
-    auto row = q.get(0,hundred_ms);
+    auto row = q.get(0,thousand_ms);
     EXPECT_EQ(row.first.size(), 2);
     EXPECT_EQ(row.second, 2);
   }
 
   // get(1)
   {
-    auto row = q.get(1,hundred_ms);
-    EXPECT_EQ(row.first.size(), 0);
+    auto row = q.get(1,thousand_ms);
+    EXPECT_EQ(row.first.size(), 2);
     EXPECT_EQ(row.second, 0);
   }
 
   // get(2)
   {
-    auto row = q.get(2,hundred_ms);
+    auto row = q.get(2,thousand_ms);
     EXPECT_EQ(row.first.size(), 2);
     EXPECT_EQ(row.second, 2);
   }

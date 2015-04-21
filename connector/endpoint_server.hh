@@ -12,7 +12,7 @@
 
 namespace virtdb { namespace connector {
   
-  class endpoint_server final
+  class endpoint_server
   {
     typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data>  ep_data_set;
     typedef std::map<std::string, uint64_t> keep_alive_map;
@@ -45,7 +45,7 @@ namespace virtdb { namespace connector {
     void reload_from(const std::string & path);
     void save_to(const std::string & path);
     
-    ~endpoint_server();
+    virtual ~endpoint_server();
     void cleanup();
     void rethrow_error();
     

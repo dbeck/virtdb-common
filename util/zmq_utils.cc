@@ -68,24 +68,35 @@ namespace virtdb { namespace util {
   
   zmq_socket_wrapper::~zmq_socket_wrapper()
   {
-    cv_.notify_all();
-    size_t nw = 1;
-    {
-      lock l(mtx_);
-      stop_ = true;
-      nw = n_waiting_;
-    }
-    cv_.notify_all();
-    
-    while ( nw > 0 )
-    {
+    try {
+      cv_.notify_all();
+      size_t nw = 1;
       {
         lock l(mtx_);
+        stop_ = true;
         nw = n_waiting_;
       }
       cv_.notify_all();
-      std::this_thread::yield();
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      
+      while ( nw > 0 )
+      {
+        {
+          lock l(mtx_);
+          nw = n_waiting_;
+        }
+        cv_.notify_all();
+        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+      
+      // make sure we don't block context destroy in any ways
+      int linger = 1;
+      socket_.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
+      socket_.close();
+    }
+    catch (...)
+    {
+      std::cerr << "exception during ZMQ socket close";
     }
   }
   

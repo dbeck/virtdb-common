@@ -11,7 +11,7 @@
 
 namespace virtdb { namespace connector {
   
-  class config_server final :
+  class config_server :
       public rep_server<interface::pb::Config,
                         interface::pb::Config>,
       public pub_server<interface::pb::Config>

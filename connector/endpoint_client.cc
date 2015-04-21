@@ -19,6 +19,30 @@ namespace virtdb { namespace connector {
   const std::string & endpoint_client::name()        const { return name_; }
   const std::string & endpoint_client::service_ep()  const { return service_ep_; }
   
+  void
+  endpoint_client::wait_valid_sub()
+  {
+    ep_sub_socket_.wait_valid();
+  }
+  
+  void
+  endpoint_client::wait_valid_req()
+  {
+    ep_req_socket_.wait_valid();
+  }
+  
+  bool
+  endpoint_client::wait_valid_sub(uint64_t timeout_ms)
+  {
+    return ep_sub_socket_.wait_valid(timeout_ms);
+  }
+  
+  bool
+  endpoint_client::wait_valid_req(uint64_t timeout_ms)
+  {
+    return ep_req_socket_.wait_valid(timeout_ms);
+  }
+  
   endpoint_client::endpoint_client(const std::string & svc_config_ep,
                                    const std::string & service_name)
   : service_ep_(svc_config_ep),
@@ -46,7 +70,10 @@ namespace virtdb { namespace connector {
     catch(const std::exception & e)
     {
       LOG_ERROR("exception during connect to" << V_(svc_config_ep) << E_(e));
-      THROW_("std::exception: failed to connect to endpoint service");
+      std::ostringstream os;
+      os << "exception during connect to: " <<  svc_config_ep << " exc: " << e.what();
+      LOG_ERROR(V_(os.str()));
+      THROW_(os.str());
     }
     
     // setup a monitor so handle_endpoint_data will connect
@@ -86,12 +113,11 @@ namespace virtdb { namespace connector {
               }
             }
           });
-    
+
     pb::EndpointData ep_data;
     ep_data.set_name(service_name);
     ep_data.set_svctype(pb::ServiceType::NONE);
     register_endpoint(ep_data);
-    
     worker_.start();
   }
   
@@ -103,6 +129,7 @@ namespace virtdb { namespace connector {
     if( ep_data.ByteSize() <= 0 )   { THROW_("empty EndpointData"); }
     if( !ep_data.IsInitialized() )  { THROW_("ep_data is not initialized"); }
     if( !ep_data.has_name() )       { THROW_("missing name from ep_data"); }
+    if( this->queue_.stopped() )    { THROW_("invalid endpoint client state"); }
     
     pb::Endpoint ep;
     auto ep_data_ptr = ep.add_endpoints();
@@ -152,6 +179,10 @@ namespace virtdb { namespace connector {
       
       if( !message_sent ) { THROW_("Couldn't send enpoint message"); }
       
+      if( !ep_req_socket_.poll_in(DEFAULT_TIMEOUT_MS) )
+      {
+        THROW_("no response for EndpointMessage");
+      }
       ep_req_socket_.get().recv(&msg);
       
       if( !msg.data() || !msg.size() )
@@ -403,8 +434,7 @@ namespace virtdb { namespace connector {
   
   endpoint_client::~endpoint_client()
   {
-    worker_.stop();
-    queue_.stop();
+    cleanup();
   }
   
   void

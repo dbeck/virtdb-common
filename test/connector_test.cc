@@ -29,20 +29,55 @@ extern std::string global_mock_ep;
 // void remove_watch(const std::string & subscription);
 #endif
 
+namespace
+{
+  int skip_tests = 0;
+  
+  static bool skip()
+  {
+    if( skip_tests == 1 ) return true;
+    if( skip_tests == 2 ) return false;
+    
+    try
+    {
+      endpoint_client ep_clnt(global_mock_ep, "SkipConnectorTests");
+      skip_tests = 2;
+      return false;
+    }
+    catch( const std::exception & e )
+    {
+      std::cout <<
+            "skipping connector tests as config "
+            "service seem to be unavailable at " << global_mock_ep << "\n"
+            "exception was: " << e.what() << "\n";
+      skip_tests = 1;
+      return true;
+    }
+  }
+}
+
 
 TEST_F(ConfigClientTest, RemoveNonexistentWatches)
 {
+  if( skip() ) return;
+  
   // only test that it doesn't fail with an error or an exception
   const char * name = "ConfigClientTest-RemoveNonexistentWatches";
-  endpoint_client   ep_clnt(global_mock_ep, name);
-  config_client     cfg_clnt(ep_clnt, "config-service");
+  auto test_fun = [&]() {
+    endpoint_client   ep_clnt(global_mock_ep, name);
+    config_client     cfg_clnt(ep_clnt, "config-service");
+    
+    // this is OK:
+    cfg_clnt.remove_watches();
+  };
   
-  // this is OK:
-  cfg_clnt.remove_watches();
+  EXPECT_NO_THROW(test_fun());
 }
 
 TEST_F(ConfigClientTest, DoubleCleanupRethrow)
 {
+  if( skip() ) return;
+  
   // only test that it doesn't fail with an error or an exception
   const char * name = "ConfigClientTest-DoubleCleanupRethrow";
   endpoint_client   ep_clnt(global_mock_ep, name);
@@ -57,6 +92,8 @@ TEST_F(ConfigClientTest, DoubleCleanupRethrow)
 
 TEST_F(ConfigClientTest, TripleRethrow)
 {
+  if( skip() ) return;
+  
   // only test that it doesn't fail with an error or an exception
   const char * name = "ConfigClientTest-TripleRethrow";
   endpoint_client   ep_clnt(global_mock_ep, name);
@@ -70,6 +107,8 @@ TEST_F(ConfigClientTest, TripleRethrow)
 
 TEST_F(ConfigClientTest, TripleCleanup)
 {
+  if( skip() ) return;
+  
   // only test that it doesn't fail with an error or an exception
   const char * name = "ConfigClientTest-TripleCleanup";
   endpoint_client   ep_clnt(global_mock_ep, name);
@@ -83,6 +122,8 @@ TEST_F(ConfigClientTest, TripleCleanup)
 
 TEST_F(ConfigClientTest, BadServiceNameToConnect)
 {
+  if( skip() ) return;
+  
   // this should succeed without exception and error
   const char * name = "ConfigClientTest-BadServiceNameToConnect";
   endpoint_client   ep_clnt(global_mock_ep, name);
@@ -95,6 +136,8 @@ TEST_F(ConfigClientTest, BadServiceNameToConnect)
 
 TEST_F(ConfigClientTest, SimpleConnect)
 {
+  if( skip() ) return;
+
   // only test that it doesn't fail with an error or an exception
   const char * name = "ConfigClientTest-ConnectOnly";
   endpoint_client   ep_clnt(global_mock_ep, name);
@@ -105,43 +148,142 @@ TEST_F(ConfigClientTest, SimpleConnect)
   EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
 }
 
-TEST_F(ConfigClientTest, ImplementMe_CheckReqChannel) { EXPECT_TRUE(false); }
-TEST_F(ConfigClientTest, ImplementMe_CheckSubChannel) { EXPECT_TRUE(false); }
+TEST_F(ConfigClientTest, ImplementMe_CheckReqChannel)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
+TEST_F(ConfigClientTest, ImplementMe_CheckSubChannel)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(ColumnClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(ColumnServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ColumnClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(ConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ColumnServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(DbConfigClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(DbConfigServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConfigServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(EndpointServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(DbConfigClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(IpDiscoveryClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(IpDiscoveryServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(DbConfigServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(LogRecordClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(LogRecordServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(EndpointServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(MetaDataClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(MetaDataServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(IpDiscoveryClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(SubClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(PubServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(IpDiscoveryServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(PushClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(PullServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(LogRecordClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(QueryClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(QueryServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(LogRecordServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
-TEST_F(ReqClientTest, ImplementMe) { EXPECT_TRUE(false); }
-TEST_F(RepServerTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(MetaDataClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(MetaDataServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(SubClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(PubServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(PushClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(PullServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(QueryClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(QueryServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(ReqClientTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
+
+TEST_F(RepServerTest, ImplementMe)
+{
+  if( skip() ) return;
+  EXPECT_TRUE(false);
+}
 
 TEST_F(ServerBaseTest, ConstuctHostSet)
 {
+  if( skip() ) return;
+
   const char * name = "ServerBaseTest-ConstuctHostSet";
   endpoint_client   ep_clnt(global_mock_ep, name);
   config_client     cfg_clnt(ep_clnt, "config-service");
@@ -152,6 +294,8 @@ TEST_F(ServerBaseTest, ConstuctHostSet)
 
 TEST_F(EndpointClientTest, StressWatch)
 {
+  if( skip() ) return;
+
   const char * name = "EndpointClientTest-StressWatch";
   endpoint_client ep_clnt(global_mock_ep, name);
 
@@ -201,6 +345,8 @@ TEST_F(EndpointClientTest, StressWatch)
 
 TEST_F(EndpointClientTest, StressRegister)
 {
+  if( skip() ) return;
+
   const char * name = "EndpointClientTest-StressRegister";
   
   endpoint_client ep_clnt(global_mock_ep, name);
@@ -229,6 +375,8 @@ TEST_F(EndpointClientTest, StressRegister)
 
 TEST_F(EndpointClientTest, InvalidRegister)
 {
+  if( skip() ) return;
+
   const char * name = "EndpointClientTest-InvalidRegister";
   
   endpoint_client ep_clnt(global_mock_ep, name);
@@ -261,6 +409,8 @@ TEST_F(EndpointClientTest, InvalidRegister)
 
 TEST_F(EndpointClientTest, InvalidWatch)
 {
+  if( skip() ) return;
+
   const char * name = "EndpointClientTest-InvalidWatch";
   
   endpoint_client ep_clnt(global_mock_ep, name);
@@ -287,6 +437,8 @@ TEST_F(EndpointClientTest, InvalidWatch)
 
 TEST_F(EndpointClientTest, InvalidConstr)
 {
+  if( skip() ) return;
+
   auto invalid_svc_config_ep = []() {
     endpoint_client ep_clnt("", "EndpointClientTest-InvalidConstr");
   };
@@ -305,6 +457,8 @@ TEST_F(EndpointClientTest, InvalidConstr)
 
 TEST_F(EndpointClientTest, Watch)
 {
+  if( skip() ) return;
+
   barrier on_callback{2};
   
   auto ep_callback = [&on_callback](const pb::EndpointData & ep)
@@ -362,6 +516,8 @@ TEST_F(EndpointClientTest, Watch)
 
 TEST_F(EndpointClientTest, Expiry)
 {
+  if( skip() ) return;
+
   const char * name = "EndpointClientTest-Expiry";
   
   endpoint_client ep_clnt(global_mock_ep, name);
@@ -403,6 +559,8 @@ TEST_F(EndpointClientTest, Expiry)
 
 TEST_F(EndpointClientTest, MonitorException)
 {
+  if( skip() ) return;
+
   const char * name = "EndpointClientTest-MonitorException";
   
   endpoint_client ep_clnt(global_mock_ep, name);
@@ -467,6 +625,8 @@ TEST_F(EndpointClientTest, MonitorException)
 
 TEST_F(EndpointClientTest, Register)
 {
+  if( skip() ) return;
+
   endpoint_client ep_clnt(global_mock_ep, "EndpointClientTest");
   endpoint_client ep_clnt2(global_mock_ep, "EndpointClientTest2");
   EXPECT_EQ("EndpointClientTest", ep_clnt.name());
