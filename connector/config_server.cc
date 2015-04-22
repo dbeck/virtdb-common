@@ -36,11 +36,11 @@ namespace virtdb { namespace connector {
                                endpoint_server & ep_server)
   :
     rep_base_type(cfg_client,
-                  std::bind(&config_server::process_replies,
+                  std::bind(&config_server::on_request,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
-                  std::bind(&config_server::publish_config,
+                  std::bind(&config_server::on_reply,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
@@ -66,8 +66,8 @@ namespace virtdb { namespace connector {
   }
   
   void
-  config_server::publish_config(const rep_base_type::req_item & request,
-                                rep_base_type::rep_item_sptr rep)
+  config_server::on_reply(const rep_base_type::req_item & request,
+                          rep_base_type::rep_item_sptr rep)
   {
     if( rep && rep->has_name() )
     {
@@ -95,8 +95,8 @@ namespace virtdb { namespace connector {
   }
   
   void
-  config_server::process_replies(const rep_base_type::req_item & request,
-                                 rep_base_type::send_rep_handler handler)
+  config_server::on_request(const rep_base_type::req_item & request,
+                            rep_base_type::send_rep_handler handler)
   {
     rep_base_type::rep_item_sptr ret;
     LOG_TRACE("config request arrived" << M_(request));

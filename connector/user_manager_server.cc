@@ -11,48 +11,34 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
   
   void
-  user_manager_server::process_rep(const rep_base_type::req_item & req,
-                                   rep_base_type::rep_item_sptr rep)
+  user_manager_server::on_reply(const rep_base_type::req_item & req,
+                                rep_base_type::rep_item_sptr rep)
   {
   }
   
   void
-  user_manager_server::process_req(const rep_base_type::req_item & req,
-                                   rep_base_type::send_rep_handler handler)
+  user_manager_server::on_request(const rep_base_type::req_item & req,
+                                  rep_base_type::send_rep_handler handler)
   {
   }
   
-  user_manager_server::user_manager_server(config_client & cfg_client)
+  user_manager_server::user_manager_server(config_client & cfg_client,
+                                           const std::string & name)
   : rep_base_type(cfg_client,
-                  std::bind(&user_manager_server::process_req,
+                  std::bind(&user_manager_server::on_request,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
-                  std::bind(&user_manager_server::process_rep,
+                  std::bind(&user_manager_server::on_reply,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
-                  pb::ServiceType::SRCSYS_CRED_MGR)
+                  pb::ServiceType::USER_MGR)
   
   {
   }
   
   user_manager_server::~user_manager_server()
   {
-  }
-  
-  void
-  user_manager_server::watch_requests(on_request)
-  {
-  }
-  
-  void
-  user_manager_server::watch_replies(on_reply)
-  {
-  }
-  
-  void
-  user_manager_server::remove_watches()
-  {
-  }
+  }  
 }}

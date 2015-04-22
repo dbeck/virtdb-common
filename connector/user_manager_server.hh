@@ -11,28 +11,22 @@ namespace virtdb { namespace connector {
   {
   public:
     typedef rep_server<interface::pb::UserManagerRequest,
-                       interface::pb::UserManagerReply>             rep_base_type;
-    typedef std::function<void(const rep_base_type::req_item&)>     on_request;
-    typedef std::function<void(const rep_base_type::req_item&,
-                               rep_base_type::rep_item_sptr)>       on_reply;
-    
+                       interface::pb::UserManagerReply>            rep_base_type;
   private:
     typedef std::lock_guard<std::mutex>  lock;
     
-    on_request on_request_;
-    on_reply   on_reply_;
+    virtual void
+    on_reply(const rep_base_type::req_item &,
+             rep_base_type::rep_item_sptr);
     
-    void process_rep(const rep_base_type::req_item&,
-                     rep_base_type::rep_item_sptr);
-    void process_req(const rep_base_type::req_item & req,
-                     rep_base_type::send_rep_handler handler);
+    virtual void
+    on_request(const rep_base_type::req_item &,
+               rep_base_type::send_rep_handler);
     
   public:
-    user_manager_server(config_client & cfg_client);
-    virtual ~user_manager_server();
+    user_manager_server(config_client & cfg_client,
+                        const std::string & name);
     
-    void watch_requests(on_request);
-    void watch_replies(on_reply);
-    void remove_watches();
+    virtual ~user_manager_server();
   };
 }}

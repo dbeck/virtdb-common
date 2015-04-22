@@ -11,28 +11,29 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
   
   void
-  cert_store_server::process_rep(const rep_base_type::req_item & req,
-                                 rep_base_type::rep_item_sptr rep)
+  cert_store_server::on_reply(const rep_base_type::req_item & req,
+                              rep_base_type::rep_item_sptr rep)
   {
   }
   
   void
-  cert_store_server::process_req(const rep_base_type::req_item & req,
-                                 rep_base_type::send_rep_handler handler)
+  cert_store_server::on_request(const rep_base_type::req_item & req,
+                                rep_base_type::send_rep_handler handler)
   {
   }
   
-  cert_store_server::cert_store_server(config_client & cfg_client)
+  cert_store_server::cert_store_server(config_client & cfg_client,
+                                       const std::string & name)
   : rep_base_type(cfg_client,
-                  std::bind(&cert_store_server::process_req,
+                  std::bind(&cert_store_server::on_request,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
-                  std::bind(&cert_store_server::process_rep,
+                  std::bind(&cert_store_server::on_reply,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
-                  pb::ServiceType::SRCSYS_CRED_MGR)
+                  pb::ServiceType::CERT_STORE)
   
   {
   }
@@ -41,18 +42,4 @@ namespace virtdb { namespace connector {
   {
   }
   
-  void
-  cert_store_server::watch_requests(on_request)
-  {
-  }
-  
-  void
-  cert_store_server::watch_replies(on_reply)
-  {
-  }
-  
-  void
-  cert_store_server::remove_watches()
-  {
-  }
 }}

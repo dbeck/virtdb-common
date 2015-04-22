@@ -1,5 +1,6 @@
 #include "ip_discovery_client.hh"
 #include "endpoint_client.hh"
+#include <util/constants.hh>
 #include <unistd.h>
 #include <functional>
 #include <future>
@@ -204,10 +205,15 @@ namespace virtdb { namespace connector {
                   });
     
     // wait till we have a valid IP_DISCOVERY endpoint data
-    ip_discovery_data.wait();
+    auto wait_ret = ip_discovery_data.wait_for(std::chrono::milliseconds(util::DEFAULT_TIMEOUT_MS));
     
     // stop listening on IP_DISCOVERY endpoint data
     ep_clnt.remove_watches(pb::ServiceType::IP_DISCOVERY);
+    
+    if( wait_ret != std::future_status::ready )
+    {
+      return std::string();
+    }
     
     // add up my ips and discovery ip
     return get_ip(ip_discovery_data.get());
