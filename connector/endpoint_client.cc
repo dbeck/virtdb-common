@@ -321,7 +321,8 @@ namespace virtdb { namespace connector {
     {
       // run monitors first
       auto it = monitors_.find( ep.svctype() );
-      if( it != monitors_.end() )
+      if( it != monitors_.end() &&
+          ep.connections_size() > 0 )
       {
         for( auto & m : it->second )
         {
@@ -337,7 +338,10 @@ namespace virtdb { namespace connector {
         endpoints_.erase(it);
       
       // insert the new one
-      endpoints_.insert(ep);
+      if( ep.connections_size() > 0 )
+      {
+        endpoints_.insert(ep);
+      }
     }
   }
   

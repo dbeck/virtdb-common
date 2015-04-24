@@ -36,6 +36,13 @@ namespace virtdb { namespace connector {
                   pb::ServiceType::SRCSYS_CRED_MGR)
   
   {
+    pb::EndpointData ep_data;
+    {
+      ep_data.set_name(name);
+      ep_data.set_svctype(pb::ServiceType::SRCSYS_CRED_MGR);
+      ep_data.add_connections()->MergeFrom(rep_base_type::conn());      
+      cfg_client.get_endpoint_client().register_endpoint(ep_data);
+    }
   }
   
   srcsys_credential_server::~srcsys_credential_server()

@@ -11,10 +11,11 @@ namespace virtdb { namespace connector {
   {
   public:
     typedef rep_server<interface::pb::UserManagerRequest,
-                       interface::pb::UserManagerReply>            rep_base_type;
+                       interface::pb::UserManagerReply>   rep_base_type;
   private:
     typedef std::lock_guard<std::mutex>  lock;
     
+  protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
              rep_base_type::rep_item_sptr);

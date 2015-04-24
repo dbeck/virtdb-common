@@ -36,6 +36,13 @@ namespace virtdb { namespace connector {
                   pb::ServiceType::CERT_STORE)
   
   {
+    pb::EndpointData ep_data;
+    {
+      ep_data.set_name(name);
+      ep_data.set_svctype(pb::ServiceType::CERT_STORE);
+      ep_data.add_connections()->MergeFrom(rep_base_type::conn());      
+      cfg_client.get_endpoint_client().register_endpoint(ep_data);
+    }
   }
   
   cert_store_server::~cert_store_server()

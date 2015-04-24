@@ -36,6 +36,13 @@ namespace virtdb { namespace connector {
                   pb::ServiceType::USER_MGR)
   
   {
+    pb::EndpointData ep_data;
+    {
+      ep_data.set_name(name);
+      ep_data.set_svctype(pb::ServiceType::USER_MGR);
+      ep_data.add_connections()->MergeFrom(rep_base_type::conn());
+      cfg_client.get_endpoint_client().register_endpoint(ep_data);
+    }
   }
   
   user_manager_server::~user_manager_server()

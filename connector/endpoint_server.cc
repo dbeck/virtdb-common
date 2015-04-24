@@ -176,6 +176,7 @@ namespace virtdb { namespace connector {
                                 to_remove.set_svctype(exp_svc_type);
                                 endpoints_.erase(to_remove);
                                 LOG_INFO("Endpoint expired" << M_(to_remove));
+                                publish_endpoint(to_remove);
                               }
                             }
                             // non-periodic check it is
@@ -270,7 +271,7 @@ namespace virtdb { namespace connector {
   void
   endpoint_server::publish_endpoint(const interface::pb::EndpointData & ep)
   {
-    if( ep.svctype() != pb::ServiceType::NONE && ep.connections_size() > 0 )
+    if( ep.svctype() != pb::ServiceType::NONE )
     {
       pb::Endpoint publish_ep;
       publish_ep.add_endpoints()->MergeFrom(ep);

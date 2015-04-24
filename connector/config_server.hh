@@ -16,9 +16,12 @@ namespace virtdb { namespace connector {
                         interface::pb::Config>,
       public pub_server<interface::pb::Config>
   {
+  public:
     typedef rep_server<interface::pb::Config,
                        interface::pb::Config>               rep_base_type;
     typedef pub_server<interface::pb::Config>               pub_base_type;
+    
+  private:
     typedef std::map<std::string, interface::pb::Config>    config_map;
     typedef std::map<std::string, std::string>              cfg_hash_map;
     typedef std::lock_guard<std::mutex>                     lock;
@@ -28,16 +31,18 @@ namespace virtdb { namespace connector {
     cfg_hash_map                         hashes_;
     mutable std::mutex                   mtx_;
 
+    virtual const util::zmq_socket_wrapper::host_set &
+    additional_hosts() const;
+    
+  protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
              rep_base_type::rep_item_sptr);
     
     virtual void
-    on_request(const rep_base_type::req_item & req,
-               rep_base_type::send_rep_handler handler);
+    on_request(const rep_base_type::req_item &,
+               rep_base_type::send_rep_handler);
     
-    virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
-        
   public:
     config_server(config_client & cfg_client,
                   endpoint_server & ep_server);
