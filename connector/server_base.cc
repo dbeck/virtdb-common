@@ -5,6 +5,12 @@
 #include <util/hex_util.hh>
 #include <xxhash.h>
 
+#ifndef NO_IPV6_SUPPORT
+#define VIRTDB_SUPPORTS_IPV6 true
+#else
+#define VIRTDB_SUPPORTS_IPV6 false
+#endif
+
 using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
@@ -31,7 +37,7 @@ namespace virtdb { namespace connector {
     hosts_.insert(add_hosts.begin(), add_hosts.end());
     
     // add my ips
-    net::string_vector my_ips{net::get_own_ips(true)};
+    net::string_vector my_ips{net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
     hosts_.insert(my_ips.begin(), my_ips.end());
     
     // add discovered endpoints too

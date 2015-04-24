@@ -22,7 +22,3 @@
 	path = rocksdb
 	url = https://github.com/starschema/rocksdb.git
 	branch = master
-[submodule "snappy"]
-	path = snappy
-	url = https://github.com/starschema/snappy.git
-	branch = master

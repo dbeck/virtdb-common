@@ -165,7 +165,7 @@
     ],
     'conditions': [
       ['OS=="mac"', {
-        'defines':            [ 'COMMON_MAC_BUILD', ],
+        'defines':            [ 'COMMON_MAC_BUILD', 'NO_IPV6_SUPPORT', ],
         'cflags':             [ '<!@(pkg-config --cflags protobuf libzmq)', '-I<!(pwd)/'],
         'xcode_settings':  {
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
@@ -197,7 +197,7 @@
       'conditions': [
         ['OS=="mac"', {
           'all_dependent_settings': {
-            'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', ],
+            'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', 'NO_IPV6_SUPPORT', ],
             'xcode_settings': {
               'OTHER_LDFLAGS':    [ '<!(pwd)/lz4/lib/liblz4.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -242,39 +242,7 @@
       'conditions': [
         ['OS=="mac"', {
           'direct_dependent_settings': {
-            'defines':            [ 'USING_SNAPPY_LIB', 'SNAPPY_MAC_BUILD', ],
-            'xcode_settings': {
-              'OTHER_LDFLAGS':    [ '<!(pwd)/snappy/.libs/libsnappy.a', ],
-              'OTHER_CFLAGS':     [ '-std=c++11', ],
-            },
-          },
-        },],
-        ['OS=="linux"', {
-          'direct_dependent_settings': {
-            'defines':            [ 'USING_SNAPPY_LIB', 'SNAPPY_LINUX_BUILD', ],
-            'link_settings': {
-              'ldflags':          [ '<@(common_ldflags)', ],
-              'libraries':        [ './snappy/.libs/libsnappy.a', ],
-            },
-          },
-        },],
-      ],
-      'target_name':         'snappy',
-      'type':                'none',
-      #'hard_dependency':      1,
-      'sources':           [ 'snappy/snappy.cc', 'snappy/snappy.h', ],
-      'actions': [ {
-        'action_name':   'snappy_build',
-        'inputs':        [ 'snappy/snappy.cc', 'snappy/snappy.h', 'snappy/Makefile.am', ],
-        'outputs':       [ './snappy/.libs/libsnappy.a', './xlast-snappy.a', ],
-        'action':        [ './build-snappy.sh',  ],
-      },],
-    },
-    {
-      'conditions': [
-        ['OS=="mac"', {
-          'direct_dependent_settings': {
-            'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', ],
+            'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', 'NO_IPV6_SUPPORT', ],
             'xcode_settings': {
               'OTHER_LDFLAGS':    [ '<!(pwd)/rocksdb/librocksdb.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -289,7 +257,6 @@
               'libraries':        [
                                     './rocksdb/librocksdb.a',
                                     './xlast-lz4.a', 
-                                    './xlast-snappy.a',
                                   ],
             },
           },
@@ -297,9 +264,9 @@
       ],
       'target_name':                  'rocksdb',
       'type':                         'none',
-      'dependencies':               [ 'snappy', 'lz4', ],
+      'dependencies':               [ 'lz4', ],
       'direct_dependent_settings':  { 'include_dirs': [ './rocksdb/include', ], },
-      'export_dependent_settings':  [ 'lz4', 'snappy', ],
+      'export_dependent_settings':  [ 'lz4', ],
       'sources':      [
                         'rocksdb/db/c.cc',
                         'rocksdb/include/rocksdb/db.h',
@@ -335,7 +302,7 @@
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'NO_IPV6_SUPPORT', ],
             'include_dirs':       [ '<(common_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -366,7 +333,7 @@
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'INJECT_FAULTS', ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'INJECT_FAULTS', 'NO_IPV6_SUPPORT', ],
             'include_dirs':       [ '<(common_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -396,7 +363,7 @@
         ['OS=="mac"', {
           'variables':  { 'cachedb_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', ],
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'NO_IPV6_SUPPORT', ],
             'include_dirs':       [ '<(cachedb_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -426,7 +393,7 @@
         ['OS=="mac"', {
           'variables':  { 'cachedb_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'INJECT_FAULTS', ],
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'INJECT_FAULTS', 'NO_IPV6_SUPPORT', ],
             'include_dirs':       [ '<(cachedb_root)/', ], # TODO: check this
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -456,7 +423,7 @@
         ['OS=="mac"', {
           'variables':  { 'dsproxy_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', ],
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'NO_IPV6_SUPPORT', ],
             'include_dirs':       [ '<(dsproxy_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -486,7 +453,7 @@
         ['OS=="mac"', {
           'variables':  { 'dsproxy_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'INJECT_FAULTS', ],
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'INJECT_FAULTS', 'NO_IPV6_SUPPORT', ],
             'include_dirs':       [ '<(dsproxy_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],

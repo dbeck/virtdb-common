@@ -1,12 +1,10 @@
 #!/bin/sh
 XP=$PWD
-SNI="-I$XP/snappy"
 LZI="-I$XP/lz4/lib"
-SNL="-L$XP/snappy/.libs"
 LZL="-L$XP/lz4/lib"
 FKI="-I$XP/fake-includes"
-ALI="$SNI $LZI $FKI"
-ALL="$SNL $LZL"
+ALI="$LZI $FKI"
+ALL="$LZL"
 
 MF=$MAKEFLAGS
 unset MAKEFLAGS

@@ -10,6 +10,12 @@
 #include <cstdlib>
 #include <ctime>
 
+#ifndef NO_IPV6_SUPPORT
+#define VIRTDB_SUPPORTS_IPV6 true
+#else
+#define VIRTDB_SUPPORTS_IPV6 false
+#endif
+
 namespace virtdb { namespace logger {
   
   namespace
@@ -80,7 +86,7 @@ namespace virtdb { namespace logger {
         }
         else
         {
-          util::net::string_vector my_ips{util::net::get_own_ips()};
+          util::net::string_vector my_ips{util::net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
           if( my_ips.size() > 0 )
           {
             _g_host_name_ = my_ips[0];

@@ -14,6 +14,12 @@
 #include <iostream>
 #include <fstream>
 
+#ifndef NO_IPV6_SUPPORT
+#define VIRTDB_SUPPORTS_IPV6 true
+#else
+#define VIRTDB_SUPPORTS_IPV6 false
+#endif
+
 using namespace virtdb::util;
 using namespace virtdb::interface;
 using namespace virtdb::logger;
@@ -45,7 +51,7 @@ namespace virtdb { namespace connector {
       auto ep_local = parse_zmq_tcp_endpoint(local_ep());
 
       // add my ips
-      net::string_vector my_ips{net::get_own_ips(true)};
+      net::string_vector my_ips{net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
       hosts.insert(my_ips.begin(), my_ips.end());
       
       // add endpoint_server hostnames too

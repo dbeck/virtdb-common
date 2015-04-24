@@ -7,6 +7,12 @@
 #include <sstream>
 #include <mutex>
 
+#ifndef NO_IPV6_SUPPORT
+#define VIRTDB_SUPPORTS_IPV6 true
+#else
+#define VIRTDB_SUPPORTS_IPV6 false
+#endif
+
 namespace virtdb { namespace util {
   
   template <typename T>
@@ -145,7 +151,7 @@ namespace virtdb { namespace util {
       if( h == "0.0.0.0" || h == "*" )
       {
         // add my ips
-        net::string_vector my_ips{net::get_own_ips(true)};
+        net::string_vector my_ips{net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
         tmp.insert(my_ips.begin(), my_ips.end());
       }
       else

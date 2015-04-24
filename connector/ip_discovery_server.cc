@@ -8,6 +8,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#ifndef NO_IPV6_SUPPORT
+#define VIRTDB_SUPPORTS_IPV6 true
+#else
+#define VIRTDB_SUPPORTS_IPV6 false
+#endif
+
 namespace virtdb { namespace connector {
   
   namespace
@@ -79,7 +85,7 @@ namespace virtdb { namespace connector {
         THROW_("getcosckname() cannot determine socket address");
       }
       
-      auto ips = util::net::get_own_ips(false);
+      auto ips = util::net::get_own_ips(VIRTDB_SUPPORTS_IPV6);
       for( auto const & ip : ips )
       {
         std::ostringstream os;
@@ -119,7 +125,7 @@ namespace virtdb { namespace connector {
         }
         else
         {
-          auto ips = util::net::get_own_ips(true);
+          auto ips = util::net::get_own_ips(VIRTDB_SUPPORTS_IPV6);
           for( auto const & ip : ips )
           {
             // we only care about ipv6 here
