@@ -306,8 +306,9 @@ TEST_F(ServerBaseTest, ConstuctHostSet)
 
   server_context::sptr ctx{new server_context};
   ctx->service_name("dummy-service");
+  ctx->endpoint_svc_addr(global_mock_ep);
   ctx->ip_discovery_timeout_ms(10);
-  server_base bs(ctx, cfg_clnt);
+  server_base bs{ctx};
   auto const & host_set{bs.hosts(ep_clnt)};
 }
 

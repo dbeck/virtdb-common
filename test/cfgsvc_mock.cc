@@ -59,6 +59,7 @@ int main(int argc, char ** argv)
         server_context::sptr  ctx{new server_context};
         
         ctx->service_name("config-service");
+        ctx->endpoint_svc_addr(service_ep);
         ctx->ip_discovery_timeout_ms(1);
         
         endpoint_server       ep_srv(ctx, service_ep, "config-service");

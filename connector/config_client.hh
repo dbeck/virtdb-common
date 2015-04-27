@@ -12,11 +12,14 @@ namespace virtdb { namespace connector {
       public req_client<interface::pb::Config, interface::pb::Config>,
       public sub_client<interface::pb::Config>
   {
-    typedef req_client<interface::pb::Config, interface::pb::Config> req_base_type;
-    typedef sub_client<interface::pb::Config>                        sub_base_type;
-    
+    typedef req_client<interface::pb::Config, interface::pb::Config>   req_base_type;
+    typedef sub_client<interface::pb::Config>                          sub_base_type;
+
     endpoint_client * ep_client_;
+    
   public:
+    typedef std::shared_ptr<config_client>  sptr;
+
     config_client(client_context::sptr ctx,
                   endpoint_client & ep_client,
                   const std::string & server_name);

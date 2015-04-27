@@ -155,8 +155,7 @@ namespace virtdb { namespace connector {
                rep_handler handler,
                on_reply on_rep,
                interface::pb::ServiceType st)
-    : server_base(ctx,
-                  cfg_client),
+    : server_base{ctx},
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_REP),
       worker_(std::bind(&rep_server::worker_function,

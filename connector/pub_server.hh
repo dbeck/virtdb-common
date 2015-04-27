@@ -76,8 +76,7 @@ namespace virtdb { namespace connector {
     pub_server(server_context::sptr ctx,
                config_client & cfg_client,
                interface::pb::ServiceType st)
-    : server_base(ctx,
-                  cfg_client),
+    : server_base{ctx},
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PUB),
       queue_(1,std::bind(&pub_server::process_function,

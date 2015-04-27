@@ -1,11 +1,14 @@
 #include "server_context.hh"
+#include <util/hex_util.hh>
+#include <xxhash.h>
 
 namespace virtdb { namespace connector {
   
   server_context::server_context()
   : service_name_{"changeme"},
     ip_discovery_timeout_ms_{1000}
-  {}
+  {
+  }
   
   server_context::~server_context() {}
   
@@ -16,6 +19,15 @@ namespace virtdb { namespace connector {
     service_name_ = name;
   }
   
+  void
+  server_context::endpoint_svc_addr(const std::string & addr)
+  {
+    endpoint_svc_addr_ = addr;
+    
+    // generate a hash on the endpoint service
+    endpoint_hash_ = hash_ep(addr);
+  }
+
   void
   server_context::ip_discovery_timeout_ms(uint64_t val)
   {
@@ -29,10 +41,30 @@ namespace virtdb { namespace connector {
     return service_name_;
   }
   
+  const std::string &
+  server_context::endpoint_svc_addr() const
+  {
+    return endpoint_svc_addr_;
+  }
+  
+  const std::string &
+  server_context::endpoint_hash() const
+  {
+    return endpoint_hash_;
+  }
+
   uint64_t
   server_context::ip_discovery_timeout_ms() const
   {
     return ip_discovery_timeout_ms_;
+  }
+  
+  std::string
+  server_context::hash_ep(const std::string & ep_string)
+  {
+    std::string ret;
+    util::hex_util(XXH64(ep_string.c_str(), ep_string.size(), 0), ret);
+    return ret;
   }
   
 }}

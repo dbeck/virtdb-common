@@ -312,7 +312,7 @@ namespace virtdb { namespace connector {
   void
   endpoint_server::reload_from(const std::string & path)
   {
-    std::string inpath{path + "/" + server_base::hash_ep(local_ep_) + "-" + "endpoint.data"};
+    std::string inpath{path + "/" + server_context::hash_ep(local_ep_) + "-" + "endpoint.data"};
     std::ifstream ifs{inpath};
     if( ifs.good() )
     {
@@ -347,7 +347,7 @@ namespace virtdb { namespace connector {
       }
     }
     
-    std::string outpath{path + "/" + server_base::hash_ep(local_ep_) + "-" + "endpoint.data"};    
+    std::string outpath{path + "/" + server_context::hash_ep(local_ep_) + "-" + "endpoint.data"};
     std::ofstream of{outpath};
     if( of.good() )
     {

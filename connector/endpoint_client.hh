@@ -19,6 +19,7 @@ namespace virtdb { namespace connector {
   {
   public:
     typedef std::function<void(const interface::pb::EndpointData &)> monitor;
+    typedef std::shared_ptr<endpoint_client> sptr;
     
   private:
     typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data> ep_data_set;

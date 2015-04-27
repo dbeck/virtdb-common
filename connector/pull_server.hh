@@ -89,8 +89,7 @@ namespace virtdb { namespace connector {
                 config_client & cfg_client,
                 pull_handler h,
                 interface::pb::ServiceType st)
-    : server_base(ctx,
-                  cfg_client),
+    : server_base{ctx},
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_PULL),
       worker_(std::bind(&pull_server::worker_function,
