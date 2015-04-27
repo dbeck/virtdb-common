@@ -97,8 +97,8 @@ namespace virtdb { namespace dsproxy {
     }
     
     if( !q->has_queryid() ||
-       !q->has_table() ||
-       !q->fields_size() )
+        !q->has_table() ||
+        !q->fields_size() )
     {
       LOG_ERROR("cannot handle invalid query" <<
                 V_(q->queryid()) <<
