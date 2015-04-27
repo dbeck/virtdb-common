@@ -206,7 +206,8 @@ namespace virtdb { namespace dsproxy {
     {
       std::unique_lock<std::mutex> l(mtx_);
       subscriptions_.clear();
-      client_sptr_.reset(new connector::column_client(*ep_client_, server));
+      client_sptr_.reset(new connector::column_client(client_ctx_,
+                                                      *ep_client_, server));
     }
     
     bool ret = client_sptr_->wait_valid(util::SHORT_TIMEOUT_MS);
@@ -424,11 +425,15 @@ namespace virtdb { namespace dsproxy {
   //const std::string & service_ep() const;
   //    const std::string & name() const;
   
-  column_dispatcher::column_dispatcher(connector::config_client & cfg_clnt,
-                             on_data handler)
-  : server_(cfg_clnt),
-    ep_client_(&(cfg_clnt.get_endpoint_client())), 
-    handler_(handler)
+  column_dispatcher::column_dispatcher(connector::server_context::sptr sr_ctx,
+                                       connector::client_context::sptr cl_ctx,
+                                       connector::config_client & cfg_clnt,
+                                       on_data handler)
+  : server_ctx_{sr_ctx},
+    client_ctx_{cl_ctx},
+    server_{sr_ctx, cfg_clnt},
+    ep_client_{&(cfg_clnt.get_endpoint_client())},
+    handler_{handler}
   {
     if( !handler )
     {

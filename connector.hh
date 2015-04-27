@@ -22,4 +22,6 @@
 #include "connector/srcsys_credential_client.hh"
 #include "connector/cert_store_server.hh"
 #include "connector/cert_store_client.hh"
+#include "connector/client_context.hh"
+#include "connector/server_context.hh"
 

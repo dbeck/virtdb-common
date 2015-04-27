@@ -93,6 +93,8 @@
                           'connector/srcsys_credential_client.cc',   'connector/srcsys_credential_client.hh',
                           'connector/cert_store_server.cc',          'connector/cert_store_server.hh',
                           'connector/cert_store_client.cc',          'connector/cert_store_client.hh',
+                          'connector/server_context.cc',             'connector/server_context.hh',  
+                          'connector/client_context.cc',             'connector/client_context.hh',  
                           # data helpers
                           'datasrc.hh',
                           'datasrc/column.cc',           'datasrc/column.hh',
@@ -165,7 +167,7 @@
     ],
     'conditions': [
       ['OS=="mac"', {
-        'defines':            [ 'COMMON_MAC_BUILD', ],
+        'defines':            [ 'COMMON_MAC_BUILD', 'ENABLE_OWN_IP_CACHE', ],
         'cflags':             [ '<!@(pkg-config --cflags protobuf libzmq)', '-I<!(pwd)/'],
         'xcode_settings':  {
           'GCC_ENABLE_CPP_EXCEPTIONS':   'YES',
@@ -197,7 +199,7 @@
       'conditions': [
         ['OS=="mac"', {
           'all_dependent_settings': {
-            'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', ],
+            'defines':            [ 'USING_LZ4_LIB', 'LZ4_MAC_BUILD', 'ENABLE_OWN_IP_CACHE', ],
             'xcode_settings': {
               'OTHER_LDFLAGS':    [ '<!(pwd)/lz4/lib/liblz4.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -242,7 +244,7 @@
       'conditions': [
         ['OS=="mac"', {
           'direct_dependent_settings': {
-            'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', ],
+            'defines':            [ 'USING_ROCKSDB_LIB', 'ROCKSDB_MAC_BUILD', 'ENABLE_OWN_IP_CACHE', ],
             'xcode_settings': {
               'OTHER_LDFLAGS':    [ '<!(pwd)/rocksdb/librocksdb.a', ],
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -302,7 +304,7 @@
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'ENABLE_OWN_IP_CACHE', ],
             'include_dirs':       [ '<(common_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -333,7 +335,7 @@
         ['OS=="mac"', {
           'variables':  { 'common_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'INJECT_FAULTS', ],
+            'defines':            [ 'USING_COMMON_LIB', 'COMMON_MAC_BUILD', 'INJECT_FAULTS', 'ENABLE_OWN_IP_CACHE', ],
             'include_dirs':       [ '<(common_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -363,7 +365,7 @@
         ['OS=="mac"', {
           'variables':  { 'cachedb_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', ],
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'ENABLE_OWN_IP_CACHE', ],
             'include_dirs':       [ '<(cachedb_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -393,7 +395,7 @@
         ['OS=="mac"', {
           'variables':  { 'cachedb_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'INJECT_FAULTS', ],
+            'defines':            [ 'USING_CACHEDB_LIB', 'CACHEDB_MAC_BUILD', 'INJECT_FAULTS', 'ENABLE_OWN_IP_CACHE', ],
             'include_dirs':       [ '<(cachedb_root)/', ], # TODO: check this
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -423,7 +425,7 @@
         ['OS=="mac"', {
           'variables':  { 'dsproxy_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', ],
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'ENABLE_OWN_IP_CACHE', ],
             'include_dirs':       [ '<(dsproxy_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
@@ -453,7 +455,7 @@
         ['OS=="mac"', {
           'variables':  { 'dsproxy_root':  '<!(pwd)/../', },
           'direct_dependent_settings': {
-            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'INJECT_FAULTS', ],
+            'defines':            [ 'USING_DSPROXY_LIB', 'DSPROXY_MAC_BUILD', 'INJECT_FAULTS', 'ENABLE_OWN_IP_CACHE', ],
             'include_dirs':       [ '<(dsproxy_root)/', ],
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],

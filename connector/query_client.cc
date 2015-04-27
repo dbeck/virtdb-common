@@ -2,9 +2,12 @@
 
 namespace virtdb { namespace connector {
   
-  query_client::query_client(endpoint_client & ep_clnt,
+  query_client::query_client(client_context::sptr ctx,
+                             endpoint_client & ep_clnt,
                              const std::string & server)
-  : push_base_type(ep_clnt, server)
+  : push_base_type(ctx,
+                   ep_clnt,
+                   server)
   {
   }
   

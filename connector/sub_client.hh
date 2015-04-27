@@ -212,11 +212,14 @@ namespace virtdb { namespace connector {
     }
 
   public:
-    sub_client(endpoint_client & ep_clnt,
+    sub_client(client_context::sptr ctx,
+               endpoint_client & ep_clnt,
                const std::string & server,
                size_t n_retries_on_worker_exception=10,
                bool die_on_worker_exception=true)
-    : client_base(ep_clnt, server),
+    : client_base(ctx,
+                  ep_clnt,
+                  server),
       ep_clnt_(&ep_clnt),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_SUB),

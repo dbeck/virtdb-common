@@ -17,12 +17,14 @@ namespace virtdb { namespace dsproxy {
   private:
     typedef std::shared_ptr<connector::meta_data_client>  client_sptr;
     
-    connector::meta_data_server   server_;
-    client_sptr                   client_sptr_;
-    connector::endpoint_client *  ep_client_;
-    util::timer_service           timer_service_;
-    on_disconnect                 on_disconnect_;
-    std::mutex                    mtx_;
+    connector::server_context::sptr   server_ctx_;
+    connector::client_context::sptr   client_ctx_;
+    connector::meta_data_server       server_;
+    client_sptr                       client_sptr_;
+    connector::endpoint_client *      ep_client_;
+    util::timer_service               timer_service_;
+    on_disconnect                     on_disconnect_;
+    std::mutex                        mtx_;
     
     void reset_client();
 
@@ -30,7 +32,9 @@ namespace virtdb { namespace dsproxy {
     void watch_disconnect(on_disconnect);
     bool reconnect();
     bool reconnect(const std::string & server);
-    meta_proxy(connector::config_client & cfg_client);
+    meta_proxy(connector::server_context::sptr sr_ctx,
+               connector::client_context::sptr cl_ctx,
+               connector::config_client & cfg_client);
     ~meta_proxy();
     
   private:

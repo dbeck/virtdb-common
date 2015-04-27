@@ -11,7 +11,8 @@ namespace virtdb { namespace connector {
     typedef push_client<interface::pb::Query> push_base_type;
     
   public:
-    query_client(endpoint_client & ep_clnt,
+    query_client(client_context::sptr ctx,
+                 endpoint_client & ep_clnt,
                  const std::string & server);
     
     ~query_client();

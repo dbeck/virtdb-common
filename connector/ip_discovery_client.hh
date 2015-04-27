@@ -18,9 +18,11 @@ namespace virtdb { namespace connector {
     //   123.123.123.123:65432  for ipv4
     //   [1::2::3::4::]:65432   for ipv6
     static std::string
-    get_ip(const endpoint_vector & srv_endpoints);
+    get_ip(const endpoint_vector & srv_endpoints,
+           uint64_t timeout_ms=1000);
     
     static std::string
-    get_ip(endpoint_client & ep_clnt);
+    get_ip(endpoint_client & ep_clnt,
+           uint64_t timeout_ms=1000);
   };
 }}

@@ -37,7 +37,8 @@ namespace virtdb { namespace connector {
     void on_endpoint_data(const interface::pb::EndpointData & ep);
 
   public:
-    log_record_client(endpoint_client & ep_client,
+    log_record_client(client_context::sptr ctx,
+                      endpoint_client & ep_client,
                       const std::string & server_name);
     
     ~log_record_client();

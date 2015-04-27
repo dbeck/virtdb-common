@@ -1,15 +1,18 @@
 #pragma once
 
 #include "endpoint_client.hh"
+#include <connector/client_context.hh>
 
 namespace virtdb { namespace connector {
 
   class client_base
   {
-    std::string server_;
+    client_context::sptr  context_;
+    std::string           server_;
     
   public:
-    client_base(endpoint_client & ep_clnt,
+    client_base(client_context::sptr ctx,
+                endpoint_client & ep_clnt,
                 const std::string & srv);
     virtual ~client_base();
     

@@ -29,7 +29,8 @@ namespace virtdb { namespace connector {
   const std::string & endpoint_server::local_ep() const { return local_ep_; }
   const std::string & endpoint_server::global_ep() const { return global_ep_; }
   
-  endpoint_server::endpoint_server(const std::string & svc_endpoint,
+  endpoint_server::endpoint_server(server_context::sptr ctx,
+                                   const std::string & svc_endpoint,
                                    const std::string & service_name)
   : name_(service_name),
     local_ep_(svc_endpoint),

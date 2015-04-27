@@ -38,20 +38,22 @@ namespace virtdb { namespace dsproxy {
     typedef std::set<uint64_t>                               id_set;
     typedef std::map<std::string, id_set>                    blockid_map;
     
-    connector::column_server       server_;
-    client_sptr                    client_sptr_;
-    connector::endpoint_client *   ep_client_;
-    on_data                        handler_;
-    on_disconnect                  on_disconnect_;
-    std::set<std::string>          subscriptions_;
-    std::mutex                     mtx_;
-    backlog_map                    backlog_;
-    std::mutex                     backlog_mtx_;
-    util::timer_service            timer_svc_;
-    message_cache                  message_cache_;
-    std::mutex                     message_cache_mtx_;
-    blockid_map                    block_ids_;
-    std::mutex                     block_id_mtx_;
+    connector::server_context::sptr   server_ctx_;
+    connector::client_context::sptr   client_ctx_;
+    connector::column_server          server_;
+    client_sptr                       client_sptr_;
+    connector::endpoint_client *      ep_client_;
+    on_data                           handler_;
+    on_disconnect                     on_disconnect_;
+    std::set<std::string>             subscriptions_;
+    std::mutex                        mtx_;
+    backlog_map                       backlog_;
+    std::mutex                        backlog_mtx_;
+    util::timer_service               timer_svc_;
+    message_cache                     message_cache_;
+    std::mutex                        message_cache_mtx_;
+    blockid_map                       block_ids_;
+    std::mutex                        block_id_mtx_;
     
     void reset_client();
     void handle_data(const std::string & provider_name,
@@ -77,8 +79,10 @@ namespace virtdb { namespace dsproxy {
     bool reconnect(const std::string & server);
     bool reconnect();
     void watch_disconnect(on_disconnect);
-    column_dispatcher(connector::config_client & cfg_client,
-                 on_data handler);
+    column_dispatcher(connector::server_context::sptr sr_ctx,
+                      connector::client_context::sptr cl_ctx,
+                      connector::config_client & cfg_client,
+                      on_data handler);
     ~column_dispatcher();
     
   private:

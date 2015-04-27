@@ -107,7 +107,8 @@ namespace virtdb { namespace dsproxy {
       if( client_sptr_ )
         client_sptr_->remove_watches();
       
-      client_sptr_.reset(new connector::column_client(*ep_client_, server));
+      client_sptr_.reset(new connector::column_client(client_ctx_,
+                                                      *ep_client_, server));
     }
     
     bool ret = client_sptr_->wait_valid(util::SHORT_TIMEOUT_MS);
@@ -180,11 +181,15 @@ namespace virtdb { namespace dsproxy {
     server_.publish(data->queryid(), data);
   }
   
-  column_proxy::column_proxy(connector::config_client & cfg_clnt,
+  column_proxy::column_proxy(connector::server_context::sptr sr_ctx,
+                             connector::client_context::sptr cl_ctx,
+                             connector::config_client & cfg_clnt,
                              on_data handler)
-  : server_(cfg_clnt),
-    ep_client_(&(cfg_clnt.get_endpoint_client())), 
-    handler_(handler)
+  : server_ctx_{sr_ctx},
+    client_ctx_{cl_ctx},
+    server_{sr_ctx, cfg_clnt},
+    ep_client_{&(cfg_clnt.get_endpoint_client())},
+    handler_{handler}
   {
     if( !handler )
     {

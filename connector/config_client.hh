@@ -17,7 +17,8 @@ namespace virtdb { namespace connector {
     
     endpoint_client * ep_client_;
   public:
-    config_client(endpoint_client & ep_client,
+    config_client(client_context::sptr ctx,
+                  endpoint_client & ep_client,
                   const std::string & server_name);
     
     virtual ~config_client();

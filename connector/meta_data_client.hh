@@ -12,7 +12,8 @@ namespace virtdb { namespace connector {
     typedef req_client<interface::pb::MetaDataRequest,
                        interface::pb::MetaData>         req_base_type;
   public:
-    meta_data_client(endpoint_client & ep_clnt,
+    meta_data_client(client_context::sptr ctx,
+                     endpoint_client & ep_clnt,
                      const std::string & server);
     
     ~meta_data_client();

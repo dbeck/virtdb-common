@@ -17,7 +17,8 @@ namespace virtdb { namespace connector {
     typedef sub_client<interface::pb::Column> sub_base_type;
     
   public:
-    column_client(endpoint_client & ep_client,
+    column_client(client_context::sptr ctx,
+                  endpoint_client & ep_client,
                   const std::string & server_name);
     ~column_client();
     

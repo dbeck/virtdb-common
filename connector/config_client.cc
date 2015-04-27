@@ -5,10 +5,14 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  config_client::config_client(endpoint_client & ep_client,
+  config_client::config_client(client_context::sptr ctx,
+                               endpoint_client & ep_client,
                                const std::string & server_name)
-  : req_base_type(ep_client, server_name),
-    sub_base_type(ep_client,
+  : req_base_type(ctx,
+                  ep_client,
+                  server_name),
+    sub_base_type(ctx,
+                  ep_client,
                   server_name),
     ep_client_(&ep_client)
   {

@@ -46,7 +46,8 @@ int main(int argc, char ** argv)
       stop = true;
     }
     
-    std::string service_ep{argv[1]};
+    std::string            service_ep{argv[1]};
+    client_context::sptr   cctx{new client_context};
     
     if( !stop )
     {
@@ -55,10 +56,11 @@ int main(int argc, char ** argv)
     
       LOG_SCOPED("end server block");
       {
-        endpoint_server     ep_srv(service_ep, "config-service");
-        endpoint_client     ep_clnt(ep_srv.local_ep(), ep_srv.name());
-        config_client       cfg_clnt(ep_clnt, "config-service");
-        config_server       cfg_srv(cfg_clnt, ep_srv);
+        server_context::sptr  ctx{new server_context};
+        endpoint_server       ep_srv(ctx, service_ep, "config-service");
+        endpoint_client       ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
+        config_client         cfg_clnt(cctx, ep_clnt, "config-service");
+        config_server         cfg_srv(ctx, cfg_clnt, ep_srv);
         
         std::atomic<int> i{0};
         
@@ -82,7 +84,9 @@ int main(int argc, char ** argv)
     }
     else
     {
-      endpoint_client ep_clnt(service_ep,  "STOP");
+      endpoint_client ep_clnt(cctx,
+                              service_ep,
+                              "STOP");
       
       pb::EndpointData ep_data;
       {

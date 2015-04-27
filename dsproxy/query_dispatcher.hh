@@ -29,16 +29,18 @@ namespace virtdb { namespace dsproxy {
     typedef std::map<std::string, string_set>           query_segment_map;
     typedef std::map<std::string, string_set>           stopped_segment_map;
     
-    connector::query_server        server_;
-    client_sptr                    client_sptr_;
-    connector::endpoint_client *   ep_client_;
-    query_segment_map              query_map_;
-    stopped_segment_map            stopped_map_;
-    on_new_query                   on_new_query_;
-    on_new_segment                 on_new_segment_;
-    on_disconnect                  on_disconnect_;
-    on_resend_chunk                on_resend_chunk_;
-    mutable std::mutex             mtx_;
+    connector::server_context::sptr   server_ctx_;
+    connector::client_context::sptr   client_ctx_;
+    connector::query_server           server_;
+    client_sptr                       client_sptr_;
+    connector::endpoint_client *      ep_client_;
+    query_segment_map                 query_map_;
+    stopped_segment_map               stopped_map_;
+    on_new_query                      on_new_query_;
+    on_new_segment                    on_new_segment_;
+    on_disconnect                     on_disconnect_;
+    on_resend_chunk                   on_resend_chunk_;
+    mutable std::mutex                mtx_;
     
     void reset_client();
     void handle_query(connector::query_server::query_sptr q);
@@ -55,7 +57,9 @@ namespace virtdb { namespace dsproxy {
     void watch_disconnect(on_disconnect);
     void watch_resend_chunk(on_resend_chunk);
     void remove_watch();
-    query_dispatcher(connector::config_client & cfg_client);
+    query_dispatcher(connector::server_context::sptr sr_ctx,
+                     connector::client_context::sptr cl_ctx,
+                     connector::config_client & cfg_client);
     ~query_dispatcher();
     
   private:

@@ -33,9 +33,12 @@ namespace virtdb { namespace connector {
       std::mutex                          mtx_;
       
     public:
-      req_client(endpoint_client & ep_clnt,
+      req_client(client_context::sptr ctx,
+                 endpoint_client & ep_clnt,
                  const std::string & server)
-      : client_base(ep_clnt, server),
+      : client_base(ctx,
+                    ep_clnt,
+                    server),
         ep_clnt_(&ep_clnt),
         zmqctx_(1),
         socket_(zmqctx_, ZMQ_REQ)

@@ -26,7 +26,8 @@ namespace virtdb { namespace connector {
                rep_base_type::send_rep_handler);
     
   public:
-    cert_store_server(config_client & cfg_client,
+    cert_store_server(server_context::sptr ctx,
+                      config_client & cfg_client,
                       const std::string & name);
     virtual ~cert_store_server();    
   };

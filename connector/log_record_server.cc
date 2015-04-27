@@ -12,15 +12,19 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  log_record_server::log_record_server(config_client & cfg_client)
-  : pull_base_type(cfg_client,
+  log_record_server::log_record_server(server_context::sptr ctx,
+                                       config_client & cfg_client)
+  : pull_base_type(ctx,
+                   cfg_client,
                    std::bind(&log_record_server::pull_handler,
                              this,
                              std::placeholders::_1),
                    pb::ServiceType::LOG_RECORD),
-    pub_base_type(cfg_client,
+    pub_base_type(ctx,
+                  cfg_client,
                   pb::ServiceType::LOG_RECORD),
-    rep_base_type(cfg_client,
+    rep_base_type(ctx,
+                  cfg_client,
                   std::bind(&log_record_server::process_replies,
                             this,
                             std::placeholders::_1,

@@ -2,9 +2,12 @@
 
 namespace virtdb { namespace connector {
 
-  meta_data_client::meta_data_client(endpoint_client & ep_clnt,
+  meta_data_client::meta_data_client(client_context::sptr ctx,
+                                     endpoint_client & ep_clnt,
                                      const std::string & server)
-  : req_base_type(ep_clnt, server)
+  : req_base_type(ctx,
+                  ep_clnt,
+                  server)
   {
     
   }

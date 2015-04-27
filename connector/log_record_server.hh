@@ -93,7 +93,8 @@ namespace virtdb { namespace connector {
     
     size_t cached_log_count();
     void cleanup_older_than(uint64_t ms);
-    log_record_server(config_client & cfg_client);
+    log_record_server(server_context::sptr ctx,
+                      config_client & cfg_client);
     virtual ~log_record_server();    
   };
 }}

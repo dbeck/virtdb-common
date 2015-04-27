@@ -32,7 +32,8 @@ namespace virtdb { namespace dsproxy {
   {
     {
       std::unique_lock<std::mutex> l(mtx_);
-      client_sptr_.reset(new connector::query_client(*ep_client_, server));
+      client_sptr_.reset(new connector::query_client(client_ctx_,
+                                                     *ep_client_, server));
     }
     
     bool ret = client_sptr_->wait_valid(util::SHORT_TIMEOUT_MS);
@@ -370,8 +371,12 @@ namespace virtdb { namespace dsproxy {
     stopped_map_.erase(query_id);
   }
   
-  query_dispatcher::query_dispatcher(connector::config_client & cfg_clnt)
-  : server_(cfg_clnt),
+  query_dispatcher::query_dispatcher(connector::server_context::sptr sr_ctx,
+                                     connector::client_context::sptr cl_ctx,
+                                     connector::config_client & cfg_clnt)
+  : server_ctx_{sr_ctx},
+    client_ctx_{cl_ctx},
+    server_{sr_ctx, cfg_clnt},
     ep_client_(&(cfg_clnt.get_endpoint_client()))
   {
     server_.watch("", [&](const std::string & provider_name,

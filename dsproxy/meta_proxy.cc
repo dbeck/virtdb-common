@@ -37,7 +37,8 @@ namespace virtdb { namespace dsproxy {
   {
     {
       std::unique_lock<std::mutex> l(mtx_);
-      client_sptr_.reset(new connector::meta_data_client(*ep_client_, server));
+      client_sptr_.reset(new connector::meta_data_client(client_ctx_,
+                                                         *ep_client_, server));
     }
     bool ret = client_sptr_->wait_valid(util::SHORT_TIMEOUT_MS);
     if( ret )
@@ -73,9 +74,13 @@ namespace virtdb { namespace dsproxy {
     on_disconnect_ = m;
   }
   
-  meta_proxy::meta_proxy(connector::config_client & cfg_clnt)
-  : server_(cfg_clnt),
-    ep_client_(&(cfg_clnt.get_endpoint_client()))
+  meta_proxy::meta_proxy(connector::server_context::sptr sr_ctx,
+                         connector::client_context::sptr cl_ctx,
+                         connector::config_client & cfg_clnt)
+  : server_ctx_{sr_ctx},
+    client_ctx_{cl_ctx},
+    server_{sr_ctx, cfg_clnt},
+    ep_client_{&(cfg_clnt.get_endpoint_client())}
   {
     server_.watch_requests([&](const interface::pb::MetaDataRequest & req)
     {

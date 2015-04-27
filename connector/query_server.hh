@@ -25,7 +25,8 @@ namespace virtdb { namespace connector {
     void handler_function(query_sptr);
     
   public:
-    query_server(config_client & cfg_client);
+    query_server(server_context::sptr ctx,
+                 config_client & cfg_client);
     virtual ~query_server();
     
     void watch(const std::string & query_id,

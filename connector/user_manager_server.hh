@@ -14,7 +14,7 @@ namespace virtdb { namespace connector {
                        interface::pb::UserManagerReply>   rep_base_type;
   private:
     typedef std::lock_guard<std::mutex>  lock;
-    
+        
   protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
@@ -25,7 +25,8 @@ namespace virtdb { namespace connector {
                rep_base_type::send_rep_handler);
     
   public:
-    user_manager_server(config_client & cfg_client,
+    user_manager_server(server_context::sptr ctx,
+                        config_client & cfg_client,
                         const std::string & name);
     
     virtual ~user_manager_server();

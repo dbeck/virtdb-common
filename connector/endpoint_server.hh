@@ -6,7 +6,8 @@
 #include <util/async_worker.hh>
 #include <util/zmq_utils.hh>
 #include <util/timer_service.hh>
-#include "ip_discovery_server.hh"
+#include <connector/server_context.hh>
+#include <connector/ip_discovery_server.hh>
 #include <set>
 #include <map>
 
@@ -35,7 +36,8 @@ namespace virtdb { namespace connector {
     void publish_endpoint(const interface::pb::EndpointData & dta);
     
   public:
-    endpoint_server(const std::string & svc_endpoint,
+    endpoint_server(server_context::sptr ctx,
+                    const std::string & svc_endpoint,
                     const std::string & service_name);
     
     const std::string & local_ep() const;

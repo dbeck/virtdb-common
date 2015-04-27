@@ -22,9 +22,11 @@ namespace virtdb { namespace connector {
   {
   }
 
-  srcsys_credential_server::srcsys_credential_server(config_client & cfg_client,
+  srcsys_credential_server::srcsys_credential_server(server_context::sptr ctx,
+                                                     config_client & cfg_client,
                                                      const std::string & name)
-  : rep_base_type(cfg_client,
+  : rep_base_type(ctx,
+                  cfg_client,
                   std::bind(&srcsys_credential_server::on_request,
                             this,
                             std::placeholders::_1,

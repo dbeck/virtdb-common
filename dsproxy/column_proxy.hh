@@ -29,13 +29,15 @@ namespace virtdb { namespace dsproxy {
     typedef std::shared_ptr<connector::column_client>        client_sptr;
     typedef std::shared_ptr<interface::pb::Column>           data_sptr;
     
-    connector::column_server       server_;
-    client_sptr                    client_sptr_;
-    connector::endpoint_client *   ep_client_;
-    on_data                        handler_;
-    on_disconnect                  on_disconnect_;
-    std::set<std::string>          subscriptions_;
-    std::mutex                     mtx_;
+    connector::server_context::sptr   server_ctx_;
+    connector::client_context::sptr   client_ctx_;
+    connector::column_server          server_;
+    client_sptr                       client_sptr_;
+    connector::endpoint_client *      ep_client_;
+    on_data                           handler_;
+    on_disconnect                     on_disconnect_;
+    std::set<std::string>             subscriptions_;
+    std::mutex                        mtx_;
     
     void reset_client();
     void handle_data(const std::string & provider_name,
@@ -49,7 +51,9 @@ namespace virtdb { namespace dsproxy {
     bool reconnect();
     void watch_disconnect(on_disconnect);
     
-    column_proxy(connector::config_client & cfg_client,
+    column_proxy(connector::server_context::sptr sr_ctx,
+                 connector::client_context::sptr cl_ctx,
+                 connector::config_client & cfg_client,
                  on_data handler);
     ~column_proxy();
     

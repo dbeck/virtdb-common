@@ -32,10 +32,12 @@ namespace virtdb { namespace connector {
     }
   }
 
-  config_server::config_server(config_client & cfg_client,
+  config_server::config_server(server_context::sptr ctx,
+                               config_client & cfg_client,
                                endpoint_server & ep_server)
   :
-    rep_base_type(cfg_client,
+    rep_base_type(ctx,
+                  cfg_client,
                   std::bind(&config_server::on_request,
                             this,
                             std::placeholders::_1,
@@ -45,7 +47,8 @@ namespace virtdb { namespace connector {
                             std::placeholders::_1,
                             std::placeholders::_2),
                   pb::ServiceType::CONFIG),
-    pub_base_type(cfg_client,
+    pub_base_type(ctx,
+                  cfg_client,
                   pb::ServiceType::CONFIG),
     additional_hosts_(endpoint_hosts(ep_server))
   {

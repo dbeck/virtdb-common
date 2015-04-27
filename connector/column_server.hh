@@ -12,7 +12,8 @@ namespace virtdb { namespace connector {
     typedef pub_server<interface::pb::Column>  pub_base_type;
     
   public:
-    column_server(config_client & cfg_client);
+    column_server(server_context::sptr ctx,
+                  config_client & cfg_client);
     virtual ~column_server();
   };
 }}

@@ -7,8 +7,10 @@ using namespace virtdb::interface;
 
 namespace virtdb { namespace connector {
   
-  column_server::column_server(config_client & cfg_client)
-  : pub_base_type(cfg_client,
+  column_server::column_server(server_context::sptr ctx,
+                               config_client & cfg_client)
+  : pub_base_type(ctx,
+                  cfg_client,
                   pb::ServiceType::COLUMN)
   {
     pb::EndpointData ep_data;

@@ -34,6 +34,12 @@ namespace virtdb { namespace connector {
     virtual const util::zmq_socket_wrapper::host_set &
     additional_hosts() const;
     
+    // overriding config values
+    uint64_t ip_discovery_timeout_ms() const
+    {
+      return 10;
+    }
+    
   protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
@@ -44,7 +50,8 @@ namespace virtdb { namespace connector {
                rep_base_type::send_rep_handler);
     
   public:
-    config_server(config_client & cfg_client,
+    config_server(server_context::sptr ctx,
+                  config_client & cfg_client,
                   endpoint_server & ep_server);
     virtual ~config_server();
     

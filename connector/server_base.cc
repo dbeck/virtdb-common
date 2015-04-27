@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "server_base.hh"
 #include "config_client.hh"
 #include "ip_discovery_client.hh"
@@ -23,25 +28,15 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
-  server_base::server_base(config_client & cfg_client)
-  : name_(cfg_client.get_endpoint_client().name())
+  server_base::server_base(server_context::sptr ctx,
+                           config_client & cfg_client)
+  : context_(ctx),
+    name_(cfg_client.get_endpoint_client().name())
   {
-    
     auto const & epcli = cfg_client.get_endpoint_client();
     
     // generate a hash on the endpoint service
     ep_hash_ = hash_ep(epcli.service_ep());
-    
-    // add additional hosts if any
-    auto const & add_hosts = additional_hosts();
-    hosts_.insert(add_hosts.begin(), add_hosts.end());
-    
-    // add my ips
-    net::string_vector my_ips{net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
-    hosts_.insert(my_ips.begin(), my_ips.end());
-    
-    // add discovered endpoints too
-    hosts_.insert(ip_discovery_client::get_ip(cfg_client.get_endpoint_client()));
   }
   
   util::zmq_socket_wrapper::endpoint_set
@@ -78,10 +73,24 @@ namespace virtdb { namespace connector {
     return conn_;
   }
   
-  const util::zmq_socket_wrapper::host_set &
-  server_base::hosts() const
+  util::zmq_socket_wrapper::host_set
+  server_base::hosts(endpoint_client & ep_client) const
   {
-    return hosts_;
+    util::zmq_socket_wrapper::host_set ret;
+
+    // add additional hosts if any
+    auto const & add_hosts = additional_hosts();
+    ret.insert(add_hosts.begin(), add_hosts.end());
+    
+    // add my ips
+    net::string_vector my_ips{net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
+    ret.insert(my_ips.begin(), my_ips.end());
+    
+    // add discovered endpoints too
+    ret.insert(ip_discovery_client::get_ip(ep_client,
+                                           ip_discovery_timeout_ms()));
+
+    return ret;
   }
   
   const std::string &

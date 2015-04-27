@@ -25,7 +25,8 @@ namespace virtdb { namespace connector {
                rep_base_type::send_rep_handler);
     
   public:
-    srcsys_credential_server(config_client & cfg_client,
+    srcsys_credential_server(server_context::sptr ctx,
+                             config_client & cfg_client,
                              const std::string & name);
     virtual ~srcsys_credential_server();
     

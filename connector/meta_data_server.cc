@@ -11,8 +11,10 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  meta_data_server::meta_data_server(config_client & cfg_client)
-  : rep_base_type(cfg_client,
+  meta_data_server::meta_data_server(server_context::sptr ctx,
+                                     config_client & cfg_client)
+  : rep_base_type(ctx,
+                  cfg_client,
                   std::bind(&meta_data_server::process_replies,
                             this,
                             std::placeholders::_1,
@@ -22,7 +24,8 @@ namespace virtdb { namespace connector {
                             std::placeholders::_1,
                             std::placeholders::_2),
                   pb::ServiceType::META_DATA),
-    pub_base_type(cfg_client,
+    pub_base_type(ctx,
+                  cfg_client,
                   pb::ServiceType::META_DATA)
   {
     pb::EndpointData ep_data;

@@ -1,5 +1,7 @@
 #include "net.hh"
 #include "exception.hh"
+#include <mutex>
+#include <atomic>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -52,11 +54,60 @@ namespace virtdb { namespace util {
     return ret;
   }
   
+  
   net::string_vector
   net::get_own_ips(bool ipv6_support)
   {
+#ifdef ENABLE_OWN_IP_CACHE
+    static std::mutex mtx;
+    static net::string_vector ipv6_ips;
+    static net::string_vector non_ipv6_ips;
+    static std::atomic<bool> ipv6_ips_resolved{false};
+    static std::atomic<bool> non_ipv6_ips_resolved{false};
+    
+    net::string_vector ret;
+    
+    if( ipv6_support )
+    {
+      if( !ipv6_ips_resolved )
+      {
+        ret = resolve_hostname(get_own_hostname(), ipv6_support);
+        {
+          std::unique_lock<std::mutex> l(mtx);
+          ipv6_ips = ret;
+        }
+        ipv6_ips_resolved = true;
+      }
+      else
+      {
+        std::unique_lock<std::mutex> l(mtx);
+        ret = ipv6_ips;
+      }
+    }
+    else
+    {
+      if( !non_ipv6_ips_resolved )
+      {
+        ret = resolve_hostname(get_own_hostname(), ipv6_support);
+        {
+          std::unique_lock<std::mutex> l(mtx);
+          non_ipv6_ips = ret;
+        }
+        non_ipv6_ips_resolved = true;
+      }
+      else
+      {
+        std::unique_lock<std::mutex> l(mtx);
+        ret = non_ipv6_ips;
+      }
+    }
+    return ret;
+#else
     return resolve_hostname(get_own_hostname(),
                             ipv6_support);
+#endif
+    
+    
   }
   
   std::string

@@ -150,11 +150,13 @@ namespace virtdb { namespace connector {
     }
 
   public:
-    rep_server(config_client & cfg_client,
+    rep_server(server_context::sptr ctx,
+               config_client & cfg_client,
                rep_handler handler,
                on_reply on_rep,
                interface::pb::ServiceType st)
-    : server_base(cfg_client),
+    : server_base(ctx,
+                  cfg_client),
       zmqctx_(1),
       socket_(zmqctx_, ZMQ_REP),
       worker_(std::bind(&rep_server::worker_function,
@@ -177,7 +179,7 @@ namespace virtdb { namespace connector {
       
       if( !socket_.batch_ep_rebind(ep_set, true) )
       {
-        socket_.batch_tcp_bind(hosts());
+        socket_.batch_tcp_bind(hosts(ep_client));
       }
       else
       {

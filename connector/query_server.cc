@@ -5,8 +5,10 @@ using namespace virtdb::interface;
 
 namespace virtdb { namespace connector {
   
-  query_server::query_server(config_client & cfg_client)
-  : pull_base_type(cfg_client,
+  query_server::query_server(server_context::sptr ctx,
+                             config_client & cfg_client)
+  : pull_base_type(ctx,
+                   cfg_client,
                    std::bind(&query_server::handler_function,
                              this,
                              std::placeholders::_1),

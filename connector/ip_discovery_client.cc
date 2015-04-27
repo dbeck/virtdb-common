@@ -26,7 +26,8 @@ namespace virtdb { namespace connector {
   }
   
   std::string
-  ip_discovery_client::get_ip(const endpoint_vector & srv_endpoints)
+  ip_discovery_client::get_ip(const endpoint_vector & srv_endpoints,
+                              uint64_t timeout_ms)
   {
     std::string ret;
     char tmp_ret[2048];
@@ -69,7 +70,9 @@ namespace virtdb { namespace connector {
                 FD_ZERO(&handles);
                 FD_SET(fd.fd_, &handles);
                 
-                struct timeval tv { 10, 0 };
+                struct timeval tv { 0, 1 };
+                tv.tv_sec = timeout_ms/1000;
+                
                 int rc_sel = ::select(fd.fd_+1,
                                       &handles,
                                       NULL,
@@ -140,7 +143,9 @@ namespace virtdb { namespace connector {
                 FD_ZERO(&handles);
                 FD_SET(fd.fd_, &handles);
                 
-                struct timeval tv { 10, 0 };
+                struct timeval tv { 0, 1 };
+                tv.tv_sec = timeout_ms/1000;
+                
                 int rc_sel = ::select(fd.fd_+1,
                                       &handles,
                                       NULL,
@@ -174,12 +179,12 @@ namespace virtdb { namespace connector {
   }
   
   std::string
-  ip_discovery_client::get_ip(endpoint_client & ep_clnt)
+  ip_discovery_client::get_ip(endpoint_client & ep_clnt,
+                              uint64_t timeout_ms)
   {
     std::promise<endpoint_vector> ip_discovery_promise;
     std::future<endpoint_vector>  ip_discovery_data{ip_discovery_promise.get_future()};
-    
-    // TODO, FIXME : promise, future 
+
     ep_clnt.watch(pb::ServiceType::IP_DISCOVERY,
                   [&ip_discovery_promise](const pb::EndpointData & ep) {
                     //
@@ -203,9 +208,10 @@ namespace virtdb { namespace connector {
                       ip_discovery_promise.set_value(result);
                     }
                   });
+
     
     // wait till we have a valid IP_DISCOVERY endpoint data
-    auto wait_ret = ip_discovery_data.wait_for(std::chrono::milliseconds(util::DEFAULT_TIMEOUT_MS));
+    auto wait_ret = ip_discovery_data.wait_for(std::chrono::milliseconds(timeout_ms));
     
     // stop listening on IP_DISCOVERY endpoint data
     ep_clnt.remove_watches(pb::ServiceType::IP_DISCOVERY);
@@ -216,7 +222,8 @@ namespace virtdb { namespace connector {
     }
     
     // add up my ips and discovery ip
-    return get_ip(ip_discovery_data.get());
+    return get_ip(ip_discovery_data.get(),
+                  timeout_ms);
   }
 
 }}

@@ -2,9 +2,11 @@
 
 namespace virtdb { namespace connector {
 
-  client_base::client_base(endpoint_client & ep_clnt,
+  client_base::client_base(client_context::sptr ctx,
+                           endpoint_client & ep_clnt,
                            const std::string & srv)
-  : server_(srv)
+  : context_(ctx),
+    server_(srv)
   {
   }
   

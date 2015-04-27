@@ -11,6 +11,7 @@
 #include <set>
 #include <functional>
 #include <mutex>
+#include <connector/client_context.hh>
 
 namespace virtdb { namespace connector {
 
@@ -26,6 +27,7 @@ namespace virtdb { namespace connector {
     typedef interface::pb::EndpointData ep_data_item;
     typedef util::active_queue<ep_data_item,util::DEFAULT_TIMEOUT_MS> notification_queue_t;
 
+    client_context::sptr      context_;
     std::string               service_ep_;
     std::string               name_;
     zmq::context_t            zmqctx_;
@@ -43,7 +45,8 @@ namespace virtdb { namespace connector {
     void async_handle_data(ep_data_item);
     
   public:
-    endpoint_client(const std::string & svc_config_ep,
+    endpoint_client(client_context::sptr ctx,
+                    const std::string & svc_config_ep,
                     const std::string & service_name);
     virtual ~endpoint_client();
     
@@ -56,7 +59,10 @@ namespace virtdb { namespace connector {
     bool get(const std::string & ep_name,
              interface::pb::ServiceType st,
              interface::pb::EndpointData & result) const;
-             
+
+    bool get(interface::pb::ServiceType st,
+             interface::pb::EndpointData & result) const;
+    
     const std::string & name() const;
     const std::string & service_ep() const;
     void cleanup();

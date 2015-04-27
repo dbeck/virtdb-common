@@ -22,9 +22,11 @@ namespace virtdb { namespace connector {
   {
   }
   
-  cert_store_server::cert_store_server(config_client & cfg_client,
+  cert_store_server::cert_store_server(server_context::sptr ctx,
+                                       config_client & cfg_client,
                                        const std::string & name)
-  : rep_base_type(cfg_client,
+  : rep_base_type(ctx,
+                  cfg_client,
                   std::bind(&cert_store_server::on_request,
                             this,
                             std::placeholders::_1,

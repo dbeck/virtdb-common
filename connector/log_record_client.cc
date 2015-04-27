@@ -46,10 +46,14 @@ namespace virtdb { namespace connector {
     return req_base_type::wait_valid(timeout_ms);
   }
   
-  log_record_client::log_record_client(endpoint_client & ep_client,
+  log_record_client::log_record_client(client_context::sptr ctx,
+                                       endpoint_client & ep_client,
                                        const std::string & server_name)
-  : req_base_type(ep_client, server_name),
-    sub_base_type(ep_client,
+  : req_base_type(ctx,
+                  ep_client,
+                  server_name),
+    sub_base_type(ctx,
+                  ep_client,
                   server_name),
     zmqctx_(1),
     logger_push_socket_(new util::zmq_socket_wrapper(zmqctx_,ZMQ_PUSH)),

@@ -43,13 +43,15 @@ namespace virtdb { namespace connector {
     return ep_req_socket_.wait_valid(timeout_ms);
   }
   
-  endpoint_client::endpoint_client(const std::string & svc_config_ep,
+  endpoint_client::endpoint_client(client_context::sptr ctx,
+                                   const std::string & svc_config_ep,
                                    const std::string & service_name)
-  : service_ep_(svc_config_ep),
-    name_(service_name),
-    zmqctx_(1),
-    ep_req_socket_(zmqctx_, ZMQ_REQ),
-    ep_sub_socket_(zmqctx_,ZMQ_SUB),
+  : context_{ctx},
+    service_ep_{svc_config_ep},
+    name_{service_name},
+    zmqctx_{1},
+    ep_req_socket_{zmqctx_, ZMQ_REQ},
+    ep_sub_socket_{zmqctx_,ZMQ_SUB},
     worker_(std::bind(&endpoint_client::worker_function,this),
             /* the preferred way is to rethrow exceptions if any on the other
                thread, rather then die */
@@ -406,6 +408,24 @@ namespace virtdb { namespace connector {
       {
         result = *it;
         return true;
+      }
+    }
+    return false;
+  }
+  
+  bool
+  endpoint_client::get(interface::pb::ServiceType st,
+                       interface::pb::EndpointData & result) const
+  {
+    {
+      std::lock_guard<std::mutex> lock(mtx_);
+      for( auto const & e : endpoints_ )
+      {
+        if( e.svctype() == st )
+        {
+          result = e;
+          return true;
+        }
       }
     }
     return false;

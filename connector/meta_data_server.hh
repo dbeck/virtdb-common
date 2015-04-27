@@ -40,7 +40,8 @@ namespace virtdb { namespace connector {
                          rep_base_type::send_rep_handler handler);
     
   public:
-    meta_data_server(config_client & cfg_client);
+    meta_data_server(server_context::sptr ctx,
+                     config_client & cfg_client);
     virtual ~meta_data_server();
     void add_table(table_sptr table);
     void remove_table(const std::string & schema,
