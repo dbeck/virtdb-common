@@ -30,8 +30,7 @@ namespace virtdb { namespace connector {
   
   server_base::server_base(server_context::sptr ctx,
                            config_client & cfg_client)
-  : context_(ctx),
-    name_(cfg_client.get_endpoint_client().name())
+  : context_{ctx}
   {
     auto const & epcli = cfg_client.get_endpoint_client();
     
@@ -88,7 +87,7 @@ namespace virtdb { namespace connector {
     
     // add discovered endpoints too
     ret.insert(ip_discovery_client::get_ip(ep_client,
-                                           ip_discovery_timeout_ms()));
+                                           context_->ip_discovery_timeout_ms()));
 
     return ret;
   }
@@ -109,6 +108,6 @@ namespace virtdb { namespace connector {
   const std::string &
   server_base::name() const
   {
-    return name_;
+    return context_->service_name();
   }
 }}

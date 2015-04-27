@@ -57,6 +57,10 @@ int main(int argc, char ** argv)
       LOG_SCOPED("end server block");
       {
         server_context::sptr  ctx{new server_context};
+        
+        ctx->service_name("config-service");
+        ctx->ip_discovery_timeout_ms(1);
+        
         endpoint_server       ep_srv(ctx, service_ep, "config-service");
         endpoint_client       ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
         config_client         cfg_clnt(cctx, ep_clnt, "config-service");

@@ -13,19 +13,12 @@ namespace virtdb { namespace connector {
   class server_base
   {
     server_context::sptr                    context_;
-    std::string                             name_;
     interface::pb::Connection               conn_;
     std::string                             ep_hash_;
     
   protected:
     virtual interface::pb::Connection & conn();
-    
-    // config values, override if needed
-    virtual uint64_t ip_discovery_timeout_ms() const
-    {
-      return 1000;
-    };
-    
+        
   public:
     server_base(server_context::sptr ctx,
                 config_client & cfg_client);
