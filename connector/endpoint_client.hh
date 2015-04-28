@@ -1,17 +1,17 @@
 #pragma once
 
-#include <string>
-#include <svc_config.pb.h>
 #include <util/compare_messages.hh>
 #include <util/async_worker.hh>
 #include <util/active_queue.hh>
 #include <util/zmq_utils.hh>
+#include <connector/client_context.hh>
+#include <svc_config.pb.h>
+#include <string>
 #include <map>
 #include <vector>
 #include <set>
 #include <functional>
 #include <mutex>
-#include <connector/client_context.hh>
 
 namespace virtdb { namespace connector {
 

@@ -3,10 +3,11 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "server_base.hh"
-#include "config_client.hh"
-#include "ip_discovery_client.hh"
+#include <connector/server_base.hh>
+#include <connector/config_client.hh>
+#include <connector/ip_discovery_client.hh>
 #include <util/net.hh>
+#include <string>
 
 #ifndef NO_IPV6_SUPPORT
 #define VIRTDB_SUPPORTS_IPV6 true
@@ -63,8 +64,8 @@ namespace virtdb { namespace connector {
     util::zmq_socket_wrapper::host_set ret;
 
     // add additional hosts if any
-    auto const & add_hosts = additional_hosts();
-    ret.insert(add_hosts.begin(), add_hosts.end());
+    auto const & bind_also{context_->bind_also_to()};
+    ret.insert(bind_also.begin(), bind_also.end());
     
     // add my ips
     net::string_vector my_ips{net::get_own_ips(VIRTDB_SUPPORTS_IPV6)};
@@ -82,14 +83,7 @@ namespace virtdb { namespace connector {
   {
     return context_->endpoint_hash();
   }
-  
-  const util::zmq_socket_wrapper::host_set &
-  server_base::additional_hosts() const
-  {
-    static util::zmq_socket_wrapper::host_set empty;
-    return empty;
-  }
-  
+    
   const std::string &
   server_base::name() const
   {

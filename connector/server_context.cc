@@ -6,13 +6,13 @@ namespace virtdb { namespace connector {
   
   server_context::server_context()
   : service_name_{"changeme"},
+    endpoint_svc_addr_{"changeme"},
     ip_discovery_timeout_ms_{1000}
   {
   }
   
   server_context::~server_context() {}
   
-  // setters
   void
   server_context::service_name(const std::string & name)
   {
@@ -57,6 +57,18 @@ namespace virtdb { namespace connector {
   server_context::ip_discovery_timeout_ms() const
   {
     return ip_discovery_timeout_ms_;
+  }
+  
+  void
+  server_context::bind_also_to(const std::string & host)
+  {
+    bind_also_to_.insert(host);
+  }
+  
+  const server_context::hostset &
+  server_context::bind_also_to() const
+  {
+    return bind_also_to_;
   }
   
   std::string

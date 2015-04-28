@@ -29,12 +29,10 @@ namespace virtdb { namespace connector {
   const std::string & endpoint_server::local_ep() const { return local_ep_; }
   const std::string & endpoint_server::global_ep() const { return global_ep_; }
   
-  endpoint_server::endpoint_server(server_context::sptr ctx,
-                                   const std::string & svc_endpoint,
-                                   const std::string & service_name)
-  : name_(service_name),
-    local_ep_(svc_endpoint),
-    global_ep_(svc_endpoint),
+  endpoint_server::endpoint_server(server_context::sptr ctx)
+  : context_{ctx},
+    local_ep_{ctx->endpoint_svc_addr()},
+    global_ep_{ctx->endpoint_svc_addr()},
     zmqctx_(1),
     ep_rep_socket_(zmqctx_, ZMQ_REP),
     ep_pub_socket_(zmqctx_, ZMQ_PUB),
@@ -43,7 +41,7 @@ namespace virtdb { namespace connector {
                thread, rather then die */
             10,false}
   {
-    process_info::set_app_name(name_);
+    process_info::set_app_name(ctx->service_name());
     
     // collect hosts to bind to
     zmq_socket_wrapper::host_set hosts;
@@ -60,7 +58,7 @@ namespace virtdb { namespace connector {
       hosts.insert(ep_local.first);
       hosts.insert("*");
     }
-    ep_rep_socket_.bind(svc_endpoint.c_str());
+    ep_rep_socket_.bind(ctx->endpoint_svc_addr().c_str());
     ep_pub_socket_.batch_tcp_bind(hosts);
     
     // start worker before we report endpoints
@@ -71,7 +69,7 @@ namespace virtdb { namespace connector {
       pb::EndpointData   discovery_endpoint;
       
       size_t discovery_address_count = 0;
-      discovery_endpoint.set_name(service_name); // "ip_discovery"
+      discovery_endpoint.set_name(ctx->service_name()); // "ip_discovery"
       discovery_endpoint.set_svctype(pb::ServiceType::IP_DISCOVERY);
       {
         auto disc_ep = discovery_.endpoints();
@@ -96,11 +94,13 @@ namespace virtdb { namespace connector {
       pb::EndpointData   self_endpoint;
       
       size_t svc_config_address_count = 0;
-      self_endpoint.set_name(service_name);
+      self_endpoint.set_name(ctx->service_name());
       self_endpoint.set_svctype(pb::ServiceType::ENDPOINT);
       {
         auto conn = self_endpoint.add_connections();
         conn->set_type(pb::ConnectionType::REQ_REP);
+        
+        std::string svc_endpoint{ctx->endpoint_svc_addr()};
         
         if( svc_endpoint.find("0.0.0.0") == std::string::npos )
         {
@@ -377,6 +377,6 @@ namespace virtdb { namespace connector {
   const std::string &
   endpoint_server::name() const
   {
-    return name_;
+    return context_->service_name();
   }
 }}

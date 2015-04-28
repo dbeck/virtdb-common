@@ -62,10 +62,10 @@ int main(int argc, char ** argv)
         ctx->endpoint_svc_addr(service_ep);
         ctx->ip_discovery_timeout_ms(1);
         
-        endpoint_server       ep_srv(ctx, service_ep, "config-service");
+        endpoint_server       ep_srv(ctx, service_ep);
         endpoint_client       ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
         config_client         cfg_clnt(cctx, ep_clnt, "config-service");
-        config_server         cfg_srv(ctx, cfg_clnt, ep_srv);
+        config_server         cfg_srv(ctx, cfg_clnt);
         
         std::atomic<int> i{0};
         

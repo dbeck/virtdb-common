@@ -18,7 +18,7 @@ namespace virtdb { namespace connector {
     typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data>  ep_data_set;
     typedef std::map<std::string, uint64_t> keep_alive_map;
     
-    std::string                 name_;
+    server_context::sptr        context_;
     std::string                 local_ep_;
     std::string                 global_ep_;
     ep_data_set                 endpoints_;
@@ -36,9 +36,7 @@ namespace virtdb { namespace connector {
     void publish_endpoint(const interface::pb::EndpointData & dta);
     
   public:
-    endpoint_server(server_context::sptr ctx,
-                    const std::string & svc_endpoint,
-                    const std::string & service_name);
+    endpoint_server(server_context::sptr ctx);
     
     const std::string & local_ep() const;
     const std::string & global_ep() const;

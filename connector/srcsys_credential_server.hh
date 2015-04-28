@@ -15,19 +15,26 @@ namespace virtdb { namespace connector {
   private:
     typedef std::lock_guard<std::mutex>  lock;
     
+    void
+    on_reply_fwd(const rep_base_type::req_item &,
+                 rep_base_type::rep_item_sptr);
+    
+    void
+    on_request_fwd(const rep_base_type::req_item &,
+                   rep_base_type::send_rep_handler);
+    
   protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
-             rep_base_type::rep_item_sptr);
+             rep_base_type::rep_item_sptr) {}
     
     virtual void
     on_request(const rep_base_type::req_item &,
-               rep_base_type::send_rep_handler);
+               rep_base_type::send_rep_handler) {}
     
   public:
     srcsys_credential_server(server_context::sptr ctx,
-                             config_client & cfg_client,
-                             const std::string & name);
+                             config_client & cfg_client);
     virtual ~srcsys_credential_server();
     
   };

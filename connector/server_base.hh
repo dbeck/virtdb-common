@@ -1,10 +1,8 @@
 #pragma once
 
-#include <svc_config.pb.h>
-#include <util/zmq_utils.hh>
-#include <connector/endpoint_client.hh>
-
 #include <connector/server_context.hh>
+#include <connector/endpoint_client.hh>
+#include <svc_config.pb.h>
 
 namespace virtdb { namespace connector {
   
@@ -12,17 +10,17 @@ namespace virtdb { namespace connector {
 
   class server_base
   {
-    server_context::sptr         context_;
-    interface::pb::Connection    conn_;
+    server_context::sptr            context_;
+    interface::pb::Connection       conn_;
     
   protected:
-    virtual interface::pb::Connection & conn();
-        
+    interface::pb::Connection & conn();
+    
   public:
     server_base(server_context::sptr ctx);
     
-    virtual util::zmq_socket_wrapper::host_set hosts(endpoint_client & ep_client) const;
-    virtual const util::zmq_socket_wrapper::host_set & additional_hosts() const;
+    virtual util::zmq_socket_wrapper::host_set
+    hosts(endpoint_client & ep_client) const;
     
     virtual util::zmq_socket_wrapper::endpoint_set
       registered_endpoints(endpoint_client & ep_client,

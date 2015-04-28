@@ -1,6 +1,6 @@
 #pragma once
 
-#include "barrier.hh"
+#include <util/barrier.hh>
 #include <thread>
 #include <mutex>
 #include <functional>

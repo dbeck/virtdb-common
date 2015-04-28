@@ -18,44 +18,39 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  namespace
+  zmq_socket_wrapper::host_set
+  config_server::endpoint_hosts(const endpoint_server & ep_server)
   {
-    zmq_socket_wrapper::host_set
-    endpoint_hosts(const endpoint_server & ep_server)
-    {
-      zmq_socket_wrapper::host_set hosts;
-      auto ep_global = parse_zmq_tcp_endpoint(ep_server.global_ep());
-      auto ep_local = parse_zmq_tcp_endpoint(ep_server.local_ep());
-      hosts.insert(ep_global.first);
-      hosts.insert(ep_local.first);
-      return hosts;
-    }
+    zmq_socket_wrapper::host_set hosts;
+    auto ep_global = parse_zmq_tcp_endpoint(ep_server.global_ep());
+    auto ep_local = parse_zmq_tcp_endpoint(ep_server.local_ep());
+    hosts.insert(ep_global.first);
+    hosts.insert(ep_local.first);
+    return hosts;
   }
-
+  
   config_server::config_server(server_context::sptr ctx,
-                               config_client & cfg_client,
-                               endpoint_server & ep_server)
+                               config_client & cfg_client)
   :
     rep_base_type(ctx,
                   cfg_client,
-                  std::bind(&config_server::on_request,
+                  std::bind(&config_server::on_request_fwd,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
-                  std::bind(&config_server::on_reply,
+                  std::bind(&config_server::on_reply_fwd,
                             this,
                             std::placeholders::_1,
                             std::placeholders::_2),
                   pb::ServiceType::CONFIG),
     pub_base_type(ctx,
                   cfg_client,
-                  pb::ServiceType::CONFIG),
-    additional_hosts_(endpoint_hosts(ep_server))
+                  pb::ServiceType::CONFIG)
   {
     // setting up our own endpoints
     pb::EndpointData ep_data;
     {
-      ep_data.set_name(ep_server.name());
+      ep_data.set_name(ctx->service_name());
       ep_data.set_svctype(pb::ServiceType::CONFIG);
       
       // REP socket
@@ -66,6 +61,13 @@ namespace virtdb { namespace connector {
       
       cfg_client.get_endpoint_client().register_endpoint(ep_data);
     }
+  }
+
+  void
+  config_server::on_reply_fwd(const rep_base_type::req_item & request,
+                              rep_base_type::rep_item_sptr rep)
+  {
+    on_reply(request, rep);
   }
   
   void
@@ -95,6 +97,13 @@ namespace virtdb { namespace connector {
       if( !suppress )
         publish(subscription,rep);
     }
+  }
+
+  void
+  config_server::on_request_fwd(const rep_base_type::req_item & request,
+                                rep_base_type::send_rep_handler handler)
+  {
+    on_request(request, handler);
   }
   
   void
@@ -182,12 +191,6 @@ namespace virtdb { namespace connector {
         }
       }
     }
-  }
-  
-  const util::zmq_socket_wrapper::host_set &
-  config_server::additional_hosts() const
-  {
-    return additional_hosts_;
   }
   
   config_server::~config_server() {}
