@@ -1,23 +1,22 @@
 #pragma once
 
-#include <set>
-#include <cstdint>
-#include <memory>
 #include <string>
+#include <set>
+#include <memory>
 
 namespace virtdb { namespace connector {
   
   class server_context
   {
   public:
-    typedef std::set<std::string> hostset;
-
+    typedef std::set<std::string> hosts_set;
+    
   private:
     std::string       service_name_;
     std::string       endpoint_svc_addr_;
     std::string       endpoint_hash_;
     uint64_t          ip_discovery_timeout_ms_;
-    hostset           bind_also_to_;
+    hosts_set         bind_also_to_;
     
     server_context(const server_context &) = delete;
     server_context& operator=(const server_context &) = delete;
@@ -39,7 +38,7 @@ namespace virtdb { namespace connector {
     const std::string & endpoint_svc_addr() const;
     const std::string & endpoint_hash() const;
     uint64_t ip_discovery_timeout_ms() const;
-    const hostset & bind_also_to() const;
+    const hosts_set & bind_also_to() const;
     
     static std::string hash_ep(const std::string & ep);
   };

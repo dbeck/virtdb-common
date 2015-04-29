@@ -27,11 +27,11 @@ namespace virtdb { namespace connector {
   protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
-             rep_base_type::rep_item_sptr) {}
+             rep_base_type::rep_item_sptr);
     
     virtual void
     on_request(const rep_base_type::req_item &,
-               rep_base_type::send_rep_handler) {}
+               rep_base_type::send_rep_handler);
     
   public:
     cert_store_server(server_context::sptr ctx,

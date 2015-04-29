@@ -58,13 +58,13 @@ int main(int argc, char ** argv)
       {
         server_context::sptr  ctx{new server_context};
         
-        ctx->service_name("config-service");
+        ctx->service_name(service_ep);
         ctx->endpoint_svc_addr(service_ep);
         ctx->ip_discovery_timeout_ms(1);
         
-        endpoint_server       ep_srv(ctx, service_ep);
+        endpoint_server       ep_srv(ctx);
         endpoint_client       ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
-        config_client         cfg_clnt(cctx, ep_clnt, "config-service");
+        config_client         cfg_clnt(cctx, ep_clnt, service_ep);
         config_server         cfg_srv(ctx, cfg_clnt);
         
         std::atomic<int> i{0};

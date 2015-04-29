@@ -26,6 +26,18 @@ namespace virtdb { namespace connector {
     on_request(req, handler);
   }
   
+  void
+  user_manager_server::on_reply(const rep_base_type::req_item & req,
+                                rep_base_type::rep_item_sptr rep)
+  {
+  }
+  
+  void
+  user_manager_server::on_request(const rep_base_type::req_item & req,
+                                  rep_base_type::send_rep_handler handler)
+  {
+  }
+  
   user_manager_server::user_manager_server(server_context::sptr ctx,
                                            config_client & cfg_client)
   : rep_base_type(ctx,

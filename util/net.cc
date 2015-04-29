@@ -72,6 +72,9 @@ namespace virtdb { namespace util {
       if( !ipv6_ips_resolved )
       {
         ret = resolve_hostname(get_own_hostname(), ipv6_support);
+        if( ret.empty() )
+          ret.push_back("127.0.0.1");
+        
         {
           std::unique_lock<std::mutex> l(mtx);
           ipv6_ips = ret;
@@ -103,8 +106,12 @@ namespace virtdb { namespace util {
     }
     return ret;
 #else
-    return resolve_hostname(get_own_hostname(),
-                            ipv6_support);
+    ret = resolve_hostname(get_own_hostname(),
+                           ipv6_support);
+    if( ret.empty() )
+      ret.push_back("127.0.0.1");
+    
+    return ret;
 #endif
     
     
@@ -114,7 +121,9 @@ namespace virtdb { namespace util {
   net::get_own_hostname()
   {
     char name[2048];
+    name[0] = 0;
     gethostname(name, sizeof(name));
+    name[2047] = 0;
     return std::string(name);
   }
   

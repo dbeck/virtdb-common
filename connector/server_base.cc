@@ -64,7 +64,7 @@ namespace virtdb { namespace connector {
     util::zmq_socket_wrapper::host_set ret;
 
     // add additional hosts if any
-    auto const & bind_also{context_->bind_also_to()};
+    const server_context::hosts_set & bind_also = context_->bind_also_to();
     ret.insert(bind_also.begin(), bind_also.end());
     
     // add my ips

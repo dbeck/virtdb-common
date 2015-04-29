@@ -1,3 +1,5 @@
+
+
 #include "server_context.hh"
 #include <util/hex_util.hh>
 #include <xxhash.h>
@@ -65,7 +67,7 @@ namespace virtdb { namespace connector {
     bind_also_to_.insert(host);
   }
   
-  const server_context::hostset &
+  const server_context::hosts_set &
   server_context::bind_also_to() const
   {
     return bind_also_to_;

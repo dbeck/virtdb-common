@@ -26,6 +26,18 @@ namespace virtdb { namespace connector {
     on_request(req, handler);
   }
 
+  void
+  srcsys_credential_server::on_reply(const rep_base_type::req_item & req,
+                                     rep_base_type::rep_item_sptr rep)
+  {
+  }
+  
+  void
+  srcsys_credential_server::on_request(const rep_base_type::req_item & req,
+                                       rep_base_type::send_rep_handler handler)
+  {
+  }
+  
   srcsys_credential_server::srcsys_credential_server(server_context::sptr ctx,
                                                      config_client & cfg_client)
   : rep_base_type(ctx,

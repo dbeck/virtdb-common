@@ -1,7 +1,7 @@
 #pragma once
 
-#include <connector/server_context.hh>
 #include <connector/endpoint_client.hh>
+#include <connector/server_context.hh>
 #include <svc_config.pb.h>
 
 namespace virtdb { namespace connector {
