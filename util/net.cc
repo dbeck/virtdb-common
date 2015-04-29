@@ -106,8 +106,8 @@ namespace virtdb { namespace util {
     }
     return ret;
 #else
-    ret = resolve_hostname(get_own_hostname(),
-                           ipv6_support);
+    net::string_vector ret = resolve_hostname(get_own_hostname(),
+                                              ipv6_support);
     if( ret.empty() )
       ret.push_back("127.0.0.1");
     
