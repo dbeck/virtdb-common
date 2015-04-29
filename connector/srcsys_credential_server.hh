@@ -2,6 +2,9 @@
 
 #include "rep_server.hh"
 #include <security.pb.h>
+#include <map>
+#include <string>
+#include <mutex>
 
 namespace virtdb { namespace connector {
   
@@ -13,7 +16,16 @@ namespace virtdb { namespace connector {
     typedef rep_server<interface::pb::SourceSystemCredentialRequest,
                        interface::pb::SourceSystemCredentialReply>     rep_base_type;
   private:
-    typedef std::lock_guard<std::mutex>  lock;
+    typedef std::shared_ptr<interface::pb::CredentialValues>                           cred_sptr;
+    typedef std::shared_ptr<interface::pb::SourceSystemCredentialReply::GetTemplate>   tmpl_sptr;
+    typedef std::pair<std::string, std::string>                                        name_token;
+    typedef std::map<name_token, cred_sptr>                                            cred_map;
+    typedef std::map<std::string, tmpl_sptr>                                           tmpl_map;
+    typedef std::lock_guard<std::mutex>                                                lock;
+    
+    cred_map              credentials_;
+    tmpl_map              templates_;
+    mutable std::mutex    mtx_;
     
     void
     on_reply_fwd(const rep_base_type::req_item &,

@@ -169,7 +169,10 @@ namespace virtdb { namespace connector {
         }
           
         default:
+        {
+          THROW_("Unkown request type");
           break;
+        }
       };
     }
     catch (const std::exception & e)
