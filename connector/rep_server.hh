@@ -20,6 +20,7 @@ namespace virtdb { namespace connector {
   public:
     typedef REQ_ITEM                                        req_item;
     typedef REP_ITEM                                        rep_item;
+    typedef std::shared_ptr<req_item>                       req_item_sptr;
     typedef std::shared_ptr<rep_item>                       rep_item_sptr;
     typedef std::function<void(const rep_item_sptr & reply,
                                bool has_more)>              send_rep_handler;

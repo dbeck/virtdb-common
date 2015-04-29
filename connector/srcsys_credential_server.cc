@@ -14,7 +14,6 @@ namespace virtdb { namespace connector {
   srcsys_credential_server::on_reply_fwd(const rep_base_type::req_item & req,
                                          rep_base_type::rep_item_sptr rep)
   {
-    LOG_INFO("FORWARDING");
     on_reply(req, rep);
   }
   
@@ -22,7 +21,6 @@ namespace virtdb { namespace connector {
   srcsys_credential_server::on_request_fwd(const rep_base_type::req_item & req,
                                            rep_base_type::send_rep_handler handler)
   {
-    LOG_INFO("FORWARDING");
     on_request(req, handler);
   }
 

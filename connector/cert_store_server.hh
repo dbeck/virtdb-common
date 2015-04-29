@@ -14,7 +14,13 @@ namespace virtdb { namespace connector {
                        interface::pb::CertStoreReply>    rep_base_type;
     
   private:
-    typedef std::lock_guard<std::mutex>  lock;
+    typedef std::lock_guard<std::mutex>                  lock;
+    typedef std::shared_ptr<interface::pb::Certificate>  cert_sptr;
+    typedef std::pair<std::string, std::string>          name_key;
+    typedef std::map<name_key, cert_sptr>                cert_store;
+    
+    cert_store          certs_;
+    mutable std::mutex  mtx_;
     
     void
     on_reply_fwd(const rep_base_type::req_item &,
