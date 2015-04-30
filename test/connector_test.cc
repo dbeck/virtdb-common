@@ -34,54 +34,9 @@ extern std::string global_mock_ep;
 // void remove_watch(const std::string & subscription);
 #endif
 
-namespace
-{
-  int skip_tests = 0;
-  
-  static bool skip()
-  {
-    return false;
-#if 0
-    if( skip_tests == 1 ) return true;
-    if( skip_tests == 2 ) return false;
-    
-    try
-    {
-      client_context::sptr cctx{new client_context};
-      endpoint_client ep_clnt(cctx, global_mock_ep, "SkipConnectorTests");
-      skip_tests = 2;
-      return false;
-    }
-    catch( const std::exception & e )
-    {
-      std::cout <<
-            "skipping connector tests as config "
-            "service seem to be unavailable at " << global_mock_ep << "\n"
-            "exception was: " << e.what() << "\n";
-      skip_tests = 1;
-      return true;
-    }
-#endif
-  }
-}
-
-void ConnectorCommon::SetUp()
-{
-}
-
-void
-ConnectorCommon::TearDown()
-{
-}
-
-ConnectorCommon::~ConnectorCommon()
-{
-}
 
 TEST_F(ConnConfigClientTest, RemoveNonexistentWatches)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
   
   // only test that it doesn't fail with an error or an exception
@@ -99,8 +54,6 @@ TEST_F(ConnConfigClientTest, RemoveNonexistentWatches)
 
 TEST_F(ConnConfigClientTest, DoubleCleanupRethrow)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
   
   // only test that it doesn't fail with an error or an exception
@@ -117,8 +70,6 @@ TEST_F(ConnConfigClientTest, DoubleCleanupRethrow)
 
 TEST_F(ConnConfigClientTest, TripleRethrow)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
   
   // only test that it doesn't fail with an error or an exception
@@ -134,8 +85,6 @@ TEST_F(ConnConfigClientTest, TripleRethrow)
 
 TEST_F(ConnConfigClientTest, TripleCleanup)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
   
   // only test that it doesn't fail with an error or an exception
@@ -151,8 +100,6 @@ TEST_F(ConnConfigClientTest, TripleCleanup)
 
 TEST_F(ConnConfigClientTest, BadServiceNameToConnect)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
   
   // this should succeed without exception and error
@@ -167,10 +114,8 @@ TEST_F(ConnConfigClientTest, BadServiceNameToConnect)
 
 TEST_F(ConnConfigClientTest, SimpleConnect)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
-
+  
   // only test that it doesn't fail with an error or an exception
   const char * name = "ConfigClientTest-ConnectOnly";
   endpoint_client   ep_clnt(cctx, global_mock_ep, name);
@@ -183,140 +128,116 @@ TEST_F(ConnConfigClientTest, SimpleConnect)
 
 TEST_F(ConnConfigClientTest, ImplementMe_CheckReqChannel)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnConfigClientTest, ImplementMe_CheckSubChannel)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnColumnClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnColumnServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnConfigServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnDbConfigClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnDbConfigServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnEndpointServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnIpDiscoveryClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnIpDiscoveryServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnLogRecordClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnLogRecordServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnMetaDataClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnMetaDataServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnSubClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnPubServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnPushClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnPullServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnQueryClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnQueryServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnReqClientTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnRepServerTest, ImplementMe)
 {
-  if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
 TEST_F(ConnServerBaseTest, ConstuctHostSet)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
 
   const char * name = "ServerBaseTest-ConstuctHostSet";
@@ -333,12 +254,13 @@ TEST_F(ConnServerBaseTest, ConstuctHostSet)
 
 TEST_F(ConnEndpointClientTest, StressWatch)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
 
   const char * name = "EndpointClientTest-StressWatch";
   endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  
+  EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
+  EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
 
   auto watch = [](const pb::EndpointData & ep) {};
 
@@ -386,14 +308,15 @@ TEST_F(ConnEndpointClientTest, StressWatch)
 
 TEST_F(ConnEndpointClientTest, StressRegister)
 {
-  if( skip() ) return;
-
   client_context::sptr cctx{new client_context};
 
   const char * name = "EndpointClientTest-StressRegister";
   
   endpoint_client ep_clnt(cctx, global_mock_ep, name);
   pb::EndpointData ep_data;
+  
+  EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
+  EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
   
   ep_data.set_svctype(pb::ServiceType::OTHER);
   auto conn = ep_data.add_connections();
@@ -418,8 +341,6 @@ TEST_F(ConnEndpointClientTest, StressRegister)
 
 TEST_F(ConnEndpointClientTest, InvalidRegister)
 {
-  if( skip() ) return;
-
   client_context::sptr cctx{new client_context};
   
   const char * name = "EndpointClientTest-InvalidRegister";
@@ -454,8 +375,6 @@ TEST_F(ConnEndpointClientTest, InvalidRegister)
 
 TEST_F(ConnEndpointClientTest, InvalidWatch)
 {
-  if( skip() ) return;
-
   client_context::sptr cctx{new client_context};
   
   const char * name = "EndpointClientTest-InvalidWatch";
@@ -484,8 +403,6 @@ TEST_F(ConnEndpointClientTest, InvalidWatch)
 
 TEST_F(ConnEndpointClientTest, InvalidConstr)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
 
   auto invalid_svc_config_ep = [&]() {
@@ -506,8 +423,6 @@ TEST_F(ConnEndpointClientTest, InvalidConstr)
 
 TEST_F(ConnEndpointClientTest, Watch)
 {
-  if( skip() ) return;
-
   client_context::sptr cctx{new client_context};
   barrier on_callback{2};
   
@@ -566,13 +481,15 @@ TEST_F(ConnEndpointClientTest, Watch)
 
 TEST_F(ConnEndpointClientTest, Expiry)
 {
-  if( skip() ) return;
-
   client_context::sptr cctx{new client_context};
   
   const char * name = "EndpointClientTest-Expiry";
   
   endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  
+  EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
+  EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
+
   
   {
     pb::EndpointData ep_data;
@@ -611,13 +528,14 @@ TEST_F(ConnEndpointClientTest, Expiry)
 
 TEST_F(ConnEndpointClientTest, MonitorException)
 {
-  if( skip() ) return;
-
   client_context::sptr cctx{new client_context};
   
   const char * name = "EndpointClientTest-MonitorException";
   
   endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  
+  EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
+  EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
   
   {
     pb::EndpointData ep_data;
@@ -679,8 +597,6 @@ TEST_F(ConnEndpointClientTest, MonitorException)
 
 TEST_F(ConnEndpointClientTest, Register)
 {
-  if( skip() ) return;
-  
   client_context::sptr cctx{new client_context};
 
   endpoint_client ep_clnt(cctx, global_mock_ep, "EndpointClientTest");
@@ -816,4 +732,16 @@ TEST_F(ConnEndpointClientTest, Register)
   }
 }
 
+void ConnectorCommon::SetUp()
+{
+}
+
+void
+ConnectorCommon::TearDown()
+{
+}
+
+ConnectorCommon::~ConnectorCommon()
+{
+}
 

@@ -198,10 +198,7 @@ namespace virtdb { namespace util {
           
           if( queue_.empty() )
           {
-            cond_.wait_for(l,
-                           std::chrono::milliseconds(WAKEUP_FREQ),
-                           [this] { return !queue_.empty(); }
-                           );
+            cond_.wait_for(l,std::chrono::milliseconds(WAKEUP_FREQ));
           }
           
           if( !queue_.empty() )

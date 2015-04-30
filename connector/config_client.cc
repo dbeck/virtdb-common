@@ -26,7 +26,6 @@ namespace virtdb { namespace connector {
   
   config_client::~config_client()
   {
-    // LOG_SCOPED("destroy config client");
     this->cleanup();
   }
   
@@ -64,7 +63,7 @@ namespace virtdb { namespace connector {
   config_client::cleanup()
   {
     req_base_type::cleanup();
-    sub_base_type::cleanup();    
+    sub_base_type::cleanup();
   }
   
   void

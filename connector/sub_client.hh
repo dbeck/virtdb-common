@@ -359,6 +359,7 @@ namespace virtdb { namespace connector {
     virtual ~sub_client()
     {
       ep_clnt_->remove_watches(service_type);
+      socket_.close();
       worker_.stop();
       queue_.stop();
     }
@@ -366,9 +367,10 @@ namespace virtdb { namespace connector {
     virtual void cleanup()
     {
       ep_clnt_->remove_watches(service_type);
+      socket_.disconnect_all();
+      socket_.close();
       worker_.stop();
       queue_.stop();
-      socket_.disconnect_all();
     }
     
     virtual void rethrow_error()
