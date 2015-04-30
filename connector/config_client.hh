@@ -1,10 +1,8 @@
 #pragma once
 
-#include "endpoint_client.hh"
-#include "req_client.hh"
-#include "sub_client.hh"
-#include "service_type_map.hh"
-#include <functional>
+#include <connector/endpoint_client.hh>
+#include <connector/req_client.hh>
+#include <connector/sub_client.hh>
 
 namespace virtdb { namespace connector {
   

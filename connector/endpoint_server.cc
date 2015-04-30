@@ -26,6 +26,18 @@ using namespace virtdb::logger;
 
 namespace virtdb { namespace connector {
   
+  util::zmq_socket_wrapper::host_set
+  endpoint_server::endpoint_hosts() const
+  {
+    using namespace virtdb::util;
+    zmq_socket_wrapper::host_set hosts;
+    auto ep_global = parse_zmq_tcp_endpoint(global_ep());
+    auto ep_local = parse_zmq_tcp_endpoint(local_ep());
+    hosts.insert(ep_global.first);
+    hosts.insert(ep_local.first);
+    return hosts;
+  }
+  
   const std::string & endpoint_server::local_ep() const { return local_ep_; }
   const std::string & endpoint_server::global_ep() const { return global_ep_; }
   

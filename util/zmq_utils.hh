@@ -34,6 +34,7 @@ namespace virtdb { namespace util {
     endpoint_set                    endpoints_;
     int                             type_;
     bool                            stop_;
+    bool                            closed_;
     size_t                          n_waiting_;
     bool                            valid_;
     std::condition_variable         cv_;
@@ -45,6 +46,8 @@ namespace virtdb { namespace util {
   public:
     zmq_socket_wrapper(zmq::context_t &ctx, int type);
     ~zmq_socket_wrapper();
+    
+    void close();
     
     zmq::socket_t & get();
     endpoint_info bind(const char *addr);
@@ -75,7 +78,8 @@ namespace virtdb { namespace util {
     bool wait_valid(unsigned long ms);
     void wait_valid();
     
-    bool poll_in(unsigned long ms);
+    bool poll_in(unsigned long ms,
+                 unsigned long check_interval_ms=100);
 
     static void valid_subscription(const char * sub_data,
                                    size_t sub_len,

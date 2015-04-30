@@ -182,6 +182,7 @@ namespace virtdb { namespace connector {
   ip_discovery_client::get_ip(endpoint_client & ep_clnt,
                               uint64_t timeout_ms)
   {
+    LOG_SCOPED(V_(ep_clnt.name()) << V_(timeout_ms));
     std::promise<endpoint_vector> ip_discovery_promise;
     std::future<endpoint_vector>  ip_discovery_data{ip_discovery_promise.get_future()};
 

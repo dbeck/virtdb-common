@@ -36,6 +36,8 @@ namespace virtdb { namespace connector {
     void publish_endpoint(const interface::pb::EndpointData & dta);
     
   public:
+    typedef std::shared_ptr<endpoint_server> sptr;
+    
     endpoint_server(server_context::sptr ctx);
     
     const std::string & local_ep() const;
@@ -48,6 +50,8 @@ namespace virtdb { namespace connector {
     virtual ~endpoint_server();
     void cleanup();
     void rethrow_error();
+    
+    util::zmq_socket_wrapper::host_set endpoint_hosts() const;
     
   private:
     endpoint_server() = delete;

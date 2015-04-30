@@ -1,12 +1,9 @@
 #pragma once
 
-#include "rep_server.hh"
-#include "pub_server.hh"
+#include <connector/rep_server.hh>
+#include <connector/pub_server.hh>
+#include <connector/config_client.hh>
 #include <svc_config.pb.h>
-#include <util/async_worker.hh>
-#include <util/zmq_utils.hh>
-#include "config_client.hh"
-#include "endpoint_server.hh"
 #include <map>
 
 namespace virtdb { namespace connector {
@@ -48,14 +45,13 @@ namespace virtdb { namespace connector {
                rep_base_type::send_rep_handler);
     
   public:
+    typedef std::shared_ptr<config_server> sptr;
+
     config_server(server_context::sptr ctx,
                   config_client & cfg_client);
     virtual ~config_server();
     
     virtual void reload_from(const std::string & path);
-    virtual void save_to(const std::string & path);
-    
-    static util::zmq_socket_wrapper::host_set
-    endpoint_hosts(const endpoint_server & ep_server);
+    virtual void save_to(const std::string & path);    
   };
 }}

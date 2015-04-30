@@ -6,8 +6,8 @@
 #include <util/async_worker.hh>
 #include <util/constants.hh>
 #include <logger.hh>
-#include "config_client.hh"
-#include "server_base.hh"
+#include <connector/config_client.hh>
+#include <connector/server_base.hh>
 
 namespace virtdb { namespace connector {
   
@@ -131,15 +131,17 @@ namespace virtdb { namespace connector {
 
     virtual ~pull_server()
     {
+      socket_.close();
       worker_.stop();
       queue_.stop();
     }
     
     virtual void cleanup()
     {
+      socket_.disconnect_all();
+      socket_.close();
       worker_.stop();
       queue_.stop();
-      socket_.disconnect_all();
     }
     
     virtual void rethrow_error()

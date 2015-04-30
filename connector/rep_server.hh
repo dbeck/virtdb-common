@@ -7,8 +7,8 @@
 #include <util/flex_alloc.hh>
 #include <util/constants.hh>
 #include <logger.hh>
-#include "config_client.hh"
-#include "server_base.hh"
+#include <connector/config_client.hh>
+#include <connector/server_base.hh>
 #include <list>
 
 namespace virtdb { namespace connector {
@@ -196,13 +196,15 @@ namespace virtdb { namespace connector {
     
     virtual ~rep_server()
     {
+      socket_.close();
       worker_.stop();
     }
     
     virtual void cleanup()
     {
-      worker_.stop();
       socket_.disconnect_all();
+      socket_.close();
+      worker_.stop();
     }
     
     virtual void rethrow_error()

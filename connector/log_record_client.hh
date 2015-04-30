@@ -1,12 +1,10 @@
 #pragma once
 
-#include "endpoint_client.hh"
+#include <connector/endpoint_client.hh>
 #include <util/zmq_utils.hh>
-#include "req_client.hh"
-#include "sub_client.hh"
-#include "service_type_map.hh"
+#include <connector/req_client.hh>
+#include <connector/sub_client.hh>
 #include <memory>
-#include <logger.hh>
 #include <map>
 #include <functional>
 #include <mutex>

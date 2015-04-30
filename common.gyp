@@ -503,15 +503,8 @@
                              'test/engine_test.cc',       'test/engine_test.hh',
                              'test/fault_test.cc',        'test/fault_test.hh',
                              'test/cachedb_test.cc',      'test/cachedb_test.hh',
+                             'test/cfgsvc_mock.cc',       'test/cfgsvc_mock.hh',
                            ],
-    },
-    {
-      'target_name':       'cfgsvc_mock',
-      'type':              'executable',
-      'dependencies':      [ 'common', 'proto/proto.gyp:*', ],
-      'include_dirs':      [ './gtest/include/', ],
-      'cflags':            [ '-std=c++11', '-Wall', ],
-      'sources':           [ 'test/cfgsvc_mock.cc', ],
     },
     {
       'target_name':       'murmur3',

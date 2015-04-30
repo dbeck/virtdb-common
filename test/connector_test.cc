@@ -1,7 +1,11 @@
 #include "connector_test.hh"
 #include <logger.hh>
-#include <connector/endpoint_client.hh>
+#include <connector/server_base.hh>
+#include <connector/server_context.hh>
 #include <connector/client_context.hh>
+#include <connector/endpoint_client.hh>
+#include <connector/config_client.hh>
+#include <test/cfgsvc_mock.hh>
 #include <atomic>
 #include <thread>
 #include <util/barrier.hh>
@@ -36,6 +40,8 @@ namespace
   
   static bool skip()
   {
+    return false;
+#if 0
     if( skip_tests == 1 ) return true;
     if( skip_tests == 2 ) return false;
     
@@ -55,11 +61,24 @@ namespace
       skip_tests = 1;
       return true;
     }
+#endif
   }
 }
 
+void ConnectorCommon::SetUp()
+{
+}
 
-TEST_F(ConfigClientTest, RemoveNonexistentWatches)
+void
+ConnectorCommon::TearDown()
+{
+}
+
+ConnectorCommon::~ConnectorCommon()
+{
+}
+
+TEST_F(ConnConfigClientTest, RemoveNonexistentWatches)
 {
   if( skip() ) return;
   
@@ -78,7 +97,7 @@ TEST_F(ConfigClientTest, RemoveNonexistentWatches)
   EXPECT_NO_THROW(test_fun());
 }
 
-TEST_F(ConfigClientTest, DoubleCleanupRethrow)
+TEST_F(ConnConfigClientTest, DoubleCleanupRethrow)
 {
   if( skip() ) return;
   
@@ -96,7 +115,7 @@ TEST_F(ConfigClientTest, DoubleCleanupRethrow)
   cfg_clnt.rethrow_error();
 }
 
-TEST_F(ConfigClientTest, TripleRethrow)
+TEST_F(ConnConfigClientTest, TripleRethrow)
 {
   if( skip() ) return;
   
@@ -113,7 +132,7 @@ TEST_F(ConfigClientTest, TripleRethrow)
   cfg_clnt.rethrow_error();
 }
 
-TEST_F(ConfigClientTest, TripleCleanup)
+TEST_F(ConnConfigClientTest, TripleCleanup)
 {
   if( skip() ) return;
   
@@ -130,7 +149,7 @@ TEST_F(ConfigClientTest, TripleCleanup)
   cfg_clnt.cleanup();
 }
 
-TEST_F(ConfigClientTest, BadServiceNameToConnect)
+TEST_F(ConnConfigClientTest, BadServiceNameToConnect)
 {
   if( skip() ) return;
   
@@ -146,7 +165,7 @@ TEST_F(ConfigClientTest, BadServiceNameToConnect)
   EXPECT_FALSE(cfg_clnt.wait_valid_req(200));
 }
 
-TEST_F(ConfigClientTest, SimpleConnect)
+TEST_F(ConnConfigClientTest, SimpleConnect)
 {
   if( skip() ) return;
   
@@ -162,139 +181,139 @@ TEST_F(ConfigClientTest, SimpleConnect)
   EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
 }
 
-TEST_F(ConfigClientTest, ImplementMe_CheckReqChannel)
+TEST_F(ConnConfigClientTest, ImplementMe_CheckReqChannel)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(ConfigClientTest, ImplementMe_CheckSubChannel)
+TEST_F(ConnConfigClientTest, ImplementMe_CheckSubChannel)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(ColumnClientTest, ImplementMe)
+TEST_F(ConnColumnClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(ColumnServerTest, ImplementMe)
+TEST_F(ConnColumnServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(ConfigServerTest, ImplementMe)
+TEST_F(ConnConfigServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(DbConfigClientTest, ImplementMe)
+TEST_F(ConnDbConfigClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(DbConfigServerTest, ImplementMe)
+TEST_F(ConnDbConfigServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(EndpointServerTest, ImplementMe)
+TEST_F(ConnEndpointServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(IpDiscoveryClientTest, ImplementMe)
+TEST_F(ConnIpDiscoveryClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(IpDiscoveryServerTest, ImplementMe)
+TEST_F(ConnIpDiscoveryServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(LogRecordClientTest, ImplementMe)
+TEST_F(ConnLogRecordClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(LogRecordServerTest, ImplementMe)
+TEST_F(ConnLogRecordServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(MetaDataClientTest, ImplementMe)
+TEST_F(ConnMetaDataClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(MetaDataServerTest, ImplementMe)
+TEST_F(ConnMetaDataServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(SubClientTest, ImplementMe)
+TEST_F(ConnSubClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(PubServerTest, ImplementMe)
+TEST_F(ConnPubServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(PushClientTest, ImplementMe)
+TEST_F(ConnPushClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(PullServerTest, ImplementMe)
+TEST_F(ConnPullServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(QueryClientTest, ImplementMe)
+TEST_F(ConnQueryClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(QueryServerTest, ImplementMe)
+TEST_F(ConnQueryServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(ReqClientTest, ImplementMe)
+TEST_F(ConnReqClientTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(RepServerTest, ImplementMe)
+TEST_F(ConnRepServerTest, ImplementMe)
 {
   if( skip() ) return;
   EXPECT_TRUE(false);
 }
 
-TEST_F(ServerBaseTest, ConstuctHostSet)
+TEST_F(ConnServerBaseTest, ConstuctHostSet)
 {
   if( skip() ) return;
   
@@ -312,7 +331,7 @@ TEST_F(ServerBaseTest, ConstuctHostSet)
   auto const & host_set{bs.hosts(ep_clnt)};
 }
 
-TEST_F(EndpointClientTest, StressWatch)
+TEST_F(ConnEndpointClientTest, StressWatch)
 {
   if( skip() ) return;
   
@@ -365,7 +384,7 @@ TEST_F(EndpointClientTest, StressWatch)
   }
 }
 
-TEST_F(EndpointClientTest, StressRegister)
+TEST_F(ConnEndpointClientTest, StressRegister)
 {
   if( skip() ) return;
 
@@ -397,7 +416,7 @@ TEST_F(EndpointClientTest, StressRegister)
   }
 }
 
-TEST_F(EndpointClientTest, InvalidRegister)
+TEST_F(ConnEndpointClientTest, InvalidRegister)
 {
   if( skip() ) return;
 
@@ -433,7 +452,7 @@ TEST_F(EndpointClientTest, InvalidRegister)
   }
 }
 
-TEST_F(EndpointClientTest, InvalidWatch)
+TEST_F(ConnEndpointClientTest, InvalidWatch)
 {
   if( skip() ) return;
 
@@ -463,7 +482,7 @@ TEST_F(EndpointClientTest, InvalidWatch)
   }
 }
 
-TEST_F(EndpointClientTest, InvalidConstr)
+TEST_F(ConnEndpointClientTest, InvalidConstr)
 {
   if( skip() ) return;
   
@@ -485,7 +504,7 @@ TEST_F(EndpointClientTest, InvalidConstr)
   EXPECT_THROW(malformed_ep(), virtdb::util::exception);
 }
 
-TEST_F(EndpointClientTest, Watch)
+TEST_F(ConnEndpointClientTest, Watch)
 {
   if( skip() ) return;
 
@@ -545,7 +564,7 @@ TEST_F(EndpointClientTest, Watch)
   }
 }
 
-TEST_F(EndpointClientTest, Expiry)
+TEST_F(ConnEndpointClientTest, Expiry)
 {
   if( skip() ) return;
 
@@ -590,7 +609,7 @@ TEST_F(EndpointClientTest, Expiry)
   }
 }
 
-TEST_F(EndpointClientTest, MonitorException)
+TEST_F(ConnEndpointClientTest, MonitorException)
 {
   if( skip() ) return;
 
@@ -658,7 +677,7 @@ TEST_F(EndpointClientTest, MonitorException)
   }
 }
 
-TEST_F(EndpointClientTest, Register)
+TEST_F(ConnEndpointClientTest, Register)
 {
   if( skip() ) return;
   

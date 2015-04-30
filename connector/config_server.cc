@@ -18,17 +18,6 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  zmq_socket_wrapper::host_set
-  config_server::endpoint_hosts(const endpoint_server & ep_server)
-  {
-    zmq_socket_wrapper::host_set hosts;
-    auto ep_global = parse_zmq_tcp_endpoint(ep_server.global_ep());
-    auto ep_local = parse_zmq_tcp_endpoint(ep_server.local_ep());
-    hosts.insert(ep_global.first);
-    hosts.insert(ep_local.first);
-    return hosts;
-  }
-  
   config_server::config_server(server_context::sptr ctx,
                                config_client & cfg_client)
   :

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "endpoint_client.hh"
+#include <connector/endpoint_client.hh>
 #include <connector/client_context.hh>
 
 namespace virtdb { namespace connector {

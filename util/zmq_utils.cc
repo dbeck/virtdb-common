@@ -6,6 +6,7 @@
 #include <logger.hh>
 #include <sstream>
 #include <mutex>
+#include <unistd.h>
 
 #ifndef NO_IPV6_SUPPORT
 #define VIRTDB_SUPPORTS_IPV6 true
@@ -64,17 +65,20 @@ namespace virtdb { namespace util {
   }
   
   zmq_socket_wrapper::zmq_socket_wrapper(zmq::context_t &ctx, int type)
-  : socket_(ctx, type),
-    type_(type),
-    stop_(false),
-    n_waiting_(0),
-    valid_(false)
+  : socket_{ctx, type},
+    type_{type},
+    stop_{false},
+    n_waiting_{0},
+    valid_{false},
+    closed_{false}
   {
   }
   
-  zmq_socket_wrapper::~zmq_socket_wrapper()
+  void
+  zmq_socket_wrapper::close()
   {
-    try {
+    try
+    {
       cv_.notify_all();
       size_t nw = 1;
       {
@@ -86,23 +90,66 @@ namespace virtdb { namespace util {
       
       while ( nw > 0 )
       {
+        cv_.notify_all();
+        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         {
           lock l(mtx_);
           nw = n_waiting_;
         }
-        cv_.notify_all();
-        std::this_thread::yield();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+      
+      {
+        lock l(mtx_);
+        if( closed_ ) return;
       }
       
       // make sure we don't block context destroy in any ways
       int linger = 1;
       socket_.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
       socket_.close();
+      {
+        lock l(mtx_);
+        closed_ = true;
+      }
     }
-    catch (...)
+    catch( const std::exception & e )
     {
-      std::cerr << "exception during ZMQ socket close";
+      std::cerr << "exception during ZMQ socket close: " << e.what();
+    }
+    catch( const zmq::error_t & e )
+    {
+      std::cerr << "ZMQ exception during ZMQ socket close: " << e.what();
+    }
+    catch( ... )
+    {
+      std::cerr << "unknown exception during ZMQ socket close";
+    }
+
+  }
+  
+  zmq_socket_wrapper::~zmq_socket_wrapper()
+  {
+    try
+    {
+      bool cl = false;
+      {
+        lock l(mtx_);
+        cl = closed_;
+      }
+      if( !cl ) close();
+    }
+    catch( const std::exception & e )
+    {
+      std::cerr << "exception during ZMQ socket close + destroy: " << e.what();
+    }
+    catch( const zmq::error_t & e )
+    {
+      std::cerr << "ZMQ exception during ZMQ socket close + destroy:" << e.what();
+    }
+    catch( ... )
+    {
+      std::cerr << "unknown exception during ZMQ socket close + destroy";
     }
   }
   
@@ -450,27 +497,52 @@ namespace virtdb { namespace util {
   }
   
   bool
-  zmq_socket_wrapper::poll_in(unsigned long ms)
+  zmq_socket_wrapper::poll_in(unsigned long ms,
+                              unsigned long check_interval_ms)
   {
     if( !valid_ )
       return false;
     
-    // interested in incoming messages
-    zmq::pollitem_t poll_item{
-      socket_,
-      0,
-      ZMQ_POLLIN,
-      0
-    };
+    if( ms < check_interval_ms )
+      check_interval_ms = ms;
     
-    int poll_ret = zmq::poll(&poll_item, 1, ms);
-    if( poll_ret == -1 || !(poll_item.revents & ZMQ_POLLIN) )
+    try
     {
+      auto end_at = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms);
+      
+      while( std::chrono::steady_clock::now() < end_at )
+      {
+        if( !valid_ || closed_ )
+          return false;
+        
+        // interested in incoming messages
+        zmq::pollitem_t poll_items[1] {
+          { socket_, 0, ZMQ_POLLIN, 0 }
+        };
+        
+        int poll_ret = zmq::poll(poll_items, 1, check_interval_ms);
+        
+        if( poll_ret == -1 )
+        {
+          return false;
+        }
+        else if( poll_items[0].revents & ZMQ_POLLIN )
+        {
+          return true;
+        }
+      }
+      
+      // timed out
       return false;
     }
-    else
+    catch( ... )
     {
-      return true;
+      if( !stop_ )
+      {
+        // rethrow unless we are about to stop this socket
+        throw;
+      }
+      return false;
     }
   }
   

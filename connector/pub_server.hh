@@ -119,6 +119,19 @@ namespace virtdb { namespace connector {
       queue_.push(std::make_pair(channel, item_sptr));
     }
     
+    virtual ~pub_server()
+    {
+      socket_.close();
+      queue_.stop();
+    }
+    
+    virtual void cleanup()
+    {
+      socket_.disconnect_all();
+      socket_.close();
+      queue_.stop();
+    }
+    
   private:
     pub_server() = delete;
     pub_server(const pub_server &) = delete;

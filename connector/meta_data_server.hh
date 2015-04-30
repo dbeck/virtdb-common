@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rep_server.hh"
-#include "pub_server.hh"
+#include <connector/rep_server.hh>
+#include <connector/pub_server.hh>
 #include <meta_data.pb.h>
 #include <map>
 #include <mutex>

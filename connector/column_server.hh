@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config_client.hh"
-#include "pub_server.hh"
+#include <connector/config_client.hh>
+#include <connector/pub_server.hh>
 #include <data.pb.h>
 
 namespace virtdb { namespace connector {

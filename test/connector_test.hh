@@ -1,45 +1,52 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <connector.hh>
 
 namespace virtdb { namespace test {
-
-  class EndpointClientTest : public ::testing::Test { };
-  class ServerBaseTest : public ::testing::Test { };
-  class ConfigClientTest : public ::testing::Test { };
+  
+  class ConnectorCommon : public ::testing::Test
+  {
+  protected:
+    virtual void SetUp();
+    virtual void TearDown();    
+    virtual ~ConnectorCommon();
+  };
+  
+  class ConnEndpointClientTest : public ConnectorCommon { };
+  class ConnServerBaseTest : public ConnectorCommon { };
+  class ConnConfigClientTest : public ConnectorCommon { };
 
   
-  class ColumnClientTest : public ::testing::Test { };
-  class ColumnServerTest : public ::testing::Test { };
+  class ConnColumnClientTest : public ConnectorCommon { };
+  class ConnColumnServerTest : public ConnectorCommon { };
 
-  class ConfigServerTest : public ::testing::Test { };
+  class ConnConfigServerTest : public ConnectorCommon { };
   
-  class DbConfigClientTest : public ::testing::Test { };
-  class DbConfigServerTest : public ::testing::Test { };
+  class ConnDbConfigClientTest : public ConnectorCommon { };
+  class ConnDbConfigServerTest : public ConnectorCommon { };
   
-  class EndpointServerTest : public ::testing::Test { };
+  class ConnEndpointServerTest : public ConnectorCommon { };
   
-  class IpDiscoveryClientTest : public ::testing::Test { };
-  class IpDiscoveryServerTest : public ::testing::Test { };
+  class ConnIpDiscoveryClientTest : public ConnectorCommon { };
+  class ConnIpDiscoveryServerTest : public ConnectorCommon { };
   
-  class LogRecordClientTest : public ::testing::Test { };
-  class LogRecordServerTest : public ::testing::Test { };
+  class ConnLogRecordClientTest : public ConnectorCommon { };
+  class ConnLogRecordServerTest : public ConnectorCommon { };
   
-  class MetaDataClientTest : public ::testing::Test { };
-  class MetaDataServerTest : public ::testing::Test { };
+  class ConnMetaDataClientTest : public ConnectorCommon { };
+  class ConnMetaDataServerTest : public ConnectorCommon { };
 
-  class SubClientTest : public ::testing::Test { };
-  class PubServerTest : public ::testing::Test { };
+  class ConnSubClientTest : public ConnectorCommon { };
+  class ConnPubServerTest : public ConnectorCommon { };
 
-  class PushClientTest : public ::testing::Test { };
-  class PullServerTest : public ::testing::Test { };
+  class ConnPushClientTest : public ConnectorCommon { };
+  class ConnPullServerTest : public ConnectorCommon { };
 
-  class QueryClientTest : public ::testing::Test { };
-  class QueryServerTest : public ::testing::Test { };
+  class ConnQueryClientTest : public ConnectorCommon { };
+  class ConnQueryServerTest : public ConnectorCommon { };
 
-  class ReqClientTest : public ::testing::Test { };
-  class RepServerTest : public ::testing::Test { };
+  class ConnReqClientTest : public ConnectorCommon { };
+  class ConnRepServerTest : public ConnectorCommon { };
   
 }}
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "push_client.hh"
+#include <connector/push_client.hh>
 #include <data.pb.h>
 
 namespace virtdb { namespace connector {

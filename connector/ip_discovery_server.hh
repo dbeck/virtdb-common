@@ -2,11 +2,8 @@
 
 #include <util/barrier.hh>
 #include <util/async_worker.hh>
-#include <utility>
 #include <set>
 #include <string>
-#include <thread>
-#include <atomic>
 
 namespace virtdb { namespace connector {
   

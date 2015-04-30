@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rep_server.hh"
+#include <connector/rep_server.hh>
 #include <security.pb.h>
 
 namespace virtdb { namespace connector {

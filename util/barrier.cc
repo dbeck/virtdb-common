@@ -43,10 +43,7 @@ barrier::wait()
       return;
     
     // doing this in a timed loop, so we don't rely on notifications alone
-    cond_.wait_for(l,
-                   std::chrono::milliseconds(SHORT_TIMEOUT_MS),
-                   [this] { return (nwaiting_ >= nthreads_); }
-                   );
+    cond_.wait_for(l, std::chrono::milliseconds(SHORT_TIMEOUT_MS) );
   }
 }
 

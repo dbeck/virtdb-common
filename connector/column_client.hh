@@ -1,12 +1,8 @@
 #pragma once
 
-#include "endpoint_client.hh"
-#include "sub_client.hh"
+#include <connector/endpoint_client.hh>
+#include <connector/sub_client.hh>
 #include <data.pb.h>
-#include <util/zmq_utils.hh>
-#include <functional>
-#include <vector>
-#include <map>
 
 namespace virtdb { namespace connector {
   

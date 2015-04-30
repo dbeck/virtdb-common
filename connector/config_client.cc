@@ -1,4 +1,10 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "config_client.hh"
+#include <logger.hh>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -18,7 +24,11 @@ namespace virtdb { namespace connector {
   {
   }
   
-  config_client::~config_client() {}
+  config_client::~config_client()
+  {
+    // LOG_SCOPED("destroy config client");
+    this->cleanup();
+  }
   
   endpoint_client &
   config_client::get_endpoint_client()

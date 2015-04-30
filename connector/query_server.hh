@@ -1,7 +1,6 @@
 #pragma once
 
-#include "pull_server.hh"
-#include "column_location.hh"
+#include <connector/pull_server.hh>
 #include <data.pb.h>
 
 namespace virtdb { namespace connector {

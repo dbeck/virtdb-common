@@ -4,9 +4,9 @@
 #include <util/zmq_utils.hh>
 #include <util/flex_alloc.hh>
 #include <util/exception.hh>
-#include "client_base.hh"
-#include "endpoint_client.hh"
-#include "service_type_map.hh"
+#include <connector/client_base.hh>
+#include <connector/endpoint_client.hh>
+#include <connector/service_type_map.hh>
 
 namespace virtdb { namespace connector {
       

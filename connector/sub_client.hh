@@ -6,9 +6,9 @@
 #include <util/active_queue.hh>
 #include <util/constants.hh>
 #include <util/exception.hh>
-#include "endpoint_client.hh"
-#include "client_base.hh"
-#include "service_type_map.hh"
+#include <connector/endpoint_client.hh>
+#include <connector/client_base.hh>
+#include <connector/service_type_map.hh>
 #include <memory>
 #include <map>
 

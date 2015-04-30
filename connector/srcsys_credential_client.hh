@@ -1,6 +1,6 @@
 #pragma once
 
-#include "req_client.hh"
+#include <connector/req_client.hh>
 #include <security.pb.h>
 
 namespace virtdb { namespace connector {
