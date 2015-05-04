@@ -1,52 +1,40 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <memory>
+
+namespace virtdb { namespace connector {
+
+  // forward declarations
+  class client_context;
+}}
 
 namespace virtdb { namespace test {
   
   class ConnectorCommon : public ::testing::Test
   {
   protected:
+    std::shared_ptr<connector::client_context> cctx_;
     virtual void SetUp();
-    virtual void TearDown();    
-    virtual ~ConnectorCommon();
   };
   
-  class ConnEndpointClientTest : public ConnectorCommon { };
+  class ConnEndpointTest : public ConnectorCommon { };
+  class ConnConfigTest : public ConnectorCommon { };
   class ConnServerBaseTest : public ConnectorCommon { };
-  class ConnConfigClientTest : public ConnectorCommon { };
 
+  class ConnCertStoreTest : public ConnectorCommon { };
+  class ConnSrcsysCredTest : public ConnectorCommon { };
   
-  class ConnColumnClientTest : public ConnectorCommon { };
-  class ConnColumnServerTest : public ConnectorCommon { };
-
-  class ConnConfigServerTest : public ConnectorCommon { };
+  class ConnIpDiscoveryTest : public ConnectorCommon { };
+  class ConnLogRecordTest : public ConnectorCommon { };
   
-  class ConnDbConfigClientTest : public ConnectorCommon { };
-  class ConnDbConfigServerTest : public ConnectorCommon { };
+  class ConnQueryTest : public ConnectorCommon { };
+  class ConnColumnTest : public ConnectorCommon { };
+  class ConnMetaDataTest : public ConnectorCommon { };
   
-  class ConnEndpointServerTest : public ConnectorCommon { };
-  
-  class ConnIpDiscoveryClientTest : public ConnectorCommon { };
-  class ConnIpDiscoveryServerTest : public ConnectorCommon { };
-  
-  class ConnLogRecordClientTest : public ConnectorCommon { };
-  class ConnLogRecordServerTest : public ConnectorCommon { };
-  
-  class ConnMetaDataClientTest : public ConnectorCommon { };
-  class ConnMetaDataServerTest : public ConnectorCommon { };
-
-  class ConnSubClientTest : public ConnectorCommon { };
-  class ConnPubServerTest : public ConnectorCommon { };
-
-  class ConnPushClientTest : public ConnectorCommon { };
-  class ConnPullServerTest : public ConnectorCommon { };
-
-  class ConnQueryClientTest : public ConnectorCommon { };
-  class ConnQueryServerTest : public ConnectorCommon { };
-
-  class ConnReqClientTest : public ConnectorCommon { };
-  class ConnRepServerTest : public ConnectorCommon { };
+  class ConnPubSubTest : public ConnectorCommon { };
+  class ConnPushPullTest : public ConnectorCommon { };
+  class ConnReqRepTest : public ConnectorCommon { };
   
 }}
 

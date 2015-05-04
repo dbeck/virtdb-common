@@ -75,6 +75,13 @@ namespace virtdb { namespace util {
   }
   
   void
+  zmq_socket_wrapper::stop()
+  {
+    lock l(mtx_);
+    stop_ = true;
+  }
+  
+  void
   zmq_socket_wrapper::close()
   {
     try
@@ -100,16 +107,13 @@ namespace virtdb { namespace util {
       }
       
       {
-        lock l(mtx_);
+        lock l(close_mtx_);
         if( closed_ ) return;
-      }
-      
-      // make sure we don't block context destroy in any ways
-      int linger = 1;
-      socket_.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
-      socket_.close();
-      {
-        lock l(mtx_);
+        
+        // make sure we don't block context destroy in any ways
+        int linger = 1;
+        socket_.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
+        socket_.close();
         closed_ = true;
       }
     }
@@ -134,7 +138,7 @@ namespace virtdb { namespace util {
     {
       bool cl = false;
       {
-        lock l(mtx_);
+        lock l(close_mtx_);
         cl = closed_;
       }
       if( !cl ) close();
@@ -319,8 +323,11 @@ namespace virtdb { namespace util {
   zmq_socket_wrapper::connect (const char * addr)
   {
     if( !addr ) return;
-    socket_.connect(addr);
-    endpoints_.insert(addr);
+    {
+      lock l(mtx_);
+      socket_.connect(addr);
+      endpoints_.insert(addr);
+    }
     set_valid();
   }
   
@@ -328,7 +335,10 @@ namespace virtdb { namespace util {
   zmq_socket_wrapper::reconnect (const char * addr)
   {
     if( !addr ) return;
-    if( endpoints_.count(addr) > 0 ) return;
+    {
+      lock l(mtx_);
+      if( endpoints_.count(addr) > 0 ) return;
+    }
     disconnect_all();
     connect(addr);
     set_valid();
@@ -338,9 +348,14 @@ namespace virtdb { namespace util {
   zmq_socket_wrapper::disconnect_all()
   {
     // disconnect from all endpoints if any
-    for( auto & ep : endpoints_ )
-      socket_.disconnect(ep.c_str());
-    endpoints_.clear();
+    
+    {
+      lock l(mtx_);
+      lock lc(close_mtx_);
+      for( auto & ep : endpoints_ )
+        socket_.disconnect(ep.c_str());
+      endpoints_.clear();
+    }
     set_invalid();
   }
   
@@ -471,12 +486,12 @@ namespace virtdb { namespace util {
     return false;
   }
 
-  void
+  bool
   zmq_socket_wrapper::wait_valid()
   {
     {
       lock l(mtx_);
-      if( stop_ ) return;
+      if( stop_ ) return false;
       ++n_waiting_;
     }
     decrease_on_return<size_t> dec_ret(n_waiting_);
@@ -484,10 +499,10 @@ namespace virtdb { namespace util {
     while( !stop_ )
     {
       lock l(mtx_);
-      if( valid_ ) return;
+      if( valid_ ) return true;
       cv_.wait_for(l, std::chrono::milliseconds(DEFAULT_TIMEOUT_MS));
     }
-    return;
+    return false;
   }
   
   const zmq_socket_wrapper::endpoint_set &
@@ -512,7 +527,7 @@ namespace virtdb { namespace util {
       
       while( std::chrono::steady_clock::now() < end_at )
       {
-        if( !valid_ || closed_ )
+        if( !valid_ || stop_ )
           return false;
         
         // interested in incoming messages
@@ -520,7 +535,13 @@ namespace virtdb { namespace util {
           { socket_, 0, ZMQ_POLLIN, 0 }
         };
         
-        int poll_ret = zmq::poll(poll_items, 1, check_interval_ms);
+        int poll_ret = 0;
+        
+        {
+          lock l(close_mtx_);
+          if( closed_ ) return false;
+          poll_ret = zmq::poll(poll_items, 1, check_interval_ms);
+        }
         
         if( poll_ret == -1 )
         {

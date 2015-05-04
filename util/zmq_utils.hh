@@ -39,15 +39,15 @@ namespace virtdb { namespace util {
     bool                            valid_;
     std::condition_variable         cv_;
     mutable mtx                     mtx_;
+    mutable mtx                     close_mtx_;
     
     void set_valid();
     void set_invalid();
+    void close();
     
   public:
     zmq_socket_wrapper(zmq::context_t &ctx, int type);
     ~zmq_socket_wrapper();
-    
-    void close();
     
     zmq::socket_t & get();
     endpoint_info bind(const char *addr);
@@ -75,8 +75,9 @@ namespace virtdb { namespace util {
       return false;
     }
     
+    void stop();
     bool wait_valid(unsigned long ms);
-    void wait_valid();
+    bool wait_valid();
     
     bool poll_in(unsigned long ms,
                  unsigned long check_interval_ms=100);

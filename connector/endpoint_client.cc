@@ -181,7 +181,8 @@ namespace virtdb { namespace connector {
       
       if( !message_sent ) { THROW_("Couldn't send enpoint message"); }
       
-      if( !ep_req_socket_.poll_in(DEFAULT_TIMEOUT_MS) )
+      if( !ep_req_socket_.poll_in(DEFAULT_TIMEOUT_MS,
+                                  SHORT_TIMEOUT_MS) )
       {
         THROW_("no response for EndpointMessage");
       }
@@ -247,7 +248,8 @@ namespace virtdb { namespace connector {
       if( !ep_sub_socket_.wait_valid(util::DEFAULT_TIMEOUT_MS) )
         return true;
       
-      if( !ep_sub_socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
+      if( !ep_sub_socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
+                                  util::TINY_TIMEOUT_MS) )
         return true;
     }
     catch (const zmq::error_t & e)
@@ -350,7 +352,6 @@ namespace virtdb { namespace connector {
   void
   endpoint_client::remove_watches(interface::pb::ServiceType st)
   {
-    LOG_TRACE("remove watches for" << V_((int)st));
     std::lock_guard<std::mutex> lock(mtx_);
     auto it = monitors_.find(st);
     if( it != monitors_.end() )
@@ -369,7 +370,6 @@ namespace virtdb { namespace connector {
                          monitor m)
   {
     if( !m ) { THROW_("invalid monitor in endpoint client"); }
-    LOG_TRACE("start watching" << V_((int)st));
     std::lock_guard<std::mutex> lock(mtx_);
     {
       auto it = monitors_.find(st);
@@ -435,7 +435,6 @@ namespace virtdb { namespace connector {
   endpoint_client::fire_monitor(monitor & m,
                                 const interface::pb::EndpointData & ep)
   {
-    LOG_TRACE("run monitior for" << M_(ep) << V_((int)ep.svctype()));
     if( ep.svctype() == interface::pb::ServiceType::NONE )
     {
       // ignore this service type and save others time too

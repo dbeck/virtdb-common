@@ -121,14 +121,14 @@ namespace virtdb { namespace connector {
     
     virtual ~pub_server()
     {
-      socket_.close();
+      socket_.stop();
       queue_.stop();
     }
     
     virtual void cleanup()
     {
       socket_.disconnect_all();
-      socket_.close();
+      socket_.stop();
       queue_.stop();
     }
     

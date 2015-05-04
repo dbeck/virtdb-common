@@ -11,7 +11,8 @@ namespace virtdb { namespace connector {
   {
   public:
     typedef rep_server<interface::pb::CertStoreRequest,
-                       interface::pb::CertStoreReply>    rep_base_type;
+                       interface::pb::CertStoreReply>     rep_base_type;
+    typedef std::shared_ptr<cert_store_server>            sptr;
     
   private:
     typedef std::lock_guard<std::mutex>                  lock;

@@ -144,14 +144,14 @@ namespace virtdb { namespace connector {
     virtual ~push_client()
     {
       ep_clnt_->remove_watches(service_type);
-      socket_.close();
+      socket_.stop();
     }
     
     virtual void cleanup()
     {
       ep_clnt_->remove_watches(service_type);
       socket_.disconnect_all();
-      socket_.close();
+      socket_.stop();
     }
     
   private:

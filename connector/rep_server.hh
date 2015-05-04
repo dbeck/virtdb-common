@@ -38,7 +38,8 @@ namespace virtdb { namespace connector {
     
     bool worker_function()
     {
-      if( !socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
+      if( !socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
+                           util::SHORT_TIMEOUT_MS) )
         return true;
 
       // poll said we have data ...
@@ -196,14 +197,14 @@ namespace virtdb { namespace connector {
     
     virtual ~rep_server()
     {
-      socket_.close();
+      socket_.stop();
       worker_.stop();
     }
     
     virtual void cleanup()
     {
       socket_.disconnect_all();
-      socket_.close();
+      socket_.stop();
       worker_.stop();
     }
     

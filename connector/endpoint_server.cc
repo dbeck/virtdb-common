@@ -208,7 +208,8 @@ namespace virtdb { namespace connector {
   bool
   endpoint_server::worker_function()
   {
-    if( !ep_rep_socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
+    if( !ep_rep_socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
+                                util::SHORT_TIMEOUT_MS) )
       return true;
     
     zmq::message_t message;

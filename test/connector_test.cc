@@ -5,6 +5,9 @@
 #include <connector/client_context.hh>
 #include <connector/endpoint_client.hh>
 #include <connector/config_client.hh>
+#include <connector/cert_store_client.hh>
+#include <connector/srcsys_credential_client.hh>
+#include <connector/ip_discovery_client.hh>
 #include <test/cfgsvc_mock.hh>
 #include <atomic>
 #include <thread>
@@ -34,236 +37,21 @@ extern std::string global_mock_ep;
 // void remove_watch(const std::string & subscription);
 #endif
 
-
-TEST_F(ConnConfigClientTest, RemoveNonexistentWatches)
+void ConnectorCommon::SetUp()
 {
-  client_context::sptr cctx{new client_context};
-  
-  // only test that it doesn't fail with an error or an exception
-  const char * name = "ConfigClientTest-RemoveNonexistentWatches";
-  auto test_fun = [&]() {
-    endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-    config_client     cfg_clnt(cctx, ep_clnt, "config-service");
-    
-    // this is OK:
-    cfg_clnt.remove_watches();
-  };
-  
-  EXPECT_NO_THROW(test_fun());
+  cctx_.reset(new client_context);
 }
 
-TEST_F(ConnConfigClientTest, DoubleCleanupRethrow)
+TEST_F(ConnEndpointTest, StressWatch)
 {
-  client_context::sptr cctx{new client_context};
-  
-  // only test that it doesn't fail with an error or an exception
-  const char * name = "ConfigClientTest-DoubleCleanupRethrow";
-  endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-  config_client     cfg_clnt(cctx, ep_clnt, "config-service");
-  
-  // this sequence is valid, rethrow should throw excpetions here
-  cfg_clnt.cleanup();
-  cfg_clnt.rethrow_error();
-  cfg_clnt.cleanup();
-  cfg_clnt.rethrow_error();
-}
-
-TEST_F(ConnConfigClientTest, TripleRethrow)
-{
-  client_context::sptr cctx{new client_context};
-  
-  // only test that it doesn't fail with an error or an exception
-  const char * name = "ConfigClientTest-TripleRethrow";
-  endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-  config_client     cfg_clnt(cctx, ep_clnt, "config-service");
-  
-  // rethrow should survive this without exception or crash
-  cfg_clnt.rethrow_error();
-  cfg_clnt.rethrow_error();
-  cfg_clnt.rethrow_error();
-}
-
-TEST_F(ConnConfigClientTest, TripleCleanup)
-{
-  client_context::sptr cctx{new client_context};
-  
-  // only test that it doesn't fail with an error or an exception
-  const char * name = "ConfigClientTest-TripleCleanup";
-  endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-  config_client     cfg_clnt(cctx, ep_clnt, "config-service");
-
-  // cleanup should survive this without exception or crash
-  cfg_clnt.cleanup();
-  cfg_clnt.cleanup();
-  cfg_clnt.cleanup();
-}
-
-TEST_F(ConnConfigClientTest, BadServiceNameToConnect)
-{
-  client_context::sptr cctx{new client_context};
-  
-  // this should succeed without exception and error
-  const char * name = "ConfigClientTest-BadServiceNameToConnect";
-  endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-  config_client     cfg_clnt(cctx, ep_clnt, "nope-config-service");
-  
-  // this should fail because no such service exists
-  EXPECT_FALSE(cfg_clnt.wait_valid_sub(200));
-  EXPECT_FALSE(cfg_clnt.wait_valid_req(200));
-}
-
-TEST_F(ConnConfigClientTest, SimpleConnect)
-{
-  client_context::sptr cctx{new client_context};
-  
-  // only test that it doesn't fail with an error or an exception
-  const char * name = "ConfigClientTest-ConnectOnly";
-  endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-  config_client     cfg_clnt(cctx, ep_clnt, "config-service");
-  
-  // this should succeed assuming the mock service is running
-  EXPECT_TRUE(cfg_clnt.wait_valid_sub(200));
-  EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
-}
-
-TEST_F(ConnConfigClientTest, ImplementMe_CheckReqChannel)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnConfigClientTest, ImplementMe_CheckSubChannel)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnColumnClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnColumnServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnConfigServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnDbConfigClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnDbConfigServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnEndpointServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnIpDiscoveryClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnIpDiscoveryServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnLogRecordClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnLogRecordServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnMetaDataClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnMetaDataServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnSubClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnPubServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnPushClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnPullServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnQueryClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnQueryServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnReqClientTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnRepServerTest, ImplementMe)
-{
-  EXPECT_TRUE(false);
-}
-
-TEST_F(ConnServerBaseTest, ConstuctHostSet)
-{
-  client_context::sptr cctx{new client_context};
-
-  const char * name = "ServerBaseTest-ConstuctHostSet";
-  endpoint_client   ep_clnt(cctx, global_mock_ep, name);
-  config_client     cfg_clnt(cctx, ep_clnt, "config-service");
-
-  server_context::sptr ctx{new server_context};
-  ctx->service_name("dummy-service");
-  ctx->endpoint_svc_addr(global_mock_ep);
-  ctx->ip_discovery_timeout_ms(10);
-  server_base bs{ctx};
-  auto const & host_set{bs.hosts(ep_clnt)};
-}
-
-TEST_F(ConnEndpointClientTest, StressWatch)
-{
-  client_context::sptr cctx{new client_context};
-
   const char * name = "EndpointClientTest-StressWatch";
-  endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   
   EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
   EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
-
+  
   auto watch = [](const pb::EndpointData & ep) {};
-
+  
   for( int i=0; i<300; ++i )
     ep_clnt.watch(pb::ServiceType::OTHER, watch);
   
@@ -306,13 +94,10 @@ TEST_F(ConnEndpointClientTest, StressWatch)
   }
 }
 
-TEST_F(ConnEndpointClientTest, StressRegister)
+TEST_F(ConnEndpointTest, StressRegister)
 {
-  client_context::sptr cctx{new client_context};
-
   const char * name = "EndpointClientTest-StressRegister";
-  
-  endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   pb::EndpointData ep_data;
   
   EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
@@ -322,7 +107,7 @@ TEST_F(ConnEndpointClientTest, StressRegister)
   auto conn = ep_data.add_connections();
   conn->add_address("test-address");
   conn->set_type(pb::ConnectionType::REQ_REP);
- 
+  
   for( int ms=1; ms<1025; ms = ms*2 )
   {
     ep_data.set_validforms(ms);
@@ -339,18 +124,15 @@ TEST_F(ConnEndpointClientTest, StressRegister)
   }
 }
 
-TEST_F(ConnEndpointClientTest, InvalidRegister)
+TEST_F(ConnEndpointTest, InvalidRegister)
 {
-  client_context::sptr cctx{new client_context};
-  
   const char * name = "EndpointClientTest-InvalidRegister";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   
-  endpoint_client ep_clnt(cctx, global_mock_ep, name);
-
   pb::EndpointData ep_data;
   // empty EndpointData
   EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
-
+  
   // missing name
   ep_data.set_validforms(1);
   EXPECT_THROW(ep_clnt.register_endpoint(ep_data), virtdb::util::exception);
@@ -373,13 +155,10 @@ TEST_F(ConnEndpointClientTest, InvalidRegister)
   }
 }
 
-TEST_F(ConnEndpointClientTest, InvalidWatch)
+TEST_F(ConnEndpointTest, InvalidWatch)
 {
-  client_context::sptr cctx{new client_context};
-  
   const char * name = "EndpointClientTest-InvalidWatch";
-  
-  endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   std::function<void(const pb::EndpointData &)> empty_watch;
   
   EXPECT_THROW(ep_clnt.watch(pb::ServiceType::OTHER, empty_watch), virtdb::util::exception);
@@ -401,31 +180,27 @@ TEST_F(ConnEndpointClientTest, InvalidWatch)
   }
 }
 
-TEST_F(ConnEndpointClientTest, InvalidConstr)
+TEST_F(ConnEndpointTest, InvalidConstr)
 {
-  client_context::sptr cctx{new client_context};
-
   auto invalid_svc_config_ep = [&]() {
-    endpoint_client ep_clnt(cctx, "", "EndpointClientTest-InvalidConstr");
+    endpoint_client ep_clnt(cctx_, "", "EndpointClientTest-InvalidConstr");
   };
   EXPECT_THROW(invalid_svc_config_ep(), virtdb::util::exception);
   
   auto invalid_service_name = [&]() {
-    endpoint_client ep_clnt(cctx, "tcp://0.0.0.0:0", "");
+    endpoint_client ep_clnt(cctx_, "tcp://0.0.0.0:0", "");
   };
   EXPECT_THROW(invalid_service_name(), virtdb::util::exception);
   
   auto malformed_ep = [&]() {
-    endpoint_client ep_clnt(cctx, "invalid ep", "xxx");
+    endpoint_client ep_clnt(cctx_, "invalid ep", "xxx");
   };
   EXPECT_THROW(malformed_ep(), virtdb::util::exception);
 }
 
-TEST_F(ConnEndpointClientTest, Watch)
+TEST_F(ConnEndpointTest, Watch)
 {
-  client_context::sptr cctx{new client_context};
   barrier on_callback{2};
-  
   auto ep_callback = [&on_callback](const pb::EndpointData & ep)
   {
     if( ep.name() == "EndpointClientTest-Watch" &&
@@ -447,7 +222,7 @@ TEST_F(ConnEndpointClientTest, Watch)
     }
   };
   
-  endpoint_client ep_clnt(cctx, global_mock_ep, "EndpointClientTest-Watch");
+  endpoint_client ep_clnt(cctx_, global_mock_ep, "EndpointClientTest-Watch");
   ep_clnt.watch(pb::OTHER, ep_callback);
   
   {
@@ -460,10 +235,10 @@ TEST_F(ConnEndpointClientTest, Watch)
     conn->set_type(pb::ConnectionType::REQ_REP);
     
     ep_clnt.register_endpoint(ep_data);
-
+    
     // the async callback should fire and release the barrier
     EXPECT_TRUE(on_callback.wait_for(200));
-
+    
     // check client cache
     {
       pb::EndpointData result;
@@ -479,17 +254,14 @@ TEST_F(ConnEndpointClientTest, Watch)
   }
 }
 
-TEST_F(ConnEndpointClientTest, Expiry)
+TEST_F(ConnEndpointTest, Expiry)
 {
-  client_context::sptr cctx{new client_context};
-  
   const char * name = "EndpointClientTest-Expiry";
-  
-  endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   
   EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
   EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
-
+  
   
   {
     pb::EndpointData ep_data;
@@ -499,7 +271,7 @@ TEST_F(ConnEndpointClientTest, Expiry)
     auto conn = ep_data.add_connections();
     conn->add_address("test-address");
     conn->set_type(pb::ConnectionType::REQ_REP);
-
+    
     // very short lifetime for this endpoint
     ep_data.set_validforms(1);
     
@@ -508,7 +280,7 @@ TEST_F(ConnEndpointClientTest, Expiry)
   
   {
     // give a bit of time to the server for the expiry
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    std::this_thread::sleep_for(std::chrono::milliseconds{400});
     
     // check endpoints
     pb::EndpointData ep_data;
@@ -520,19 +292,17 @@ TEST_F(ConnEndpointClientTest, Expiry)
                               {
                                 // make sure we don't get back the expired EP data
                                 EXPECT_NE(ep.name(), name);
-                                ++counter;
+                                if( ep.name() == name )
+                                  ++counter;
                               });
-    EXPECT_GT(counter, 0);
+    EXPECT_EQ(counter, 0);
   }
 }
 
-TEST_F(ConnEndpointClientTest, MonitorException)
+TEST_F(ConnEndpointTest, MonitorException)
 {
-  client_context::sptr cctx{new client_context};
-  
   const char * name = "EndpointClientTest-MonitorException";
-  
-  endpoint_client ep_clnt(cctx, global_mock_ep, name);
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   
   EXPECT_TRUE(ep_clnt.wait_valid_req(1000));
   EXPECT_TRUE(ep_clnt.wait_valid_sub(1000));
@@ -551,11 +321,11 @@ TEST_F(ConnEndpointClientTest, MonitorException)
     
     // throw in the synchronous monitor
     ep_clnt.register_endpoint(ep_data,[](const pb::EndpointData & ep)
-    {
-      THROW_("test exception");
-    });
+                              {
+                                THROW_("test exception");
+                              });
   }
-
+  
   {
     std::atomic_bool throw_exc{false};
     auto fun = [&throw_exc](const pb::EndpointData & ep)
@@ -595,12 +365,10 @@ TEST_F(ConnEndpointClientTest, MonitorException)
   }
 }
 
-TEST_F(ConnEndpointClientTest, Register)
+TEST_F(ConnEndpointTest, Register)
 {
-  client_context::sptr cctx{new client_context};
-
-  endpoint_client ep_clnt(cctx, global_mock_ep, "EndpointClientTest");
-  endpoint_client ep_clnt2(cctx, global_mock_ep, "EndpointClientTest2");
+  endpoint_client ep_clnt(cctx_, global_mock_ep, "EndpointClientTest");
+  endpoint_client ep_clnt2(cctx_, global_mock_ep, "EndpointClientTest2");
   EXPECT_EQ("EndpointClientTest", ep_clnt.name());
   
   std::atomic<int> nreg{0};
@@ -608,7 +376,7 @@ TEST_F(ConnEndpointClientTest, Register)
   auto ep_callback = [&nreg](const pb::EndpointData & ep)
   {
     if( ep.name() == "EndpointClientTest" &&
-        ep.svctype() == pb::ServiceType::OTHER )
+       ep.svctype() == pb::ServiceType::OTHER )
     {
       for( auto & conn : ep.connections() )
       {
@@ -625,13 +393,14 @@ TEST_F(ConnEndpointClientTest, Register)
       }
     }
   };
-
+  
   std::atomic<int> neps{0};
-
+  
   auto count_eps = [&neps](const pb::EndpointData & ep)
   {
     if( ep.name() != "config-service" &&
-        ep.name() != "ip_discovery" )
+        ep.name() != "ip_discovery" &&
+        ep.name() != "security-service" )
     {
       std::cout << "count_eps: " << ep.DebugString() << "\n";
       ++neps;
@@ -694,7 +463,7 @@ TEST_F(ConnEndpointClientTest, Register)
   
   // now register a watch on the other endpoint
   ep_clnt2.watch(pb::ServiceType::OTHER, ep_callback);
-
+  
   // another register
   {
     pb::EndpointData ep_data;
@@ -732,16 +501,140 @@ TEST_F(ConnEndpointClientTest, Register)
   }
 }
 
-void ConnectorCommon::SetUp()
+TEST_F(ConnConfigTest, RemoveNonexistentWatches)
 {
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-RemoveNonexistentWatches";
+  auto test_fun = [&]() {
+    endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+    config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+    
+    // this is OK:
+    cfg_clnt.remove_watches();
+  };
+  
+  EXPECT_NO_THROW(test_fun());
 }
 
-void
-ConnectorCommon::TearDown()
+TEST_F(ConnConfigTest, DoubleCleanupRethrow)
 {
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-DoubleCleanupRethrow";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  
+  // this sequence is valid, rethrow should throw excpetions here
+  cfg_clnt.cleanup();
+  cfg_clnt.rethrow_error();
+  cfg_clnt.cleanup();
+  cfg_clnt.rethrow_error();
 }
 
-ConnectorCommon::~ConnectorCommon()
+TEST_F(ConnConfigTest, TripleRethrow)
 {
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-TripleRethrow";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  
+  // rethrow should survive this without exception or crash
+  cfg_clnt.rethrow_error();
+  cfg_clnt.rethrow_error();
+  cfg_clnt.rethrow_error();
 }
+
+TEST_F(ConnConfigTest, TripleCleanup)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-TripleCleanup";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  
+  // cleanup should survive this without exception or crash
+  cfg_clnt.cleanup();
+  cfg_clnt.cleanup();
+  cfg_clnt.cleanup();
+}
+
+TEST_F(ConnConfigTest, BadServiceNameToConnect)
+{
+  // this should succeed without exception and error
+  const char * name = "ConfigClientTest-BadServiceNameToConnect";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "nope-config-service");
+  
+  // this should fail because no such service exists
+  EXPECT_FALSE(cfg_clnt.wait_valid_sub(200));
+  EXPECT_FALSE(cfg_clnt.wait_valid_req(200));
+}
+
+TEST_F(ConnConfigTest, SimpleConnect)
+{
+  // only test that it doesn't fail with an error or an exception
+  const char * name = "ConfigClientTest-ConnectOnly";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  
+  // this should succeed assuming the mock service is running
+  EXPECT_TRUE(cfg_clnt.wait_valid_sub(200));
+  EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
+}
+
+TEST_F(ConnConfigTest, ImplementMe_CheckReqChannel)
+{
+  EXPECT_TRUE(false);
+}
+
+TEST_F(ConnConfigTest, ImplementMe_CheckSubChannel)
+{
+  EXPECT_TRUE(false);
+}
+
+TEST_F(ConnServerBaseTest, ConstuctHostSet)
+{
+  const char * name = "ServerBaseTest-ConstuctHostSet";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  
+  server_context::sptr ctx{new server_context};
+  ctx->service_name("dummy-service");
+  ctx->endpoint_svc_addr(global_mock_ep);
+  ctx->ip_discovery_timeout_ms(10);
+  server_base bs{ctx};
+  auto const & host_set{bs.hosts(ep_clnt)};
+}
+
+TEST_F(ConnCertStoreTest, SimpleConnect)
+{
+  const char * name = "ConnCertStoreTest-SimpleConnect";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  cert_store_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+}
+
+TEST_F(ConnSrcsysCredTest, SimpleConnect)
+{
+  const char * name = "ConnSrcsysCredTest-SimpleConnect";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+}
+
+TEST_F(ConnIpDiscoveryTest, SimpleConnect)
+{
+  const char * name = "ConnIpDiscoveryTest-SimpleConnect";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  auto res = ip_discovery_client::get_ip(ep_clnt);
+  EXPECT_FALSE(res.empty());
+}
+
+/*
+TEST_F(ConnLogRecordTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConnQueryTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConnColumnTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConnMetaDataTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConnPubSubTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConnPushPullTest, ImplementMe) { EXPECT_TRUE(false); }
+TEST_F(ConnReqRepTest, ImplementMe) { EXPECT_TRUE(false); }
+*/
 

@@ -66,7 +66,8 @@ namespace virtdb { namespace connector {
         if( !socket_.wait_valid(util::DEFAULT_TIMEOUT_MS) )
           return true;
         
-        if( !socket_.poll_in(util::DEFAULT_TIMEOUT_MS) )
+        if( !socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
+                             util::SHORT_TIMEOUT_MS) )
           return true;
       }
       catch (const zmq::error_t & e)
@@ -359,7 +360,6 @@ namespace virtdb { namespace connector {
     virtual ~sub_client()
     {
       ep_clnt_->remove_watches(service_type);
-      socket_.close();
       worker_.stop();
       queue_.stop();
     }
@@ -368,7 +368,6 @@ namespace virtdb { namespace connector {
     {
       ep_clnt_->remove_watches(service_type);
       socket_.disconnect_all();
-      socket_.close();
       worker_.stop();
       queue_.stop();
     }

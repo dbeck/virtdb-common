@@ -15,6 +15,8 @@ namespace virtdb { namespace connector {
   public:
     typedef rep_server<interface::pb::SourceSystemCredentialRequest,
                        interface::pb::SourceSystemCredentialReply>     rep_base_type;
+    typedef std::shared_ptr<srcsys_credential_server>                  sptr;
+    
   private:
     typedef std::shared_ptr<interface::pb::CredentialValues>                           cred_sptr;
     typedef std::shared_ptr<interface::pb::SourceSystemCredentialReply::GetTemplate>   tmpl_sptr;

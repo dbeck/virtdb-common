@@ -126,7 +126,8 @@ namespace virtdb { namespace connector {
             {
               rep.Clear();
               msg.rebuild();
-              if( socket_.poll_in(timeout_ms) )
+              if( socket_.poll_in(timeout_ms,
+                                  util::SHORT_TIMEOUT_MS) )
               {
                 if( socket_.get().recv(&msg) )
                 {
@@ -191,14 +192,14 @@ namespace virtdb { namespace connector {
       virtual ~req_client()
       {
         ep_clnt_->remove_watches(service_type);
-        socket_.close();
+        socket_.stop();
       }
       
       virtual void cleanup()
       {
         ep_clnt_->remove_watches(service_type);
         socket_.disconnect_all();
-        socket_.close();
+        socket_.stop();
       }
       
     private:
