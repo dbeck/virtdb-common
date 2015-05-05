@@ -679,6 +679,273 @@ TEST_F(ConnServerBaseTest, ConstuctHostSet)
   auto const & host_set{bs.hosts(ep_clnt)};
 }
 
+bool
+ConnCertStoreTest::create_temp_key(connector::cert_store_client & cli,
+                                   const std::string & name)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::Certificate      crt;
+  crt.set_componentname(name);
+  crt.set_publickey("public-key");
+  crt.set_approved(false);
+  
+  pb::CertStoreRequest req;
+  req.set_type(pb::CertStoreRequest::CREATE_TEMP_KEY);
+  req.mutable_create()->mutable_cert()->MergeFrom(crt);
+  pb::CertStoreReply   rep;
+  
+  auto proc_rep = [&](const pb::CertStoreReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::CertStoreReply::CREATE_TEMP_KEY);
+  EXPECT_TRUE(rep.has_create());
+  EXPECT_TRUE(rep.create().has_authcode());
+
+  return !rep.has_err();
+}
+
+bool
+ConnCertStoreTest::approve_temp_key(connector::cert_store_client & cli,
+                                    const std::string & name)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::Certificate      crt;
+  crt.set_componentname(name);
+  crt.set_publickey("public-key");
+  crt.set_approved(false);
+  
+  pb::CertStoreRequest req;
+  {
+    req.set_type(pb::CertStoreRequest::APPROVE_TEMP_KEY);
+    auto * inner = req.mutable_approve();
+    inner->mutable_cert()->MergeFrom(crt);
+    inner->set_authcode("authcode");
+    inner->set_username("username");
+    inner->set_passhash("passhash");
+  }
+  pb::CertStoreReply   rep;
+  
+  auto proc_rep = [&](const pb::CertStoreReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::CertStoreReply::APPROVE_TEMP_KEY);
+  
+  return !rep.has_err();
+}
+
+bool
+ConnCertStoreTest::has_temp_key(connector::cert_store_client & cli,
+                                const std::string & name)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::CertStoreRequest req;
+  {
+    req.set_type(pb::CertStoreRequest::LIST_KEYS);
+    auto * inner = req.mutable_list();
+    inner->set_tempkeys(true);
+    inner->set_approvedkeys(false);
+  }
+  pb::CertStoreReply   rep;
+  
+  auto proc_rep = [&](const pb::CertStoreReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::CertStoreReply::LIST_KEYS);
+  EXPECT_TRUE(rep.has_list());
+  EXPECT_FALSE(rep.has_err());
+  
+  if( rep.has_err() ) return false;
+  
+  bool ret = false;
+  for( auto const & c : rep.list().certs() )
+  {
+    if( c.componentname() == name )
+      return true;
+  }
+  return false;
+}
+
+bool
+ConnCertStoreTest::has_approved_key(connector::cert_store_client & cli,
+                                    const std::string & name)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::CertStoreRequest req;
+  {
+    req.set_type(pb::CertStoreRequest::LIST_KEYS);
+    auto * inner = req.mutable_list();
+    inner->set_tempkeys(false);
+    inner->set_approvedkeys(true);
+  }
+  pb::CertStoreReply   rep;
+  
+  auto proc_rep = [&](const pb::CertStoreReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::CertStoreReply::LIST_KEYS);
+  EXPECT_TRUE(rep.has_list());
+  EXPECT_FALSE(rep.has_err());
+  
+  if( rep.has_err() )
+    return false;
+  
+  bool ret = false;
+  for( auto const & c : rep.list().certs() )
+  {
+    if( c.componentname() == name )
+      return true;
+  }
+  return false;
+}
+
+bool
+ConnCertStoreTest::has_key(connector::cert_store_client & cli,
+                           const std::string & name)
+{
+  bool t2 = false;
+  bool t3 = false;
+  int sz = 0;
+  
+  { // t2
+    std::promise<void> rep_promise;
+    std::future<void>  on_rep{rep_promise.get_future()};
+    
+    pb::CertStoreRequest req;
+    {
+      req.set_type(pb::CertStoreRequest::LIST_KEYS);
+      auto * inner = req.mutable_list();
+      inner->set_tempkeys(true);
+      inner->set_approvedkeys(false);
+      inner->set_componentname(name);
+    }
+    pb::CertStoreReply   rep;
+    
+    auto proc_rep = [&](const pb::CertStoreReply & r) {
+      rep.MergeFrom(r);
+      rep_promise.set_value();
+      return true;
+    };
+    
+    EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+    EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+    EXPECT_EQ(rep.type(), pb::CertStoreReply::LIST_KEYS);
+    EXPECT_TRUE(rep.has_list());
+    EXPECT_FALSE(rep.has_err());
+    sz += rep.list().certs_size();
+    
+    for( auto const & c : rep.list().certs() )
+    {
+      if( c.componentname() == name )
+        t2 = true;
+    }
+    
+    if( rep.has_err() )
+      t2 = false;
+  }
+  
+  { // t3
+    std::promise<void> rep_promise;
+    std::future<void>  on_rep{rep_promise.get_future()};
+    
+    pb::CertStoreRequest req;
+    {
+      req.set_type(pb::CertStoreRequest::LIST_KEYS);
+      auto * inner = req.mutable_list();
+      inner->set_tempkeys(false);
+      inner->set_approvedkeys(true);
+      inner->set_componentname(name);
+    }
+    pb::CertStoreReply   rep;
+    
+    auto proc_rep = [&](const pb::CertStoreReply & r) {
+      rep.MergeFrom(r);
+      rep_promise.set_value();
+      return true;
+    };
+    
+    EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+    EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+    EXPECT_EQ(rep.type(), pb::CertStoreReply::LIST_KEYS);
+    EXPECT_TRUE(rep.has_list());
+    EXPECT_FALSE(rep.has_err());
+    sz += rep.list().certs_size();
+    
+    for( auto const & c : rep.list().certs() )
+    {
+      if( c.componentname() == name )
+        t3 = true;
+    }
+    
+    if( rep.has_err() )
+      t3 = false;
+  }
+  
+  return ((t2 || t3) && sz>0);
+}
+
+bool
+ConnCertStoreTest::delete_key(connector::cert_store_client & cli,
+                              const std::string & name)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::Certificate      crt;
+  crt.set_componentname(name);
+  crt.set_publickey("public-key");
+  crt.set_approved(false);
+  
+  pb::CertStoreRequest req;
+  {
+    req.set_type(pb::CertStoreRequest::DELETE_KEY);
+    auto * inner = req.mutable_del();
+    inner->mutable_cert()->MergeFrom(crt);
+    inner->set_logintoken("none");
+  }
+  pb::CertStoreReply   rep;
+  
+  auto proc_rep = [&](const pb::CertStoreReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::CertStoreReply::DELETE_KEY);
+  
+  return !rep.has_err();
+}
+
+
 TEST_F(ConnCertStoreTest, SimpleConnect)
 {
   const char * name = "ConnCertStoreTest-SimpleConnect";
@@ -687,6 +954,219 @@ TEST_F(ConnCertStoreTest, SimpleConnect)
   EXPECT_TRUE(cli.wait_valid(100));
 }
 
+TEST_F(ConnCertStoreTest, CreateTempKey)
+{
+  const char * name = "ConnCertStoreTest-CreateTempKey";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  cert_store_client cli{cctx_, ep_clnt, "security-service"};
+  
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_TRUE(create_temp_key(cli, name));
+}
+
+TEST_F(ConnCertStoreTest, ApproveTempKey)
+{
+  const char * name = "ConnCertStoreTest-ApproveTempKey";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  cert_store_client cli{cctx_, ep_clnt, "security-service"};
+  
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_TRUE(approve_temp_key(cli, name));
+}
+
+TEST_F(ConnCertStoreTest, ListKeys)
+{
+  const char * name = "ConnCertStoreTest-ListKeys";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  cert_store_client cli{cctx_, ep_clnt, "security-service"};
+
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_TRUE(create_temp_key(cli, name));
+  EXPECT_TRUE(has_temp_key(cli, name));
+  EXPECT_TRUE(has_key(cli, name));
+  EXPECT_TRUE(approve_temp_key(cli, name));
+  EXPECT_TRUE(has_approved_key(cli, name));
+  EXPECT_TRUE(has_key(cli, name));
+
+  EXPECT_TRUE(delete_key(cli, name));
+  EXPECT_FALSE(has_key(cli, name));
+  EXPECT_FALSE(has_temp_key(cli, name));
+  EXPECT_FALSE(has_approved_key(cli, name));
+}
+
+TEST_F(ConnCertStoreTest, DeleteKey)
+{
+  const char * name = "ConnCertStoreTest-DeleteKey";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  cert_store_client cli{cctx_, ep_clnt, "security-service"};
+
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_TRUE(create_temp_key(cli, name));
+  EXPECT_TRUE(has_key(cli, name));
+  EXPECT_TRUE(delete_key(cli, name));
+  EXPECT_FALSE(has_key(cli, name));
+  EXPECT_FALSE(has_temp_key(cli, name));
+  EXPECT_FALSE(has_approved_key(cli, name));
+}
+
+bool
+ConnSrcsysCredTest::set_cred(connector::srcsys_credential_client & cli,
+                             const std::string & srcsys,
+                             const std::string & token)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::SourceSystemCredentialRequest req;
+  {
+    req.set_type(pb::SourceSystemCredentialRequest::SET_CREDENTIAL);
+    auto * inner = req.mutable_setcred();
+    inner->set_sourcesysname(srcsys);
+    inner->set_sourcesystoken(token);
+    auto * crds = inner->mutable_creds();
+    auto * nv = crds->add_namedvalues();
+    nv->set_name("name");
+    nv->set_value("value");
+  }
+  pb::SourceSystemCredentialReply rep;
+  
+  auto proc_rep = [&](const pb::SourceSystemCredentialReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::SourceSystemCredentialReply::SET_CREDENTIAL);
+  return !rep.has_err();
+}
+
+bool
+ConnSrcsysCredTest::get_cred(connector::srcsys_credential_client & cli,
+                             const std::string & srcsys,
+                             const std::string & token)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::SourceSystemCredentialRequest req;
+  {
+    req.set_type(pb::SourceSystemCredentialRequest::GET_CREDENTIAL);
+    auto * inner = req.mutable_getcred();
+    inner->set_sourcesysname(srcsys);
+    inner->set_sourcesystoken(token);
+  }
+  pb::SourceSystemCredentialReply rep;
+  
+  auto proc_rep = [&](const pb::SourceSystemCredentialReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() ) return false;
+  EXPECT_EQ(rep.type(), pb::SourceSystemCredentialReply::GET_CREDENTIAL);
+  EXPECT_TRUE(rep.has_getcred());
+  if( !rep.getcred().has_creds() ) return false;
+  EXPECT_EQ(rep.getcred().creds().namedvalues_size(), 1);
+  return !rep.has_err();
+}
+
+bool
+ConnSrcsysCredTest::del_cred(connector::srcsys_credential_client & cli,
+                             const std::string & srcsys,
+                             const std::string & token)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::SourceSystemCredentialRequest req;
+  {
+    req.set_type(pb::SourceSystemCredentialRequest::DELETE_CREDENTIAL);
+    auto * inner = req.mutable_delcred();
+    inner->set_sourcesysname(srcsys);
+    inner->set_sourcesystoken(token);
+  }
+  pb::SourceSystemCredentialReply rep;
+  
+  auto proc_rep = [&](const pb::SourceSystemCredentialReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() ) return false;
+  EXPECT_EQ(rep.type(), pb::SourceSystemCredentialReply::DELETE_CREDENTIAL);
+  return !rep.has_err();
+}
+
+bool
+ConnSrcsysCredTest::set_tmpl(connector::srcsys_credential_client & cli,
+                             const std::string & srcsys)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::SourceSystemCredentialRequest req;
+  {
+    req.set_type(pb::SourceSystemCredentialRequest::SET_TEMPLATE);
+    auto * inner = req.mutable_settmpl();
+    inner->set_sourcesysname(srcsys);
+    auto * tmpl = inner->add_templates();
+    tmpl->set_name("name");
+    tmpl->set_type(pb::FieldTemplate::STRING);
+  }
+  pb::SourceSystemCredentialReply rep;
+  
+  auto proc_rep = [&](const pb::SourceSystemCredentialReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(rep.type(), pb::SourceSystemCredentialReply::SET_TEMPLATE);
+  return !rep.has_err();
+}
+
+bool
+ConnSrcsysCredTest::get_tmpl(connector::srcsys_credential_client & cli,
+                             const std::string & srcsys)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::SourceSystemCredentialRequest req;
+  {
+    req.set_type(pb::SourceSystemCredentialRequest::GET_TEMPLATE);
+    auto * inner = req.mutable_gettmpl();
+    inner->set_sourcesysname(srcsys);
+  }
+  pb::SourceSystemCredentialReply rep;
+  
+  auto proc_rep = [&](const pb::SourceSystemCredentialReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() )
+    return false;
+  EXPECT_EQ(rep.type(), pb::SourceSystemCredentialReply::GET_TEMPLATE);
+  EXPECT_TRUE(rep.has_gettmpl());
+  EXPECT_NE(rep.gettmpl().templates_size(), 0);
+  return !rep.has_err();
+}
+
+
 TEST_F(ConnSrcsysCredTest, SimpleConnect)
 {
   const char * name = "ConnSrcsysCredTest-SimpleConnect";
@@ -694,6 +1174,74 @@ TEST_F(ConnSrcsysCredTest, SimpleConnect)
   srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
   EXPECT_TRUE(cli.wait_valid(100));
 }
+
+TEST_F(ConnSrcsysCredTest, SetCredential)
+{
+  const char * name = "ConnSrcsysCredTest-SetCredential";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_TRUE(set_cred(cli, name, "token"));
+  EXPECT_TRUE(get_cred(cli, name, "token"));
+  EXPECT_TRUE(set_cred(cli, name, "token"));
+  EXPECT_TRUE(set_cred(cli, name, "token"));
+}
+
+TEST_F(ConnSrcsysCredTest, GetCredential)
+{
+  const char * name = "ConnSrcsysCredTest-GetCredential";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_FALSE(get_cred(cli, name, "bad-token"));
+  EXPECT_FALSE(get_cred(cli, name, "token"));
+  EXPECT_TRUE(set_cred(cli, name, "token"));
+  EXPECT_TRUE(get_cred(cli, name, "token"));
+  EXPECT_FALSE(get_cred(cli, name, "bad-token"));
+}
+
+TEST_F(ConnSrcsysCredTest, DeleteCredential)
+{
+  const char * name = "ConnSrcsysCredTest-DeleteCredential";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_FALSE(del_cred(cli, name, "token"));
+  EXPECT_TRUE(set_cred(cli, name, "token"));
+  EXPECT_TRUE(del_cred(cli, name, "token"));
+  EXPECT_FALSE(del_cred(cli, name, "token"));
+}
+
+TEST_F(ConnSrcsysCredTest, SetTemplate)
+{
+  const char * name = "ConnSrcsysCredTest-SetTemplate";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_TRUE(set_tmpl(cli, name));
+  EXPECT_TRUE(get_tmpl(cli, name));
+  EXPECT_TRUE(set_tmpl(cli, name));
+  EXPECT_TRUE(set_tmpl(cli, name));
+}
+
+TEST_F(ConnSrcsysCredTest, GetTemplate)
+{
+  const char * name = "ConnSrcsysCredTest-GetTemplate";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  EXPECT_FALSE(get_tmpl(cli, name));
+  EXPECT_TRUE(set_tmpl(cli, name));
+  EXPECT_TRUE(get_tmpl(cli, name));
+}
+
+/*
+SET_CREDENTIAL       = 2;
+GET_CREDENTIAL       = 3;
+DELETE_CREDENTIAL    = 4;
+SET_TEMPLATE         = 5;
+GET_TEMPLATE         = 6;
+*/
 
 TEST_F(ConnIpDiscoveryTest, SimpleConnect)
 {

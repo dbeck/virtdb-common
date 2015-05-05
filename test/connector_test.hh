@@ -7,6 +7,8 @@ namespace virtdb { namespace connector {
 
   // forward declarations
   class client_context;
+  class cert_store_client;
+  class srcsys_credential_client;
 }}
 
 namespace virtdb { namespace test {
@@ -22,8 +24,49 @@ namespace virtdb { namespace test {
   class ConnConfigTest : public ConnectorCommon { };
   class ConnServerBaseTest : public ConnectorCommon { };
 
-  class ConnCertStoreTest : public ConnectorCommon { };
-  class ConnSrcsysCredTest : public ConnectorCommon { };
+  class ConnCertStoreTest : public ConnectorCommon
+  {
+  protected:
+    bool create_temp_key(connector::cert_store_client & cli,
+                         const std::string & name);
+
+    bool approve_temp_key(connector::cert_store_client & cli,
+                          const std::string & name);
+    
+    bool has_temp_key(connector::cert_store_client & cli,
+                      const std::string & name);
+    
+    bool has_approved_key(connector::cert_store_client & cli,
+                          const std::string & name);
+
+    bool has_key(connector::cert_store_client & cli,
+                 const std::string & name);
+    
+    bool delete_key(connector::cert_store_client & cli,
+                    const std::string & name);
+  };
+  
+  class ConnSrcsysCredTest : public ConnectorCommon
+  {
+  protected:
+    bool set_cred(connector::srcsys_credential_client & cli,
+                  const std::string & srcsys,
+                  const std::string & token);
+    
+    bool get_cred(connector::srcsys_credential_client & cli,
+                  const std::string & srcsys,
+                  const std::string & token);
+    
+    bool del_cred(connector::srcsys_credential_client & cli,
+                  const std::string & srcsys,
+                  const std::string & token);
+    
+    bool set_tmpl(connector::srcsys_credential_client & cli,
+                  const std::string & srcsys);
+    
+    bool get_tmpl(connector::srcsys_credential_client & cli,
+                  const std::string & srcsys);
+  };
   
   class ConnIpDiscoveryTest : public ConnectorCommon { };
   class ConnLogRecordTest : public ConnectorCommon { };

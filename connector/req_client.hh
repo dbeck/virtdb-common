@@ -176,6 +176,10 @@ namespace virtdb { namespace connector {
             LOG_ERROR("unknown exception caught");
           }
         }
+        else
+        {
+          LOG_ERROR("attempt to send an empty message" << V_(req.GetTypeName()));
+        }
         return false;
       }
       

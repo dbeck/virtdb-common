@@ -130,7 +130,7 @@ namespace virtdb { namespace connector {
         case pb::SourceSystemCredentialRequest::GET_TEMPLATE:
         {
           if( !req.has_gettmpl() ) { THROW_("missing GetTemplate from SourceSystemCredentialRequest"); }
-          auto const & gettmpl = req.settmpl();
+          auto const & gettmpl = req.gettmpl();
           if( !gettmpl.has_sourcesysname() ) { THROW_("missing SourceSysName from GetTemplate"); }
           
           {
