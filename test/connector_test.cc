@@ -580,14 +580,89 @@ TEST_F(ConnConfigTest, SimpleConnect)
   EXPECT_TRUE(cfg_clnt.wait_valid_req(200));
 }
 
-TEST_F(ConnConfigTest, ImplementMe_CheckReqChannel)
+TEST_F(ConnConfigTest, CheckReqChannel)
 {
-  EXPECT_TRUE(false);
+  const char * name = "ConfigClientTest-CheckReqChannel";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  
+  {
+    pb::Config cfg_req, cfg_rep;
+    cfg_req.set_name(name);
+    
+    auto resp = [&cfg_rep](const pb::Config & rep) {
+      cfg_rep.MergeFrom(rep);
+      return true;
+    };
+    
+    EXPECT_TRUE(cfg_clnt.send_request(cfg_req, resp, 10000));
+    EXPECT_EQ(cfg_rep.name(), name);
+  }
 }
 
-TEST_F(ConnConfigTest, ImplementMe_CheckSubChannel)
+TEST_F(ConnConfigTest, CheckSubChannel)
 {
-  EXPECT_TRUE(false);
+  const char * name = "ConfigClientTest-CheckReqChannel";
+  endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
+  config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
+  std::shared_ptr<pb::Config> cfg_sub_res;
+  std::promise<void> cfg_promise;
+  std::future<void> on_cfg{cfg_promise.get_future()};
+  
+  
+  EXPECT_TRUE(cfg_clnt.wait_valid_sub(1000));
+  
+  auto config_watch = [&](const std::string & provider_name,
+                          const std::string & channel,
+                          const std::string & subscription,
+                          std::shared_ptr<pb::Config> cfg)
+  {
+    EXPECT_EQ(cfg->name(),name);
+    if( cfg->name() == name )
+    {
+      cfg_sub_res = cfg;
+      cfg_promise.set_value();
+    }
+  };
+  
+  // set monitor
+  cfg_clnt.watch(name, config_watch);
+  
+  {
+    pb::Config cfg_req, cfg_rep;
+    cfg_req.set_name(name);
+    auto * dta = cfg_req.mutable_configdata();
+    auto * kv = dta->Add();
+    kv->set_key("");
+    
+    {
+      auto child = kv->add_children();
+      child->set_key("Config Parameter");
+      {
+        auto child_l2 = child->add_children();
+        child_l2->set_key("Value");
+        auto value_l2 = child_l2->mutable_value();
+        value_l2->set_type(pb::Kind::STRING);
+      }
+      {
+        auto child_l2 = child->add_children();
+        child_l2->set_key("Scope");
+        auto value_l2 = child_l2->mutable_value();
+        value_l2->add_stringvalue("user_config");
+        value_l2->set_type(pb::Kind::STRING);
+      }
+    }
+    
+    auto resp = [&cfg_rep](const pb::Config & rep) {
+      cfg_rep.MergeFrom(rep);
+      return true;
+    };
+    
+    EXPECT_TRUE(cfg_clnt.send_request(cfg_req, resp, 10000));
+    EXPECT_EQ(cfg_rep.name(), name);
+  }
+  
+  EXPECT_EQ(on_cfg.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 }
 
 TEST_F(ConnServerBaseTest, ConstuctHostSet)
