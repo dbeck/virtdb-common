@@ -19,8 +19,10 @@ namespace virtdb { namespace connector {
     typedef std::shared_ptr<interface::pb::Certificate>  cert_sptr;
     typedef std::pair<std::string, std::string>          name_key;
     typedef std::map<name_key, cert_sptr>                cert_store;
+    typedef std::map<std::string, name_key>              code_key;
     
     cert_store          certs_;
+    code_key            auth_codes_;
     mutable std::mutex  mtx_;
     
     void

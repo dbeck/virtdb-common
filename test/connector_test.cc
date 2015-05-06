@@ -681,10 +681,12 @@ TEST_F(ConnServerBaseTest, ConstuctHostSet)
 
 bool
 ConnCertStoreTest::create_temp_key(connector::cert_store_client & cli,
-                                   const std::string & name)
+                                   const std::string & name,
+                                   std::string & authcode)
 {
   std::promise<void> rep_promise;
   std::future<void>  on_rep{rep_promise.get_future()};
+  authcode.clear();
   
   pb::Certificate      crt;
   crt.set_componentname(name);
@@ -707,30 +709,28 @@ ConnCertStoreTest::create_temp_key(connector::cert_store_client & cli,
   EXPECT_EQ(rep.type(), pb::CertStoreReply::CREATE_TEMP_KEY);
   EXPECT_TRUE(rep.has_create());
   EXPECT_TRUE(rep.create().has_authcode());
+  if( rep.create().has_authcode() )
+  {
+    authcode = rep.create().authcode();
+  }
 
   return !rep.has_err();
 }
 
 bool
 ConnCertStoreTest::approve_temp_key(connector::cert_store_client & cli,
-                                    const std::string & name)
+                                    const std::string & name,
+                                    const std::string & authcode)
 {
   std::promise<void> rep_promise;
   std::future<void>  on_rep{rep_promise.get_future()};
-  
-  pb::Certificate      crt;
-  crt.set_componentname(name);
-  crt.set_publickey("public-key");
-  crt.set_approved(false);
   
   pb::CertStoreRequest req;
   {
     req.set_type(pb::CertStoreRequest::APPROVE_TEMP_KEY);
     auto * inner = req.mutable_approve();
-    inner->mutable_cert()->MergeFrom(crt);
-    inner->set_authcode("authcode");
-    inner->set_username("username");
-    inner->set_passhash("passhash");
+    inner->set_authcode(authcode);
+    inner->set_logintoken("token");
   }
   pb::CertStoreReply   rep;
   
@@ -742,8 +742,11 @@ ConnCertStoreTest::approve_temp_key(connector::cert_store_client & cli,
   
   EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
   EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() )
+  {
+    return false;
+  }
   EXPECT_EQ(rep.type(), pb::CertStoreReply::APPROVE_TEMP_KEY);
-  
   return !rep.has_err();
 }
 
@@ -945,7 +948,6 @@ ConnCertStoreTest::delete_key(connector::cert_store_client & cli,
   return !rep.has_err();
 }
 
-
 TEST_F(ConnCertStoreTest, SimpleConnect)
 {
   const char * name = "ConnCertStoreTest-SimpleConnect";
@@ -961,7 +963,9 @@ TEST_F(ConnCertStoreTest, CreateTempKey)
   cert_store_client cli{cctx_, ep_clnt, "security-service"};
   
   EXPECT_TRUE(cli.wait_valid(100));
-  EXPECT_TRUE(create_temp_key(cli, name));
+  std::string authcode;
+  EXPECT_TRUE(create_temp_key(cli, name, authcode));
+  EXPECT_FALSE(authcode.empty());
 }
 
 TEST_F(ConnCertStoreTest, ApproveTempKey)
@@ -971,7 +975,21 @@ TEST_F(ConnCertStoreTest, ApproveTempKey)
   cert_store_client cli{cctx_, ep_clnt, "security-service"};
   
   EXPECT_TRUE(cli.wait_valid(100));
-  EXPECT_TRUE(approve_temp_key(cli, name));
+  std::string authcode{"code"};
+  EXPECT_FALSE(approve_temp_key(cli, name, authcode));
+  EXPECT_TRUE(create_temp_key(cli, name, authcode));
+  EXPECT_FALSE(authcode.empty());
+  EXPECT_NE(authcode,"code");
+  EXPECT_TRUE(approve_temp_key(cli, name, authcode));
+  
+  // no double auth
+  EXPECT_FALSE(approve_temp_key(cli, name, authcode));
+  EXPECT_TRUE(delete_key(cli, name));
+  
+  // approve after deleted
+  EXPECT_TRUE(create_temp_key(cli, name, authcode));
+  EXPECT_TRUE(delete_key(cli, name));
+  EXPECT_FALSE(approve_temp_key(cli, name, authcode));
 }
 
 TEST_F(ConnCertStoreTest, ListKeys)
@@ -981,12 +999,15 @@ TEST_F(ConnCertStoreTest, ListKeys)
   cert_store_client cli{cctx_, ep_clnt, "security-service"};
 
   EXPECT_TRUE(cli.wait_valid(100));
-  EXPECT_TRUE(create_temp_key(cli, name));
+  std::string authcode{"code"};
+  EXPECT_TRUE(create_temp_key(cli, name, authcode));
   EXPECT_TRUE(has_temp_key(cli, name));
+  EXPECT_FALSE(has_approved_key(cli, name));
   EXPECT_TRUE(has_key(cli, name));
-  EXPECT_TRUE(approve_temp_key(cli, name));
+  EXPECT_TRUE(approve_temp_key(cli, name, authcode));
   EXPECT_TRUE(has_approved_key(cli, name));
   EXPECT_TRUE(has_key(cli, name));
+  EXPECT_FALSE(has_temp_key(cli, name));
 
   EXPECT_TRUE(delete_key(cli, name));
   EXPECT_FALSE(has_key(cli, name));
@@ -1001,7 +1022,8 @@ TEST_F(ConnCertStoreTest, DeleteKey)
   cert_store_client cli{cctx_, ep_clnt, "security-service"};
 
   EXPECT_TRUE(cli.wait_valid(100));
-  EXPECT_TRUE(create_temp_key(cli, name));
+  std::string authcode{"code"};
+  EXPECT_TRUE(create_temp_key(cli, name, authcode));
   EXPECT_TRUE(has_key(cli, name));
   EXPECT_TRUE(delete_key(cli, name));
   EXPECT_FALSE(has_key(cli, name));

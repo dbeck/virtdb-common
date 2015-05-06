@@ -28,10 +28,12 @@ namespace virtdb { namespace test {
   {
   protected:
     bool create_temp_key(connector::cert_store_client & cli,
-                         const std::string & name);
+                         const std::string & name,
+                         std::string & authcode);
 
     bool approve_temp_key(connector::cert_store_client & cli,
-                          const std::string & name);
+                          const std::string & name,
+                          const std::string & authcode);
     
     bool has_temp_key(connector::cert_store_client & cli,
                       const std::string & name);

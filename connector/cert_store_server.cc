@@ -53,6 +53,8 @@ namespace virtdb { namespace connector {
           const pb::Certificate & cert = req.create().cert();
           name_key nk{cert.componentname(), cert.publickey()};
           cert_sptr cert_p{new pb::Certificate{cert}};
+          
+          // TODO : generate authcode here
           std::string auth_code{std::to_string(time(NULL))};
 
           {
@@ -65,7 +67,9 @@ namespace virtdb { namespace connector {
 
             cert_p->set_approved(false);
             cert_p->set_requestedatepoch((uint64_t)::time(nullptr));
+            cert_p->set_authcode(auth_code);
             certs_[nk] = cert_p;
+            auth_codes_[auth_code] = nk;
           }
           
           rep->set_type(pb::CertStoreReply::CREATE_TEMP_KEY);
@@ -76,24 +80,25 @@ namespace virtdb { namespace connector {
         case pb::CertStoreRequest::APPROVE_TEMP_KEY:
         {
           if( !req.has_approve() ) { THROW_("missing ApproveTempKey from CertStoreRequest"); }
-          if( !req.approve().has_cert() ) { THROW_("missing Certificate from ApproveTempKey"); }
-          if( !req.approve().cert().has_componentname() ) { THROW_("missing component_name from Certificate"); }
-          if( !req.approve().cert().has_publickey() ) { THROW_("missing public_key from Certificate"); }
-          
-          const pb::Certificate & cert = req.approve().cert();
-          name_key nk{cert.componentname(), cert.publickey()};
-          cert_sptr cert_p{new pb::Certificate{cert}};
+          auto const & approve = req.approve();
+          if( !approve.has_authcode() ) { THROW_("missing AuthCode from ApproveTempKey"); }
+          if( !approve.has_logintoken() ) { THROW_("missing LoginToken from ApproveTempKey"); }
           
           {
             lock l(mtx_);
+            auto cit = auth_codes_.find(approve.authcode());
+            if( cit == auth_codes_.end() ) { THROW_("invalid AuthCode in ApproveTempKey message"); }
+            name_key nk{cit->second.first, cit->second.second};
+            auto nit = certs_.find(nk);
+            if( nit == certs_.end() ) { THROW_("cannot find certificate for AuthCode"); }
             
             // TODO : check security here
             // TODO : handle expiry here
             // TODO : handle AUTHCODE here
             
-            cert_p->set_approved(true);
-            cert_p->set_requestedatepoch((uint64_t)::time(nullptr));
-            certs_[nk] = cert_p;
+            nit->second->set_approved(true);
+            nit->second->set_requestedatepoch((uint64_t)::time(nullptr));
+            auth_codes_.erase(cit);
           }
           
           rep->set_type(pb::CertStoreReply::APPROVE_TEMP_KEY);
@@ -128,6 +133,8 @@ namespace virtdb { namespace connector {
                 }
               }
               
+              // TODO : remove AuthCode in enterprise
+              
               if( cert.approved() && req.list().approvedkeys() && !skip )
               {
                 pb::Certificate * ctmp = lst->add_certs();
@@ -160,6 +167,18 @@ namespace virtdb { namespace connector {
             auto it = certs_.find(nk);
             if( it == certs_.end() ) { THROW_("Certificate not found"); }
            
+            std::string authcode;
+            if( !it->second->has_authcode() )
+            {
+              authcode = it->second->authcode();
+              auto cit = auth_codes_.find(it->second->authcode());
+              if( cit == auth_codes_.end() ) { LOG_ERROR("AuthCode for" << M_(*it->second) << "not found in internal map"); }
+              else
+              {
+                auth_codes_.erase(cit);
+              }
+            }
+            
             // TODO : check security here
             certs_.erase(it);
           }
