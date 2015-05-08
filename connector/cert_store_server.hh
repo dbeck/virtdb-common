@@ -13,10 +13,10 @@ namespace virtdb { namespace connector {
     typedef rep_server<interface::pb::CertStoreRequest,
                        interface::pb::CertStoreReply>     rep_base_type;
     typedef std::shared_ptr<cert_store_server>            sptr;
+    typedef std::shared_ptr<interface::pb::Certificate>   cert_sptr;
     
   private:
     typedef std::lock_guard<std::mutex>                  lock;
-    typedef std::shared_ptr<interface::pb::Certificate>  cert_sptr;
     typedef std::pair<std::string, std::string>          name_key;
     typedef std::map<name_key, cert_sptr>                cert_store;
     typedef std::map<std::string, name_key>              code_key;
@@ -41,6 +41,28 @@ namespace virtdb { namespace connector {
     virtual void
     on_request(const rep_base_type::req_item &,
                rep_base_type::send_rep_handler);
+    
+    virtual
+    std::string generate_authcode() const;
+    
+    virtual
+    void expire_certificate(cert_sptr);
+    
+    virtual
+    void validate_create_request(cert_sptr);
+    
+    virtual
+    void validate_approval_request(const std::string & auth_code,
+                                   const std::string & login_token,
+                                   cert_sptr);
+
+    virtual
+    void validate_delete_request(const std::string & login_token,
+                                 cert_sptr);
+    
+    virtual
+    bool allow_authcode_listing() const;
+                                   
     
   public:
     cert_store_server(server_context::sptr ctx,

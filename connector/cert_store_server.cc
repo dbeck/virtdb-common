@@ -32,6 +32,72 @@ namespace virtdb { namespace connector {
   {
   }
   
+  std::string
+  cert_store_server::generate_authcode() const
+  {
+    static std::atomic<int> counter{0};
+    return std::to_string(time(NULL))+"-"+std::to_string(++counter);
+  }
+  
+  void
+  cert_store_server::expire_certificate(cert_sptr p)
+  {
+    lock l(mtx_);
+    
+    const pb::Certificate & cert = *p;
+    name_key nk{cert.componentname(), cert.publickey()};
+    
+    {
+      lock l(mtx_);
+      auto it = certs_.find(nk);
+      if( it == certs_.end() ) { THROW_("Certificate not found"); }
+      
+      std::string authcode;
+      if( !it->second->has_authcode() )
+      {
+        authcode = it->second->authcode();
+        auto cit = auth_codes_.find(it->second->authcode());
+        if( cit == auth_codes_.end() ) { LOG_ERROR("AuthCode for" << M_(*it->second) << "not found in internal map"); }
+        else
+        {
+          auth_codes_.erase(cit);
+        }
+      }
+      certs_.erase(it);
+    }
+  }
+  
+  void
+  cert_store_server::validate_create_request(cert_sptr)
+  {
+    // subclasses may add more validation
+    // - THROW_(...) if not valid
+  }
+  
+  void
+  cert_store_server::validate_approval_request(const std::string & auth_code,
+                                               const std::string & login_token,
+                                               cert_sptr)
+  {
+    // subclasses may add more validation
+    // - THROW_(...) if not valid
+  }
+  
+  void
+  cert_store_server::validate_delete_request(const std::string & login_token,
+                                             cert_sptr)
+  {
+    // subclasses may add more validation
+    // - THROW_(...) if not valid
+  }
+  
+  bool
+  cert_store_server::allow_authcode_listing() const
+  {
+    // subclasses may disallow authcodes in LIST responses
+    return true;
+  }
+  
   void
   cert_store_server::on_request(const rep_base_type::req_item & req,
                                 rep_base_type::send_rep_handler handler)
@@ -40,7 +106,6 @@ namespace virtdb { namespace connector {
     
     try
     {
-
       switch( req.type() )
       {
         case pb::CertStoreRequest::CREATE_TEMP_KEY:
@@ -54,20 +119,21 @@ namespace virtdb { namespace connector {
           name_key nk{cert.componentname(), cert.publickey()};
           cert_sptr cert_p{new pb::Certificate{cert}};
           
-          // TODO : generate authcode here
-          std::string auth_code{std::to_string(time(NULL))};
+          std::string auth_code{generate_authcode()};
 
           {
             lock l(mtx_);
             if( certs_.count(nk) > 0 ) { THROW_("certificate already exists"); }
             
-            // TODO : check security here
-            // TODO : handle expiry here
-            // TODO : handle AUTHCODE here
-
             cert_p->set_approved(false);
             cert_p->set_requestedatepoch((uint64_t)::time(nullptr));
             cert_p->set_authcode(auth_code);
+            
+            // throws exception if validation fails
+            validate_create_request(cert_p);
+            
+            // TODO : handle expiry here
+
             certs_[nk] = cert_p;
             auth_codes_[auth_code] = nk;
           }
@@ -92,9 +158,12 @@ namespace virtdb { namespace connector {
             auto nit = certs_.find(nk);
             if( nit == certs_.end() ) { THROW_("cannot find certificate for AuthCode"); }
             
-            // TODO : check security here
+            // throws exception if validation fails
+            validate_approval_request(approve.authcode(),
+                                      approve.logintoken(),
+                                      nit->second);
+            
             // TODO : handle expiry here
-            // TODO : handle AUTHCODE here
             
             nit->second->set_approved(true);
             nit->second->set_requestedatepoch((uint64_t)::time(nullptr));
@@ -122,7 +191,7 @@ namespace virtdb { namespace connector {
             
             for( ; it!=end; ++it )
             {
-              const pb::Certificate & cert = *(it->second);
+              pb::Certificate cert{*(it->second)};
               bool skip = false;
               
               if( !component.empty() )
@@ -133,7 +202,7 @@ namespace virtdb { namespace connector {
                 }
               }
               
-              // TODO : remove AuthCode in enterprise
+              if( !allow_authcode_listing() ) cert.clear_authcode();
               
               if( cert.approved() && req.list().approvedkeys() && !skip )
               {
@@ -155,7 +224,8 @@ namespace virtdb { namespace connector {
         case pb::CertStoreRequest::DELETE_KEY:
         {
           if( !req.has_del() ) { THROW_("missing DeleteKey from CertStoreRequest"); }
-          if( !req.del().has_cert() ) { THROW_("missing Certificate from CreateTempKey"); }
+          auto const & del = req.del();
+          if( !req.del().has_cert() ) { THROW_("missing Certificate from DeleteKey"); }
           if( !req.del().cert().has_componentname() ) { THROW_("missing component_name from Certificate"); }
           if( !req.del().cert().has_publickey() ) { THROW_("missing public_key from Certificate"); }
  
@@ -166,6 +236,10 @@ namespace virtdb { namespace connector {
             lock l(mtx_);
             auto it = certs_.find(nk);
             if( it == certs_.end() ) { THROW_("Certificate not found"); }
+            
+            // throws exception if validation fails
+            validate_delete_request(del.logintoken(),
+                                    it->second);
            
             std::string authcode;
             if( !it->second->has_authcode() )
@@ -179,7 +253,6 @@ namespace virtdb { namespace connector {
               }
             }
             
-            // TODO : check security here
             certs_.erase(it);
           }
           
