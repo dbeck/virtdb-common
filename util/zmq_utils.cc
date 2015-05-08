@@ -69,8 +69,8 @@ namespace virtdb { namespace util {
     type_{type},
     stop_{false},
     n_waiting_{0},
-    valid_{false},
-    closed_{false}
+    closed_{false},
+    valid_{false}
   {
   }
   
