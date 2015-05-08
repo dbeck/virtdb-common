@@ -269,6 +269,7 @@ namespace virtdb { namespace connector {
     }
     catch (const std::exception & e)
     {
+      rep->Clear();
       rep->set_type(pb::CertStoreReply::ERROR_MSG);
       auto * err = rep->mutable_err();
       err->set_msg(e.what());
