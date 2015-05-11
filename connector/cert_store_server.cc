@@ -124,6 +124,14 @@ namespace virtdb { namespace connector {
           {
             lock l(mtx_);
             if( certs_.count(nk) > 0 ) { THROW_("certificate already exists"); }
+            for( auto const & i : certs_ )
+            {
+              if( i.first.first == cert.componentname() &&
+                  i.second->approved() )
+              {
+                THROW_("approved certificate already exists for this component");
+              }
+            }
             
             cert_p->set_approved(false);
             cert_p->set_requestedatepoch((uint64_t)::time(nullptr));

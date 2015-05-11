@@ -1,7 +1,8 @@
 
-#include "logger.hh"
-#include "util/active_queue.hh"
-#include "util/constants.hh"
+#include <logger.hh>
+#include <util/active_queue.hh>
+#include <util/constants.hh>
+#include <util/timer_service.hh>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -18,11 +19,18 @@ namespace virtdb { namespace logger {
     typedef std::unique_ptr<queue>                    queue_uptr;
     queue_uptr                                        zmq_queue_;
     queue_uptr                                        print_queue_;
+    util::timer_service                               timer_;
 
     queue_impl(log_sink * sink)
     : zmq_queue_(new queue(1,std::bind(&log_sink::handle_record,sink,_1))),
       print_queue_(new queue(1,std::bind(&log_sink::print_record,sink,_1)))
     {
+      timer_.schedule(300000, [](){
+        // reset every 5 minutes
+        symbol_store::max_id_sent(0);
+        header_store::reset_all();
+        return true;
+      });
     }
   };
   

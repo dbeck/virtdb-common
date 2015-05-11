@@ -19,5 +19,8 @@ namespace virtdb { namespace connector {
     
     virtual ~user_manager_client();
     virtual void cleanup();
+    
+    virtual bool token_is_admin(const std::string & token,
+                                unsigned long timeout_ms);
   };
 }}

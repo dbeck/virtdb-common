@@ -10,6 +10,12 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
+  bool
+  srcsys_credential_server::validate_token(const std::string & srcsys_token) const
+  {
+    return true;
+  }
+  
   void
   srcsys_credential_server::on_reply_fwd(const rep_base_type::req_item & req,
                                          rep_base_type::rep_item_sptr rep)
@@ -52,10 +58,11 @@ namespace virtdb { namespace connector {
           
           cred_sptr crptr{new pb::CredentialValues{crvals}};
           name_token nt{setcr.sourcesysname(), setcr.sourcesystoken()};
+          
+          if( !validate_token(setcr.sourcesystoken()) ) { THROW_("invalid SourceSysToken"); }
 
           {
             lock l(mtx_);
-            // TODO : validate Token ???
             credentials_[nt] = crptr;
           }
           

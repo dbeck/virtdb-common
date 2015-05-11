@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "ip_discovery_client.hh"
 #include "endpoint_client.hh"
 #include <util/constants.hh>

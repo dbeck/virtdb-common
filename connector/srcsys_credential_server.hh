@@ -37,6 +37,9 @@ namespace virtdb { namespace connector {
     on_request_fwd(const rep_base_type::req_item &,
                    rep_base_type::send_rep_handler);
     
+    virtual bool
+    validate_token(const std::string & srcsys_token) const;
+    
   protected:
     virtual void
     on_reply(const rep_base_type::req_item &,
