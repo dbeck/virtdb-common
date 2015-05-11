@@ -68,8 +68,8 @@ namespace virtdb { namespace util {
   : socket_{ctx, type},
     type_{type},
     stop_{false},
-    n_waiting_{0},
     closed_{false},
+    n_waiting_{0},
     valid_{false}
   {
   }
