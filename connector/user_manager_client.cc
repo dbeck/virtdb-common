@@ -42,11 +42,14 @@ namespace virtdb { namespace connector {
     auto lsrep = rep.lstusers();
     for( auto const & i : lsrep.users() )
     {
-      for( auto const & ii : i.logintokens() )
+      if( i.isadmin() )
       {
-        if( token == ii )
+        for( auto const & ii : i.logintokens() )
         {
-          return true;
+          if( token == ii )
+          {
+            return true;
+          }
         }
       }
     }
