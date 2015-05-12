@@ -27,6 +27,9 @@ namespace virtdb { namespace connector {
                                       unsigned long timeout_ms)
   {
     interface::pb::UserManagerRequest req;
+    req.set_type(interface::pb::UserManagerRequest::LIST_USERS);
+    auto * lstreq = req.mutable_lstusers();
+    lstreq->set_logintoken(token);
     interface::pb::UserManagerReply rep;
     auto fun = [&rep](const interface::pb::UserManagerReply & tmp_rep) {
       rep.MergeFrom(tmp_rep);
