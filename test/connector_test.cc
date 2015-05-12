@@ -731,6 +731,7 @@ ConnCertStoreTest::approve_temp_key(connector::cert_store_client & cli,
     auto * inner = req.mutable_approve();
     inner->set_authcode(authcode);
     inner->set_logintoken("token");
+    inner->set_componentname(name);
   }
   pb::CertStoreReply   rep;
   

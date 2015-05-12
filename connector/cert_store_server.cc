@@ -157,6 +157,7 @@ namespace virtdb { namespace connector {
           auto const & approve = req.approve();
           if( !approve.has_authcode() ) { THROW_("missing AuthCode from ApproveTempKey"); }
           if( !approve.has_logintoken() ) { THROW_("missing LoginToken from ApproveTempKey"); }
+          if( !approve.has_componentname() ) { THROW_("missing ComponentName from ApproveTempKey"); }
           
           {
             lock l(mtx_);
@@ -165,6 +166,10 @@ namespace virtdb { namespace connector {
             name_key nk{cit->second.first, cit->second.second};
             auto nit = certs_.find(nk);
             if( nit == certs_.end() ) { THROW_("cannot find certificate for AuthCode"); }
+            if( approve.componentname() != nit->second->componentname() )
+            {
+              THROW_("AuthCode is not valid for this component");
+            }
             
             // throws exception if validation fails
             validate_approval_request(approve.authcode(),
