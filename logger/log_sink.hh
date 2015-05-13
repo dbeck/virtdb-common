@@ -1,6 +1,6 @@
 #pragma once
 
-#include "diag.pb.h"
+#include <diag.pb.h>
 #include <util/zmq_utils.hh>
 #include <memory>
 

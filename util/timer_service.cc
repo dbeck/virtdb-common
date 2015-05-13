@@ -1,5 +1,5 @@
-#include "timer_service.hh"
-#include <logger.hh>
+#include <util/timer_service.hh>
+#include <iostream>
 
 namespace virtdb { namespace util {
   
@@ -83,11 +83,11 @@ namespace virtdb { namespace util {
       }
       catch (const std::exception & e)
       {
-        LOG_ERROR("exception caught during timed execution" << E_(e));
+        std::cerr << "exception caught during timed execution" << e.what() << "\n";
       }
       catch (...)
       {
-        LOG_ERROR("unknown exception caught during timed execution");
+        std::cerr << "unknown exception caught during timed execution\n";
       }
     }
     
@@ -119,7 +119,6 @@ namespace virtdb { namespace util {
     }
     else
     {
-      LOG_TRACE("item scheduled in the past, this will not reschedule");
       item i{when, what, 0};
       {
         lock l(mtx_);

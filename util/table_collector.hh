@@ -1,5 +1,9 @@
 #pragma once
 
+#include <util/relative_time.hh>
+#include <util/exception.hh>
+#include <util/constants.hh>
+
 #include <map>
 #include <vector>
 #include <memory>
@@ -7,10 +11,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <chrono>
-#include <util/relative_time.hh>
-#include <util/exception.hh>
-#include <util/constants.hh>
-#include <logger.hh>
+#include <iostream>
 
 namespace virtdb { namespace util {
 
@@ -203,7 +204,7 @@ namespace virtdb { namespace util {
     // check for invalid column id
     if( n_columns_ <= col_id )
     {
-      LOG_ERROR("out of bounds" << V_(n_columns_) << "<=" << V_(col_id));
+      std::cerr << "out of bounds: " << n_columns_ << "<=" << col_id << "\n";
       THROW_("col_id out of bounds");
     }
     

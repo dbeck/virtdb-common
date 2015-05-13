@@ -1,5 +1,5 @@
-#include "header_store.hh"
-#include "log_record.hh"
+#include <logger/header_store.hh>
+#include <logger/log_record.hh>
 #include <atomic>
 #include <mutex>
 #include <map>

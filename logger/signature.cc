@@ -1,4 +1,4 @@
-#include "signature.hh"
+#include <logger/signature.hh>
 
 namespace virtdb { namespace logger {
 

@@ -1,6 +1,6 @@
-#include "async_worker.hh"
-#include <logger.hh>
+#include <util/async_worker.hh>
 #include <zmq.hpp>
+#include <iostream>
 
 namespace virtdb { namespace util {
   
@@ -87,12 +87,14 @@ namespace virtdb { namespace util {
         }
 
         ++exceptions_caught;
-        LOG_ERROR("0MQ exception caught" << E_(e) << V_(exceptions_caught));
+        std::cerr << "0MQ exception caught: " << e.what()
+                  << " ncaught: " << exceptions_caught
+                  << "\n";
         std::this_thread::sleep_for(std::chrono::seconds(exceptions_caught));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > n_retries_on_exception_ )
         {
-          LOG_ERROR("stop worker loop because of too many errors. rethrowing exception" << E_(e));
+          std::cerr << "stop worker loop because of too many errors. rethrowing exception: " << e.what() << "\n";
           
           if( die_on_exception_ )
             throw;
@@ -108,12 +110,14 @@ namespace virtdb { namespace util {
         }
 
         ++exceptions_caught;
-        LOG_ERROR("exception caught" << E_(e) << V_(exceptions_caught));
+        std::cerr << "exception caught: " << e.what()
+                  << " ncaught: " << exceptions_caught
+                  << "\n";
         std::this_thread::sleep_for(std::chrono::seconds(exceptions_caught));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > n_retries_on_exception_ )
         {
-          LOG_ERROR("stop worker loop because of too many errors. rethrowing exception" << E_(e));
+          std::cerr << "stop worker loop because of too many errors. rethrowing exception: " << e.what() << "\n";
           
           if( die_on_exception_ )
             throw;
@@ -129,12 +133,14 @@ namespace virtdb { namespace util {
         }
 
         ++exceptions_caught;
-        LOG_ERROR("unknown excpetion caught" << V_(exceptions_caught));
+        std::cerr << "unknwon exception caught: "
+                  << " ncaught: " << exceptions_caught
+                  << "\n";
         std::this_thread::sleep_for(std::chrono::seconds(exceptions_caught));
         // if we keep receiving exceptions we stop
         if( exceptions_caught > n_retries_on_exception_ )
         {
-          LOG_ERROR("stop worker loop because of too many errors. rethrowing exception");
+          std::cerr << "stop worker loop because of too many errors. rethrowing exception.\n";
           
           if( die_on_exception_ )
             throw;

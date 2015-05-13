@@ -1,7 +1,7 @@
-#include "process_info.hh"
-#include "symbol_store.hh"
-#include "../util/relative_time.hh"
-#include "../util/net.hh"
+#include <logger/process_info.hh>
+#include <logger/symbol_store.hh>
+#include <util/relative_time.hh>
+#include <util/net.hh>
 #include <thread>
 #include <memory>
 #include <mutex>

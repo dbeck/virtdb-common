@@ -1,5 +1,9 @@
 #pragma once
 
+#include <util/barrier.hh>
+#include <util/exception.hh>
+#include <util/constants.hh>
+
 #include <queue>
 #include <thread>
 #include <condition_variable>
@@ -9,10 +13,7 @@
 #include <vector>
 #include <atomic>
 #include <algorithm>
-#include "barrier.hh"
-#include "exception.hh"
-#include "constants.hh"
-#include <logger.hh>
+#include <iostream>
 
 namespace virtdb { namespace util {
 
@@ -220,11 +221,11 @@ namespace virtdb { namespace util {
           }
           catch( const std::exception & e )
           {
-            LOG_ERROR("exception caught: " << E_(e));
+            std::cerr << "exception caught: " << e.what() << "\n";
           }
           catch(...)
           {
-            LOG_ERROR("unknown exception caught");
+            std::cerr << "unknown exception caught\n";
           }
           // signal wait_empty, no matter what the result was
           {

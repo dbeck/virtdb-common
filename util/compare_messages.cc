@@ -1,4 +1,4 @@
-#include "compare_messages.hh"
+#include <util/compare_messages.hh>
 #include <svc_config.pb.h>
 #include <diag.pb.h>
 

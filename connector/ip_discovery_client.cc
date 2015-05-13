@@ -3,9 +3,10 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "ip_discovery_client.hh"
-#include "endpoint_client.hh"
+#include <connector/ip_discovery_client.hh>
+#include <connector/endpoint_client.hh>
 #include <util/constants.hh>
+#include <logger.hh>
 #include <unistd.h>
 #include <functional>
 #include <future>

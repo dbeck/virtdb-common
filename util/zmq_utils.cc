@@ -1,9 +1,9 @@
-#include "zmq_utils.hh"
-#include "net.hh"
-#include "exception.hh"
-#include "constants.hh"
-#include "flex_alloc.hh"
-#include <logger.hh>
+#include <util/zmq_utils.hh>
+#include <util/net.hh>
+#include <util/exception.hh>
+#include <util/constants.hh>
+#include <util/flex_alloc.hh>
+#include <iostream>
 #include <sstream>
 #include <mutex>
 #include <unistd.h>
@@ -119,11 +119,13 @@ namespace virtdb { namespace util {
     }
     catch( const std::exception & e )
     {
-      std::cerr << "exception during ZMQ socket close: " << e.what();
+      std::cerr << "exception during ZMQ socket close: "
+                << e.what();
     }
     catch( const zmq::error_t & e )
     {
-      std::cerr << "ZMQ exception during ZMQ socket close: " << e.what();
+      std::cerr << "ZMQ exception during ZMQ socket close: "
+                << e.what();
     }
     catch( ... )
     {
@@ -145,11 +147,13 @@ namespace virtdb { namespace util {
     }
     catch( const std::exception & e )
     {
-      std::cerr << "exception during ZMQ socket close + destroy: " << e.what();
+      std::cerr << "exception during ZMQ socket close + destroy: "
+                << e.what();
     }
     catch( const zmq::error_t & e )
     {
-      std::cerr << "ZMQ exception during ZMQ socket close + destroy:" << e.what();
+      std::cerr << "ZMQ exception during ZMQ socket close + destroy:"
+                << e.what();
     }
     catch( ... )
     {
@@ -187,7 +191,9 @@ namespace virtdb { namespace util {
       catch (const std::exception & e)
       {
         // ignore errors, only log them
-        LOG_ERROR("exception caught:" << E_(e) << "while trying to bind to" << V_(ep));
+        std::cerr << "exception caught: "
+                  << e.what() << "while trying to bind to: "
+                  << ep << "\n";
       }
     }
     return (bound > 0);
@@ -228,9 +234,9 @@ namespace virtdb { namespace util {
       catch (const std::exception & e)
       {
         // ignore errors, only log them
-        std::string text{e.what()};
-        std::string endpoint{os.str()};
-        LOG_ERROR("exception caught" << V_(text) << "while trying to bind to" << V_(endpoint));
+        std::cerr << "exception caught: "
+                  << e.what() <<  " while trying to bind to: "
+                  << os.str() << "\n";
       }
     }
   }
@@ -371,27 +377,31 @@ namespace virtdb { namespace util {
       while( !ret && nretries > 0 )
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-        LOG_ERROR("retry sending" <<
-                  V_(len) <<
-                  V_(sleep_ms) <<
-                  V_(flags) <<
-                  V_(nretries));
+        std::cerr << "retry sending. len: " << len
+                  << " sleep_ms: " << sleep_ms
+                  << " flags: " << flags
+                  << " nretries: " << nretries
+                  << "\n";
         ret = socket_.send(buf, len, flags);
         --nretries;
         sleep_ms += SHORT_TIMEOUT_MS;
       }
       if( nretries != 10 && ret > 0 )
       {
-        LOG_INFO("sent" <<
-                 V_(len) <<
-                 V_(ret) <<
-                 V_(nretries));
+        std::cerr << "sent: " << len << " bytes."
+                  << " ret: " << ret
+                  << " nretries: " << nretries
+                  << "\n";
       }
       return ret;
     }
     else
     {
-      LOG_ERROR("trying to send on an invalid socket" << V_(len) << V_(flags));
+      std::cerr << "ERROR: "
+                << "trying to send on an invalid socket. "
+                << " len: " << len
+                << " flags: " << flags
+                << "\n";
       return 0;
     }
   }
@@ -408,27 +418,25 @@ namespace virtdb { namespace util {
       while( !ret && nretries > 0 )
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-        LOG_ERROR("retry sending" <<
-                  V_(msg.size()) <<
-                  V_(sleep_ms) <<
-                  V_(flags) <<
-                  V_(nretries));
+        std::cerr << "retry sending. "
+                  << " msg.size: " << msg.size()
+                  << " sleep_ms: " << sleep_ms
+                  << " flags: " << flags
+                  << " nretries: " << nretries
+                  << "\n";
         ret = socket_.send(msg, flags);
         --nretries;
         sleep_ms += SHORT_TIMEOUT_MS;
-      }
-      if( nretries != 10 && ret )
-      {
-        LOG_INFO("sent" <<
-                 V_(msg.size()) <<
-                 V_(ret) <<
-                 V_(nretries));
       }
       return ret;
     }
     else
     {
-      LOG_ERROR("trying to send on an invalid socket" << V_(msg.size()) << V_(flags));
+      std::cerr << "ERROR: "
+                << "trying to send on an invalid socket"
+                << " msg.size: " << msg.size()
+                << " flags: " << flags
+                << "\n";
       return false;
     }
   }

@@ -1,4 +1,4 @@
-#include "log_record.hh"
+#include <logger/log_record.hh>
 
 namespace virtdb { namespace logger {
   

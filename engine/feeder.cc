@@ -5,7 +5,8 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "feeder.hh"
+#include <engine/feeder.hh>
+#include <logger.hh>
 
 namespace virtdb { namespace engine {
 

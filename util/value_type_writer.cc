@@ -1,4 +1,4 @@
-#include "value_type_writer.hh"
+#include <util/value_type_writer.hh>
 #include <util/exception.hh>
 
 namespace virtdb { namespace util {

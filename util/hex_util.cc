@@ -1,4 +1,4 @@
-#include "hex_util.hh"
+#include <util/hex_util.hh>
 
 namespace virtdb { namespace util {
   

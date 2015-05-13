@@ -1,15 +1,15 @@
 #pragma once
 
-#include "diag.pb.h"
-#include "signature.hh"
-#include "end_msg.hh"
-#include "symbol_store.hh"
-#include "header_store.hh"
-#include "process_info.hh"
-#include "log_sink.hh"
-#include "variable.hh"
-#include "util/value_type.hh"
-#include "util/relative_time.hh"
+#include <diag.pb.h>
+#include <logger/signature.hh>
+#include <logger/end_msg.hh>
+#include <logger/symbol_store.hh>
+#include <logger/header_store.hh>
+#include <logger/process_info.hh>
+#include <logger/log_sink.hh>
+#include <logger/variable.hh>
+#include <util/value_type.hh>
+#include <util/relative_time.hh>
 #include <iostream>
 #include <map>
 #include <mutex>

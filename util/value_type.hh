@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.pb.h"
+#include <common.pb.h>
 #include <string>
 #include <util/exception.hh>
 #include <sstream>

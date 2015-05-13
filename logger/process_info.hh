@@ -1,7 +1,7 @@
 #pragma once
 
 #include <chrono>
-#include "diag.pb.h"
+#include <diag.pb.h>
 
 namespace virtdb { namespace logger {
 
