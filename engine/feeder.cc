@@ -12,7 +12,8 @@ namespace virtdb { namespace engine {
 
   feeder::feeder(collector::sptr cll)
   : collector_(cll),
-    act_block_{-1}
+    act_block_{-1},
+    next_block_timeout_ms_{30000}
   {
     std::unique_ptr<char[]> buffer;
     for( size_t i=0; i<collector_->n_columns(); ++i)
@@ -57,7 +58,7 @@ namespace virtdb { namespace engine {
       next_resend[i] = 0;
     
     // we try for 30 seconds
-    while( rt.get_msec() < 30000 )
+    while( rt.get_msec() < next_block_timeout_ms() )
     {
       got_columns = collector_->get(act_block_+1,
                                     timeout_ms,

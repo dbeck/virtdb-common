@@ -23,6 +23,7 @@ namespace virtdb { namespace engine {
     collector::reader_sptr_vec   readers_;
     util::timer_service          timer_svc_;
     util::relative_time          timer_;
+    std::atomic<uint64_t>        next_block_timeout_ms_;
     
     vtr::status next_block();
     
@@ -98,6 +99,18 @@ namespace virtdb { namespace engine {
     }
     
     bool fetch_next();
+    
+    inline void
+    next_block_timeout_ms(uint64_t val)
+    {
+      next_block_timeout_ms_  = val;
+    }
+    
+    inline uint64_t
+    next_block_timeout_ms() const
+    {
+      return next_block_timeout_ms_.load();
+    }
     
     const util::relative_time & timer() const;
   };
