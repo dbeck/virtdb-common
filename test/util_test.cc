@@ -7,11 +7,17 @@
 #include <util/table_collector.hh>
 #include <util/relative_time.hh>
 #include <util/hash_file.hh>
+#include <util/zmq_utils.hh>
 #include <future>
 #include <thread>
 
 using namespace virtdb::test;
 using namespace virtdb::util;
+
+// macro helpers for concatenating variable names
+#define INTERNAL_MACRO_CONCAT(A,B) __INTERNAL__##A##B
+#define INTERNAL_MACRO_CONCAT2(A,B) INTERNAL_MACRO_CONCAT(A,B)
+#define INTERNAL_LOCAL_VAR(A) INTERNAL_MACRO_CONCAT2(A,__LINE__)
 
 namespace
 {
@@ -37,7 +43,7 @@ namespace
   };
 }
 
-#define MEASURE_ME measure LOG_INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
+#define MEASURE_ME measure INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
 
 // UtilLZ4UtilTest
 
