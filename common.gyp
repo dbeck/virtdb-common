@@ -204,9 +204,6 @@
             'xcode_settings': {
               'OTHER_CFLAGS':     [ '-std=c++11', ],
               'OTHER_LDFLAGS':    [ '<!(pwd)/xlast-lz4.a', ],
-              #'OTHER_LDFLAGS':    [ '<(PRODUCT_DIR)/xlast-lz4.a', ],
-              #'OTHER_LDFLAGS':    [ './xlast-lz4.a', ],
-              #'OTHER_LDFLAGS':    [ '<!(pwd)/lz4/lib/liblz4.a', ],
             },
           },
         },],
@@ -216,7 +213,6 @@
             'link_settings': {
               'ldflags':          [ '<@(common_ldflags)', ],
               'libraries':        [ './lz4/lib/liblz4.a', ],
-              # 'libraries':        [ './xlast-lz4.a', ],
             },
           },
         },],
