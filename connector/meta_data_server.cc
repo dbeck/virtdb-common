@@ -186,6 +186,11 @@ namespace virtdb { namespace connector {
       }
     }
     
+    if( rep->tables_size() == 0 )
+    {
+      LOG_ERROR("couldn't gather metadata for" << V_(req));
+    }
+    
     handler(rep, false);
   }
   
