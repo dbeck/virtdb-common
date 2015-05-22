@@ -18,7 +18,10 @@ namespace virtdb { namespace connector {
       ep_data.set_name(cfg_client.get_endpoint_client().name());
       ep_data.set_svctype(pb::ServiceType::COLUMN);
       ep_data.add_connections()->MergeFrom(pub_base_type::conn());
+      ep_data.set_cmd(pb::EndpointData::ADD);
+      ep_data.set_validforms(util::DEFAULT_ENDPOINT_EXPIRY_MS);
       cfg_client.get_endpoint_client().register_endpoint(ep_data);
+      ctx->add_endpoint(ep_data);
     }
   }
   

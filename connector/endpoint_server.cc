@@ -177,25 +177,35 @@ namespace virtdb { namespace connector {
       uint64_t expiry  = now + epr.validforms();
       
       // set maximum vaildity for the component
-      keep_alive_[exp_svc_name] = expiry;
+      std::ostringstream os;
+      os << epr.svctype() << ' ' << epr.name();
+      std::string subscription{os.str()};
+      keep_alive_[subscription] = expiry;
       
       // schedule removal
       timer_svc_.schedule(epr.validforms()+SHORT_TIMEOUT_MS,
                           [this,
                            exp_svc_name,
-                           exp_svc_type]() {
+                           exp_svc_type,
+                           subscription]() {
                             {
                               std::unique_lock<std::mutex> l(mtx_);
+                              auto it = keep_alive_.find(subscription);
+                              if( it == keep_alive_.end() )
+                                return false;
+                              
                               uint64_t now     = util::relative_time::instance().get_msec();
-                              uint64_t expiry  = keep_alive_[exp_svc_name];
+                              uint64_t expiry  = it->second;
                               if( now >= expiry )
                               {
                                 pb::EndpointData to_remove;
                                 to_remove.set_name(exp_svc_name);
                                 to_remove.set_svctype(exp_svc_type);
+                                to_remove.set_cmd(pb::EndpointData::REMOVE);
                                 endpoints_.erase(to_remove);
                                 LOG_INFO("Endpoint expired" << M_(to_remove));
                                 publish_endpoint(to_remove);
+                                keep_alive_.erase(it);
                               }
                             }
                             // non-periodic check it is
@@ -318,6 +328,12 @@ namespace virtdb { namespace connector {
           LOG_ERROR("cannot send data" << M_(publish_ep));
           return;
         }
+        
+        LOG_TRACE("published message" << M_(publish_ep) << "to" << V_(subscription));
+      }
+      else
+      {
+        LOG_ERROR("failed to serialize message" << M_(publish_ep) << V_(ep.name()) );
       }
     }
   }

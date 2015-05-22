@@ -193,8 +193,11 @@ namespace virtdb { namespace connector {
     {
       ep_data.set_name(ctx->service_name());
       ep_data.set_svctype(pb::ServiceType::SRCSYS_CRED_MGR);
-      ep_data.add_connections()->MergeFrom(rep_base_type::conn());      
+      ep_data.set_cmd(pb::EndpointData::ADD);
+      ep_data.set_validforms(DEFAULT_ENDPOINT_EXPIRY_MS);
+      ep_data.add_connections()->MergeFrom(rep_base_type::conn());
       cfg_client.get_endpoint_client().register_endpoint(ep_data);
+      ctx->add_endpoint(ep_data);
     }
   }
   

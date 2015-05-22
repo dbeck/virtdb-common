@@ -312,8 +312,11 @@ namespace virtdb { namespace connector {
     {
       ep_data.set_name(ctx->service_name());
       ep_data.set_svctype(pb::ServiceType::CERT_STORE);
-      ep_data.add_connections()->MergeFrom(rep_base_type::conn());      
+      ep_data.add_connections()->MergeFrom(rep_base_type::conn());
+      ep_data.set_cmd(pb::EndpointData::ADD);
+      ep_data.set_validforms(DEFAULT_ENDPOINT_EXPIRY_MS);
       cfg_client.get_endpoint_client().register_endpoint(ep_data);
+      ctx->add_endpoint(ep_data);
     }
   }
   

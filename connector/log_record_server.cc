@@ -45,14 +45,12 @@ namespace virtdb { namespace connector {
       {
         ep_data.set_name(cfg_client.get_endpoint_client().name());
         ep_data.set_svctype(pb::ServiceType::LOG_RECORD);
-
-        // PULL socket
+        ep_data.set_cmd(pb::EndpointData::ADD);
+        ep_data.set_validforms(DEFAULT_ENDPOINT_EXPIRY_MS);
         ep_data.add_connections()->MergeFrom(pull_base_type::conn());
-        
-        // PUB socket
-        ep_data.add_connections()->MergeFrom(pub_base_type::conn());
-        
+        ep_data.add_connections()->MergeFrom(pub_base_type::conn());        
         cfg_client.get_endpoint_client().register_endpoint(ep_data);
+        ctx->add_endpoint(ep_data);
       }
     }
 
@@ -62,11 +60,11 @@ namespace virtdb { namespace connector {
       {
         ep_data.set_name(cfg_client.get_endpoint_client().name());
         ep_data.set_svctype(pb::ServiceType::GET_LOGS);
-
-        // REP socket
-        ep_data.add_connections()->MergeFrom(rep_base_type::conn());
-        
+        ep_data.set_cmd(pb::EndpointData::ADD);
+        ep_data.set_validforms(DEFAULT_ENDPOINT_EXPIRY_MS);
+        ep_data.add_connections()->MergeFrom(rep_base_type::conn());        
         cfg_client.get_endpoint_client().register_endpoint(ep_data);
+        ctx->add_endpoint(ep_data);
       }
     }
   }

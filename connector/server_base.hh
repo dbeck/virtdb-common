@@ -31,7 +31,7 @@ namespace virtdb { namespace connector {
     virtual const std::string & name() const;
     virtual const std::string & ep_hash() const;
     virtual ~server_base() {}
-        
+
   private:
     server_base() = delete;
     server_base(const server_base &) = delete;

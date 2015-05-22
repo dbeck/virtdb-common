@@ -1,4 +1,5 @@
 #include "query_server.hh"
+#include <util/constants.hh>
 #include <functional>
 
 using namespace virtdb::interface;
@@ -18,8 +19,11 @@ namespace virtdb { namespace connector {
     
     ep_data.set_name(cfg_client.get_endpoint_client().name());
     ep_data.set_svctype(pb::ServiceType::QUERY);
+    ep_data.set_cmd(pb::EndpointData::ADD);
+    ep_data.set_validforms(util::DEFAULT_ENDPOINT_EXPIRY_MS);
     ep_data.add_connections()->MergeFrom(pull_base_type::conn());
     cfg_client.get_endpoint_client().register_endpoint(ep_data);
+    ctx->add_endpoint(ep_data);
   }
   
   namespace

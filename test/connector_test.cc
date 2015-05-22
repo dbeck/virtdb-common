@@ -67,6 +67,7 @@ TEST_F(ConnEndpointTest, StressWatch)
     
     // long lifetime for this endpoint
     ep_data.set_validforms(10000);
+    ep_data.set_cmd(pb::EndpointData::ADD);
     ep_clnt.register_endpoint(ep_data);
   }
   

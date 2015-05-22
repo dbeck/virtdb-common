@@ -119,6 +119,8 @@ namespace virtdb { namespace connector {
     pb::EndpointData ep_data;
     ep_data.set_name(service_name);
     ep_data.set_svctype(pb::ServiceType::NONE);
+    ep_data.set_cmd(pb::EndpointData::LIST);
+    ep_data.set_validforms(100);
     register_endpoint(ep_data);
     worker_.start();
   }
@@ -322,6 +324,9 @@ namespace virtdb { namespace connector {
     }
 
     std::lock_guard<std::mutex> lock(mtx_);
+    bool removal_message = ( ep.has_cmd() && ep.cmd() == pb::EndpointData::REMOVE );
+
+    if( !removal_message )
     {
       // run monitors first
       auto it = monitors_.find( ep.svctype() );
@@ -342,7 +347,7 @@ namespace virtdb { namespace connector {
         endpoints_.erase(it);
       
       // insert the new one
-      if( ep.connections_size() > 0 )
+      if( !removal_message && ep.connections_size() > 0 )
       {
         endpoints_.insert(ep);
       }

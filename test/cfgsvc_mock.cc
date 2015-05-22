@@ -6,6 +6,7 @@
 #include <connector/cert_store_client.hh>
 #include <connector/user_manager_client.hh>
 #include <connector/srcsys_credential_client.hh>
+#include <util/timer_service.hh>
 #include <logger.hh>
 #include <future>
 
@@ -24,6 +25,7 @@ struct CfgSvcMock::impl
   connector::config_server::sptr             cfg_srv_;
   connector::cert_store_server::sptr         certsrv_sptr_;
   connector::srcsys_credential_server::sptr  sscsrv_sptr_;
+  util::timer_service                        timer_;
   
   impl(const std::string & ep)
   : cfg_srv_contex_{new connector::server_context},
@@ -74,6 +76,12 @@ struct CfgSvcMock::impl
       connector::srcsys_credential_client ssc_cli{cert_ctx, *ep_clnt_, "security-service"};
       ssc_cli.wait_valid();        
     }
+    
+    timer_.schedule(util::DEFAULT_ENDPOINT_EXPIRY_MS/3, [this]() {
+      sec_srv_contex_->keep_alive(*ep_clnt_);
+      cfg_srv_contex_->keep_alive(*ep_clnt_);
+      return true;
+    });
   }
 };
 
