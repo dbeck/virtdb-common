@@ -317,17 +317,56 @@ namespace virtdb { namespace connector {
   void
   endpoint_client::handle_endpoint_data(const interface::pb::EndpointData & ep)
   {
-    LOG_TRACE("handle endpoint data" << M_(ep) << V_((int)ep.svctype()) );
     if( ep.svctype() == interface::pb::ServiceType::NONE )
     {
       return;
     }
 
     std::lock_guard<std::mutex> lock(mtx_);
-    bool removal_message = ( ep.has_cmd() && ep.cmd() == pb::EndpointData::REMOVE );
-
-    if( !removal_message )
+    bool add_message = (ep.has_cmd() == false || ep.cmd() == pb::EndpointData::ADD );
+    bool new_data    = false;
+    
+    if( ep.connections_size() > 0 && add_message )
     {
+      auto it = endpoints_.find(ep);
+      if( it != endpoints_.end() )
+      {
+        // check sizes first
+        if( it->ByteSize() != ep.ByteSize() )
+        {
+          new_data = true;
+        }
+        else
+        {
+          // check data content tooo
+          util::flex_alloc<unsigned char, 4096> old_ep(it->ByteSize());
+          util::flex_alloc<unsigned char, 4096> new_ep(ep.ByteSize());
+          
+          if( it->SerializeToArray(old_ep.get(), it->ByteSize()) &&
+              ep.SerializeToArray(new_ep.get(), ep.ByteSize()) )
+          {
+            // content is different
+            if( ::memcmp(old_ep.get(), new_ep.get(), it->ByteSize()) != 0 )
+              new_data = true;
+          }
+        }
+        
+        // remove old data if new is different
+        if( new_data )
+        {
+          endpoints_.erase(it);
+        }
+      }
+      else
+      {
+        new_data = true;
+      }
+    }
+    
+    if( new_data )
+    {
+      LOG_TRACE("handle new endpoint data" << M_(ep) << V_((int)ep.svctype()) );
+
       // run monitors first
       auto it = monitors_.find( ep.svctype() );
       if( it != monitors_.end() &&
@@ -338,19 +377,8 @@ namespace virtdb { namespace connector {
           fire_monitor(m, ep);
         }
       }
-    }
-
-    {
-      // remove if exists
-      auto it = endpoints_.find(ep);
-      if( it != endpoints_.end() )
-        endpoints_.erase(it);
       
-      // insert the new one
-      if( !removal_message && ep.connections_size() > 0 )
-      {
-        endpoints_.insert(ep);
-      }
+      endpoints_.insert(ep);
     }
   }
   

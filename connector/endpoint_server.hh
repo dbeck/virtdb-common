@@ -32,7 +32,7 @@ namespace virtdb { namespace connector {
     std::mutex                  mtx_;
     
     bool worker_function();
-    void add_endpoint_data(const interface::pb::EndpointData & dta);
+    bool add_endpoint_data(const interface::pb::EndpointData & dta);
     void publish_endpoint(const interface::pb::EndpointData & dta);
     
   public:

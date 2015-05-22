@@ -91,6 +91,11 @@ namespace virtdb { namespace connector {
       }
       
       auto ips = util::net::get_own_ips(VIRTDB_SUPPORTS_IPV6);
+      if( ips.empty() )
+      {
+        ips.push_back("127.0.0.1");
+      }
+      
       for( auto const & ip : ips )
       {
         std::ostringstream os;

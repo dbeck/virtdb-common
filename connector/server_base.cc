@@ -74,6 +74,11 @@ namespace virtdb { namespace connector {
     // add discovered endpoints too
     ret.insert(ip_discovery_client::get_ip(ep_client,
                                            context_->ip_discovery_timeout_ms()));
+    
+    if( ep_client.service_ep().find("tcp://127.0.0.1") != std::string::npos )
+    {
+      ret.insert("127.0.0.1");
+    }
 
     return ret;
   }

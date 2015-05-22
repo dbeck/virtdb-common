@@ -4,6 +4,7 @@
 #include <connector/endpoint_client.hh>
 #include <util/hex_util.hh>
 #include <xxhash.h>
+#include <logger.hh>
 
 namespace virtdb { namespace connector {
   
@@ -53,7 +54,14 @@ namespace virtdb { namespace connector {
   {
     for( auto it : endpoints_ )
     {
-      ep_cli.register_endpoint(it);
+      try
+      {
+        ep_cli.register_endpoint(it);
+      }
+      catch (const std::exception & e)
+      {
+        LOG_ERROR("caugth" << E_(e));
+      }
     }
   }
   

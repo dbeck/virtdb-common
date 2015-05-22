@@ -151,24 +151,60 @@ namespace virtdb { namespace connector {
     }
   }
   
-  void
+  bool
   endpoint_server::add_endpoint_data(const interface::pb::EndpointData & epr)
   {
     std::unique_lock<std::mutex> l(mtx_);
+    bool inserted = false;
+    bool new_data = false;
+    
     // ignore endpoints with no connections
     if( epr.connections_size() > 0 &&
-       epr.svctype() != pb::ServiceType::NONE )
+        epr.svctype() != pb::ServiceType::NONE &&
+       (epr.has_cmd() == false || epr.cmd() == pb::EndpointData::ADD ))
     {
       // remove old endpoints if exists
       auto it = endpoints_.find(epr);
       if( it != endpoints_.end() )
-        endpoints_.erase(it);
+      {
+        // check sizes first
+        if( it->ByteSize() != epr.ByteSize() )
+        {
+          new_data = true;
+        }
+        else
+        {
+          // check data content tooo
+          util::flex_alloc<unsigned char, 4096> old_ep(it->ByteSize());
+          util::flex_alloc<unsigned char, 4096> new_ep(epr.ByteSize());
+          
+          if( it->SerializeToArray(old_ep.get(), it->ByteSize()) &&
+              epr.SerializeToArray(new_ep.get(), epr.ByteSize()) )
+          {
+            // content is different
+            if( ::memcmp(old_ep.get(), new_ep.get(), it->ByteSize()) != 0 )
+              new_data = true;
+          }
+        }
+
+        // remove old data if new is different
+        if( new_data )
+        {
+          endpoints_.erase(it);
+        }
+      }
+      else
+      {
+        // insert endpoint
+        endpoints_.insert(epr);
+        new_data = true;
+      }
       
-      // insert endpoint
-      endpoints_.insert(epr);
+      inserted = true;
     }
     
-    if( epr.has_validforms() )
+    if( epr.has_validforms() &&
+        inserted )
     {
       std::string exp_svc_name{epr.name()};
       pb::ServiceType exp_svc_type{epr.svctype()};
@@ -212,8 +248,8 @@ namespace virtdb { namespace connector {
                             return false;
                           });
     }
+    return new_data;
   }
-
   
   bool
   endpoint_server::worker_function()
@@ -230,13 +266,17 @@ namespace virtdb { namespace connector {
     if( !message.data() || !message.size())
       return true;
     
+    ep_data_set to_publish;
+    
     try
     {
       if( request.ParseFromArray(message.data(), message.size()) )
       {
-        for( int i=0; i<request.endpoints_size(); ++i )
+        for( auto epr : request.endpoints() )
         {
-          add_endpoint_data(request.endpoints(i));
+          // only publish new or changed endpoints
+          if( add_endpoint_data(epr) )
+            to_publish.insert(epr);
         }
         LOG_TRACE("endpoint request arrived" << M_(request));
       }
@@ -285,9 +325,9 @@ namespace virtdb { namespace connector {
         
         // publish new messages one by one, so subscribers can choose what to
         // receive
-        for( int i=0; i<request.endpoints_size(); ++i )
+        for( auto epr : to_publish )
         {
-          publish_endpoint(request.endpoints(i));
+          publish_endpoint(epr);
         }
       }
       else
@@ -353,8 +393,10 @@ namespace virtdb { namespace connector {
           if( ep.name() != this->name() &&
               ep.name() != "ip_discovery" )
           {
-            add_endpoint_data(ep);
-            publish_endpoint(ep);
+            if( add_endpoint_data(ep) )
+            {
+              publish_endpoint(ep);
+            }
           }
         }
       }
