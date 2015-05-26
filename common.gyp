@@ -96,6 +96,8 @@
                           'connector/cert_store_client.cc',          'connector/cert_store_client.hh',
                           'connector/server_context.cc',             'connector/server_context.hh',  
                           'connector/client_context.cc',             'connector/client_context.hh',  
+                          'connector/monitoring_server.cc',          'connector/monitoring_server.hh',
+                          'connector/monitoring_client.cc',          'connector/monitoring_client.hh',
                           # data helpers
                           'datasrc.hh',
                           'datasrc/column.cc',           'datasrc/column.hh',

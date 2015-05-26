@@ -8,6 +8,8 @@
 #include <connector/cert_store_client.hh>
 #include <connector/srcsys_credential_client.hh>
 #include <connector/ip_discovery_client.hh>
+#include <connector/monitoring_server.hh>
+#include <connector/monitoring_client.hh>
 #include <test/cfgsvc_mock.hh>
 #include <atomic>
 #include <thread>
@@ -40,6 +42,10 @@ extern std::string global_mock_ep;
 void ConnectorCommon::SetUp()
 {
   cctx_.reset(new client_context);
+}
+
+TEST_F(ConnMonitoringTest, ImplementMe)
+{
 }
 
 TEST_F(ConnEndpointTest, StressWatch)

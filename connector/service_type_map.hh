@@ -5,6 +5,7 @@
 #include <data.pb.h>
 #include <diag.pb.h>
 #include <security.pb.h>
+#include <monitoring.pb.h>
 
 namespace virtdb { namespace connector {
 
@@ -90,5 +91,14 @@ namespace virtdb { namespace connector {
     static const interface::pb::ServiceType value =
       interface::pb::ServiceType::SRCSYS_CRED_MGR;
   };
+  
+  template <>
+  struct service_type_map<interface::pb::MonitoringRequest,
+                          interface::pb::ConnectionType::REQ_REP>
+  {
+    static const interface::pb::ServiceType value =
+      interface::pb::ServiceType::MONITORING;
+  };
+
   
 }}

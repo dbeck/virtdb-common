@@ -19,6 +19,8 @@ namespace virtdb { namespace test {
     std::shared_ptr<connector::client_context> cctx_;
     virtual void SetUp();
   };
+
+  class ConnMonitoringTest : public ConnectorCommon { };
   
   class ConnEndpointTest : public ConnectorCommon { };
   class ConnConfigTest : public ConnectorCommon { };
