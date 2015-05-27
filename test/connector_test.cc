@@ -44,9 +44,89 @@ void ConnectorCommon::SetUp()
   cctx_.reset(new client_context);
 }
 
-TEST_F(ConnMonitoringTest, ImplementMe)
+TEST_F(ConnMonitoringTest, SimpleConnect)
 {
+  const char * name = "ConnMonitoringTest-SimpleConnect";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  monitoring_client cli{cctx_, ep_clnt, "monitoring-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
 }
+
+TEST_F(ConnMonitoringTest, ReportStats)
+{
+  const char * name = "ConnMonitoringTest-ReportStats";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  monitoring_client cli{cctx_, ep_clnt, "monitoring-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  const char * keys[] = { "Hello", "World", NULL };
+  EXPECT_TRUE(report_stats(cli,  name, keys));
+  EXPECT_FALSE(report_stats(cli,  name, NULL));
+  
+  pb::MonitoringRequest req;
+  req.set_type(pb::MonitoringRequest::GET_STATES);
+  req.mutable_getsts();
+  EXPECT_TRUE(cli.send_request(req, [](const pb::MonitoringReply & rep)
+  {
+    LOG_TRACE(M_(rep));
+    return true;
+  } , 10000));
+}
+
+bool
+ConnMonitoringTest::send_state(connector::monitoring_client & cli,
+                             const std::string & name,
+                             bool clear)
+{
+  return false;
+}
+
+bool
+ConnMonitoringTest::check_ok(connector::monitoring_client & cli,
+                             const std::string & name)
+{
+  return false;
+}
+
+bool
+ConnMonitoringTest::report_stats(connector::monitoring_client & cli,
+                                 const std::string & name,
+                                 const char ** keys)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::MonitoringRequest req;
+  req.set_type(pb::MonitoringRequest::REPORT_STATS);
+  auto stats = req.mutable_repstats();
+  stats->set_name(name);
+  if( keys )
+  {
+    const char * k = keys[0];
+    while( k )
+    {
+      auto st = stats->add_stats();
+      st->set_name(k);
+      st->set_stat(1.1);
+      k = *(++keys);
+    }
+  }
+  
+  pb::MonitoringReply rep;
+  
+  auto proc_rep = [&](const pb::MonitoringReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() )
+    return false;
+  EXPECT_EQ(rep.type(), pb::MonitoringReply::REPORT_STATS);
+  return !rep.has_err();
+}
+
 
 TEST_F(ConnEndpointTest, StressWatch)
 {

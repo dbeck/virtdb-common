@@ -26,11 +26,6 @@ namespace virtdb { namespace connector {
     sub_base_type::wait_valid();
   }
   
-  void log_record_client::wait_valid_req()
-  {
-    req_base_type::wait_valid();
-  }
-  
   bool log_record_client::wait_valid_push(uint64_t timeout_ms)
   {
     return logger_push_socket_->wait_valid(timeout_ms);
@@ -41,18 +36,10 @@ namespace virtdb { namespace connector {
     return sub_base_type::wait_valid(timeout_ms);
   }
   
-  bool log_record_client::wait_valid_req(uint64_t timeout_ms)
-  {
-    return req_base_type::wait_valid(timeout_ms);
-  }
-  
   log_record_client::log_record_client(client_context::sptr ctx,
                                        endpoint_client & ep_client,
                                        const std::string & server_name)
-  : req_base_type(ctx,
-                  ep_client,
-                  server_name),
-    sub_base_type(ctx,
+  : sub_base_type(ctx,
                   ep_client,
                   server_name),
     zmqctx_(1),
@@ -125,7 +112,6 @@ namespace virtdb { namespace connector {
   void
   log_record_client::cleanup()
   {
-    req_base_type::cleanup();
     sub_base_type::cleanup();    
   }
   

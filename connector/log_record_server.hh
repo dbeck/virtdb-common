@@ -18,13 +18,10 @@ namespace virtdb { namespace connector {
   // TODO : integrate rep_server too ... 
   class log_record_server final :
       public pull_server<interface::pb::LogRecord>,
-      public pub_server<interface::pb::LogRecord>,
-      public rep_server<interface::pb::GetLogs, interface::pb::LogRecord>
+      public pub_server<interface::pb::LogRecord>
   {
     typedef pull_server<interface::pb::LogRecord>              pull_base_type;
     typedef pub_server<interface::pb::LogRecord>               pub_base_type;
-    typedef rep_server<interface::pb::GetLogs,
-                       interface::pb::LogRecord>               rep_base_type;
     typedef interface::pb::ProcessInfo                         process_info;
     typedef interface::pb::Symbol                              symbol;
     typedef interface::pb::LogData                             log_data;
@@ -53,13 +50,6 @@ namespace virtdb { namespace connector {
     std::mutex                              header_mtx_;
     std::mutex                              symbol_mtx_;
     std::mutex                              log_mtx_;
-
-    void
-    publish_log(const rep_base_type::req_item& req,
-                rep_base_type::rep_item_sptr rep_sptr);
-    
-    void process_replies(const rep_base_type::req_item & req,
-                         rep_base_type::send_rep_handler handler);
     
     bool rep_worker_function();
     void pull_handler(record_sptr);

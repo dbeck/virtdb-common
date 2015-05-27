@@ -12,10 +12,8 @@
 namespace virtdb { namespace connector {
   
   class log_record_client final :
-      public req_client<interface::pb::GetLogs, interface::pb::LogRecord>,
       public sub_client<interface::pb::LogRecord>
   {
-    typedef req_client<interface::pb::GetLogs, interface::pb::LogRecord> req_base_type;
     typedef sub_client<interface::pb::LogRecord>                         sub_base_type;
     
   public:
@@ -43,11 +41,9 @@ namespace virtdb { namespace connector {
     
     bool logger_ready() const;
     void wait_valid_push();
-    void wait_valid_req();
     void wait_valid_sub();
 
     bool wait_valid_push(uint64_t timeout_ms);
-    bool wait_valid_req(uint64_t timeout_ms);
     bool wait_valid_sub(uint64_t timeout_ms);
     
     void cleanup();

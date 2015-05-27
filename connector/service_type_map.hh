@@ -37,14 +37,6 @@ namespace virtdb { namespace connector {
   };
   
   template <>
-  struct service_type_map<interface::pb::GetLogs,
-                          interface::pb::ConnectionType::REQ_REP>
-  {
-    static const interface::pb::ServiceType value =
-      interface::pb::ServiceType::GET_LOGS;
-  };
-
-  template <>
   struct service_type_map<interface::pb::Query,
                           interface::pb::ConnectionType::PUSH_PULL>
   {

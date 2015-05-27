@@ -9,6 +9,7 @@ namespace virtdb { namespace connector {
   class client_context;
   class cert_store_client;
   class srcsys_credential_client;
+  class monitoring_client;
 }}
 
 namespace virtdb { namespace test {
@@ -20,7 +21,21 @@ namespace virtdb { namespace test {
     virtual void SetUp();
   };
 
-  class ConnMonitoringTest : public ConnectorCommon { };
+  class ConnMonitoringTest : public ConnectorCommon
+  {
+  protected:
+    bool report_stats(connector::monitoring_client & cli,
+                      const std::string & name,
+                      const char ** keys);
+    
+    bool send_state(connector::monitoring_client & cli,
+                    const std::string & name,
+                    bool clear);
+    
+    bool check_ok(connector::monitoring_client & cli,
+                  const std::string & name);
+                  
+  };
   
   class ConnEndpointTest : public ConnectorCommon { };
   class ConnConfigTest : public ConnectorCommon { };
