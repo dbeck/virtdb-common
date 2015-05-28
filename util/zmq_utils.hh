@@ -59,6 +59,9 @@ namespace virtdb { namespace util {
     void disconnect_all();
     bool valid() const;
     const endpoint_set & endpoints() const;
+    void set_correlate(bool yesno);
+    void set_relaxed(bool yesno);
+    
     
     size_t send(const void *buf_, size_t len_, int flags_ = 0);
     bool send(zmq::message_t &msg_, int flags_ = 0);

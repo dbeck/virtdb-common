@@ -72,6 +72,8 @@ namespace virtdb { namespace util {
     n_waiting_{0},
     valid_{false}
   {
+    if( type == ZMQ_REQ )
+      set_correlate(true);
   }
   
   void
@@ -131,7 +133,20 @@ namespace virtdb { namespace util {
     {
       std::cerr << "unknown exception during ZMQ socket close";
     }
-
+  }
+  
+  void
+  zmq_socket_wrapper::set_correlate(bool yesno)
+  {
+    int opt = (yesno?1:0);
+    socket_.setsockopt(ZMQ_REQ_CORRELATE, &opt, sizeof(opt));
+  }
+  
+  void
+  zmq_socket_wrapper::set_relaxed(bool yesno)
+  {
+    int opt = (yesno?1:0);
+    socket_.setsockopt(ZMQ_REQ_RELAXED, &opt, sizeof(opt));
   }
   
   zmq_socket_wrapper::~zmq_socket_wrapper()
@@ -371,28 +386,22 @@ namespace virtdb { namespace util {
     size_t ret = 0;
     if( wait_valid(SHORT_TIMEOUT_MS) )
     {
-      size_t nretries = 10;
-      size_t sleep_ms = SHORT_TIMEOUT_MS;
-      ret = socket_.send(buf, len, flags);
-      while( !ret && nretries > 0 )
+      try
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-        std::cerr << "retry sending. len: " << len
-                  << " sleep_ms: " << sleep_ms
-                  << " flags: " << flags
-                  << " nretries: " << nretries
-                  << "\n";
         ret = socket_.send(buf, len, flags);
-        --nretries;
-        sleep_ms += SHORT_TIMEOUT_MS;
       }
-      if( nretries != 10 && ret > 0 )
+      catch( const zmq::error_t & e )
       {
-        std::cerr << "sent: " << len << " bytes."
-                  << " ret: " << ret
-                  << " nretries: " << nretries
-                  << "\n";
+        std::cerr << "caught " << e.what() << "\n";
+#ifdef RELEASE
+        if( type_ == ZMQ_REQ ) set_relaxed(true);
+#endif
+        throw;
       }
+      
+#ifdef RELEASE
+      if( type_ == ZMQ_REQ ) set_relaxed(false);
+#endif
       return ret;
     }
     else

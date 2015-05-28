@@ -550,7 +550,8 @@ TEST_F(ConnEndpointTest, Register)
   {
     if( ep.name() != "config-service" &&
         ep.name() != "ip_discovery" &&
-        ep.name() != "security-service" )
+        ep.name() != "security-service" &&
+        ep.name() != "monitoring-service" )
     {
       std::cout << "count_eps: " << ep.DebugString() << "\n";
       ++neps;
@@ -752,7 +753,7 @@ TEST_F(ConnConfigTest, CheckReqChannel)
 
 TEST_F(ConnConfigTest, CheckSubChannel)
 {
-  const char * name = "ConfigClientTest-CheckReqChannel";
+  const char * name = "ConfigClientTest-CheckSubChannel";
   endpoint_client   ep_clnt(cctx_, global_mock_ep, name);
   config_client     cfg_clnt(cctx_, ep_clnt, "config-service");
   std::shared_ptr<pb::Config> cfg_sub_res;

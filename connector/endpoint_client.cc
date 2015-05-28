@@ -183,11 +183,26 @@ namespace virtdb { namespace connector {
       
       if( !message_sent ) { THROW_("Couldn't send enpoint message"); }
       
-      if( !ep_req_socket_.poll_in(DEFAULT_TIMEOUT_MS,
-                                  SHORT_TIMEOUT_MS) )
       {
-        THROW_("no response for EndpointMessage");
+        int i=0;
+        for( ; i<20; ++i )
+        {
+          if( !ep_req_socket_.poll_in(DEFAULT_TIMEOUT_MS,
+                                      SHORT_TIMEOUT_MS) )
+          {
+            LOG_ERROR("no response for EndpointMessage" <<  M_(ep_data) << V_(i));
+          }
+          else
+          {
+            break;
+          }
+        }
+        if( i > 19 )
+        {
+          THROW_("no response for EndpointMessage. giving up");
+        }
       }
+      
       ep_req_socket_.get().recv(&msg);
       
       if( !msg.data() || !msg.size() )
