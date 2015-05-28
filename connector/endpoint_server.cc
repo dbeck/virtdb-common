@@ -211,6 +211,7 @@ namespace virtdb { namespace connector {
       }
       
       inserted = true;
+      on_up_down_(epr.name(), true);
     }
     
     if( epr.has_validforms() && inserted )
@@ -226,7 +227,6 @@ namespace virtdb { namespace connector {
       os << epr.svctype() << ' ' << epr.name();
       std::string subscription{os.str()};
       keep_alive_[subscription] = expiry;
-      on_up_down_(epr.name(), true);
       
       // schedule removal
       timer_svc_.schedule(epr.validforms()+SHORT_TIMEOUT_MS,
