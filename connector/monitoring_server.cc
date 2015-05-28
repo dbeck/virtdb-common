@@ -3,7 +3,8 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "monitoring_server.hh"
+#include <connector/monitoring_server.hh>
+#include <logger.hh>
 #include <time.h>
 
 using namespace virtdb::interface;
@@ -48,8 +49,8 @@ namespace virtdb { namespace connector {
           if( obj->type() != interface::pb::MonitoringRequest::SetState::CLEAR )
           {
             ret.first = false;
-            break;
           }
+          break;
         }
       }
     }
@@ -66,8 +67,8 @@ namespace virtdb { namespace connector {
           if( obj->type() != interface::pb::MonitoringRequest::ComponentError::CLEAR )
           {
             ret.first = false;
-            break;
           }
+          break;
         }
       }
     }
@@ -211,10 +212,17 @@ namespace virtdb { namespace connector {
               it = res.first;
             }
             report_stats_sptr tmp{new interface::pb::MonitoringRequest::ReportStats{req_msg}};
-            it->second.push_front(std::make_pair(::time(NULL), tmp));
-            
+            {
+              it->second.push_front(std::make_pair(::time(NULL), tmp));
+              if( it->second.size() > 5 )
+              {
+                // only keep the last 5 entries
+                auto erase_from = it->second.begin();
+                for( int i=0; i<5; ++i ) ++erase_from;
+                it->second.erase( erase_from, it->second.end() );
+              }
+            }
             components_.insert(req_msg.name());
-            // TODO : cleanup old entries
           }
           
           rep->set_type(pb::MonitoringReply::REPORT_STATS);
@@ -236,10 +244,17 @@ namespace virtdb { namespace connector {
               it = res.first;
             }
             set_state_sptr tmp{new interface::pb::MonitoringRequest::SetState{req_msg}};
-            it->second.push_front(std::make_pair(::time(NULL), tmp));
-            
+            {
+              it->second.push_front(std::make_pair(::time(NULL), tmp));
+              if( it->second.size() > 5 )
+              {
+                // only keep the last 5 entries
+                auto erase_from = it->second.begin();
+                for( int i=0; i<5; ++i ) ++erase_from;
+                it->second.erase( erase_from, it->second.end() );
+              }
+            }
             components_.insert(req_msg.name());
-            // TODO : cleanup old entries
           }
           
           rep->set_type(pb::MonitoringReply::SET_STATE);
@@ -262,11 +277,19 @@ namespace virtdb { namespace connector {
               it = res.first;
             }
             component_error_sptr tmp{new interface::pb::MonitoringRequest::ComponentError{req_msg}};
-            it->second.push_front(std::make_pair(::time(NULL), tmp));
             
+            {
+              it->second.push_front(std::make_pair(::time(NULL), tmp));
+              if( it->second.size() > 5 )
+              {
+                // only keep the last 5 entries
+                auto erase_from = it->second.begin();
+                for( int i=0; i<5; ++i ) ++erase_from;
+                it->second.erase( erase_from, it->second.end() );
+              }
+            }
             components_.insert(req_msg.reportedby());
             components_.insert(req_msg.impactedpeer());
-            // TODO : cleanup old entries
           }
  
           rep->set_type(pb::MonitoringReply::COMPONENT_ERROR);
@@ -290,13 +313,19 @@ namespace virtdb { namespace connector {
               it = res.first;
             }
             request_error_sptr tmp{new interface::pb::MonitoringRequest::RequestError{req_msg}};
-            it->second.push_front(std::make_pair(::time(NULL), tmp));
-            
+            {
+              it->second.push_front(std::make_pair(::time(NULL), tmp));
+              if( it->second.size() > 5 )
+              {
+                // only keep the last 5 entries
+                auto erase_from = it->second.begin();
+                for( int i=0; i<5; ++i ) ++erase_from;
+                it->second.erase( erase_from, it->second.end() );
+              }
+            }
             components_.insert(req_msg.reportedby());
             components_.insert(req_msg.impactedpeer());
-            // TODO : cleanup old entries
           }
-          
           rep->set_type(pb::MonitoringReply::REQUEST_ERROR);
           break;
         }
@@ -319,6 +348,7 @@ namespace virtdb { namespace connector {
               status->set_ok(is_ok.first);
               status->set_updatedepoch(is_ok.second);
               locked_add_events(*status, i);
+              LOG_TRACE("reporintg state: " << V_(i) << V_(is_ok.first) << V_(is_ok.second));
             }
           }
           rep->set_type(pb::MonitoringReply::GET_STATES);

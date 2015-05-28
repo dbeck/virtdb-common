@@ -29,6 +29,7 @@ struct CfgSvcMock::impl
   connector::cert_store_server::sptr         certsrv_sptr_;
   connector::srcsys_credential_server::sptr  sscsrv_sptr_;
   connector::monitoring_server::sptr         monsrv_sptr_;
+  connector::monitoring_client::sptr         moncli_sptr_;
   util::timer_service                        timer_;
   
   impl(const std::string & ep)
@@ -71,15 +72,6 @@ struct CfgSvcMock::impl
     cfg_clnt_->wait_valid_req();
     cfg_clnt_->wait_valid_sub();
     
-    // initialize monitoring services
-    monsrv_sptr_.reset(new connector::monitoring_server{mon_srv_contex_, *cfg_clnt_});
-    {
-      // wait for valid monitoring client
-      connector::client_context::sptr mon_ctx{new connector::client_context};
-      connector::monitoring_client mon_cli{mon_ctx, *ep_clnt_, "monitoring-service"};
-      mon_cli.wait_valid();
-    }
-    
     // initialize security services
     certsrv_sptr_.reset(new connector::cert_store_server{sec_srv_contex_, *cfg_clnt_});
     sscsrv_sptr_.reset(new connector::srcsys_credential_server{sec_srv_contex_, *cfg_clnt_});
@@ -92,6 +84,19 @@ struct CfgSvcMock::impl
       
       connector::srcsys_credential_client ssc_cli{cert_ctx, *ep_clnt_, "security-service"};
       ssc_cli.wait_valid();        
+    }
+    
+    // initialize monitoring services
+    monsrv_sptr_.reset(new connector::monitoring_server{mon_srv_contex_, *cfg_clnt_});
+    {
+      // wait for valid monitoring client
+      connector::client_context::sptr mon_ctx{new connector::client_context};
+      moncli_sptr_.reset(new connector::monitoring_client{clnt_contex_, *ep_clnt_, "monitoring-service"});
+      moncli_sptr_->wait_valid();
+      
+      ep_srv_->on_up_down([this](const std::string & name, bool is_up) {
+        moncli_sptr_->report_up_down(name, is_up, "config-service");
+      });
     }
     
     timer_.schedule(util::DEFAULT_ENDPOINT_EXPIRY_MS/3, [this]() {

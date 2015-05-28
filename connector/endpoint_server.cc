@@ -51,7 +51,8 @@ namespace virtdb { namespace connector {
     worker_{std::bind(&endpoint_server::worker_function,this),
             /* the preferred way is to rethrow exceptions if any on the other
                thread, rather then die */
-            10,false}
+            10,false},
+    on_up_down_{[](const std::string & name, bool is_up){}}
   {
     process_info::set_app_name(ctx->service_name());
     
@@ -151,6 +152,15 @@ namespace virtdb { namespace connector {
     }
   }
   
+  void
+  endpoint_server::on_up_down(on_up_down_fun monitor)
+  {
+    std::unique_lock<std::mutex> l(mtx_);
+    if( !monitor )
+      monitor = [](const std::string & name, bool is_up){};
+    on_up_down_ = monitor;
+  }
+  
   bool
   endpoint_server::add_endpoint_data(const interface::pb::EndpointData & epr)
   {
@@ -203,8 +213,7 @@ namespace virtdb { namespace connector {
       inserted = true;
     }
     
-    if( epr.has_validforms() &&
-        inserted )
+    if( epr.has_validforms() && inserted )
     {
       std::string exp_svc_name{epr.name()};
       pb::ServiceType exp_svc_type{epr.svctype()};
@@ -217,6 +226,7 @@ namespace virtdb { namespace connector {
       os << epr.svctype() << ' ' << epr.name();
       std::string subscription{os.str()};
       keep_alive_[subscription] = expiry;
+      on_up_down_(epr.name(), true);
       
       // schedule removal
       timer_svc_.schedule(epr.validforms()+SHORT_TIMEOUT_MS,
@@ -242,6 +252,7 @@ namespace virtdb { namespace connector {
                                 LOG_INFO("Endpoint expired" << M_(to_remove));
                                 publish_endpoint(to_remove);
                                 keep_alive_.erase(it);
+                                on_up_down_(exp_svc_name, false);
                               }
                             }
                             // non-periodic check it is

@@ -15,6 +15,10 @@ namespace virtdb { namespace connector {
   
   class endpoint_server
   {
+  public:
+    typedef std::function<void(const std::string & name, bool is_up)>   on_up_down_fun;
+    
+  private:
     typedef std::set<interface::pb::EndpointData,util::compare_endpoint_data>  ep_data_set;
     typedef std::map<std::string, uint64_t> keep_alive_map;
     
@@ -29,6 +33,7 @@ namespace virtdb { namespace connector {
     ip_discovery_server         discovery_;
     util::timer_service         timer_svc_;
     keep_alive_map              keep_alive_;
+    on_up_down_fun              on_up_down_;
     std::mutex                  mtx_;
     
     bool worker_function();
@@ -46,6 +51,7 @@ namespace virtdb { namespace connector {
     
     void reload_from(const std::string & path);
     void save_to(const std::string & path);
+    void on_up_down(on_up_down_fun monitor);
     
     virtual ~endpoint_server();
     void cleanup();

@@ -67,9 +67,21 @@ TEST_F(ConnMonitoringTest, ReportStats)
   req.mutable_getsts();
   EXPECT_TRUE(cli.send_request(req, [](const pb::MonitoringReply & rep)
   {
-    LOG_TRACE(M_(rep));
     return true;
-  } , 10000));
+  },10000));
+}
+
+TEST_F(ConnMonitoringTest, SetStates)
+{
+  const char * name = "ConnMonitoringTest-SetStates";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  monitoring_client cli{cctx_, ep_clnt, "monitoring-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  
+  EXPECT_TRUE(send_state(cli, name, false));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_state(cli, name, true));
+  EXPECT_TRUE(check_ok(cli, name));
 }
 
 bool
@@ -77,13 +89,64 @@ ConnMonitoringTest::send_state(connector::monitoring_client & cli,
                              const std::string & name,
                              bool clear)
 {
-  return false;
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::MonitoringRequest req;
+  req.set_type(pb::MonitoringRequest::SET_STATE);
+  auto stats = req.mutable_setst();
+  stats->set_name(name);
+  stats->set_type(clear?(pb::MonitoringRequest::SetState::CLEAR):(pb::MonitoringRequest::SetState::COMPONENT_ERROR));
+  pb::MonitoringReply rep;
+  
+  auto proc_rep = [&](const pb::MonitoringReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() )
+    return false;
+  EXPECT_EQ(rep.type(), pb::MonitoringReply::SET_STATE);
+  return !rep.has_err();
 }
 
 bool
 ConnMonitoringTest::check_ok(connector::monitoring_client & cli,
                              const std::string & name)
 {
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::MonitoringRequest req;
+  req.set_type(pb::MonitoringRequest::GET_STATES);
+  auto stats = req.mutable_getsts();
+  stats->set_name(name);
+  
+  pb::MonitoringReply rep;
+  
+  auto proc_rep = [&](const pb::MonitoringReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() )
+    return false;
+  EXPECT_EQ(rep.type(), pb::MonitoringReply::GET_STATES);
+  if(!rep.has_states())
+    return false;
+  auto const & states = rep.states();
+  if( states.states_size() == 1 )
+  {
+    EXPECT_EQ(states.states(0).name(), name);
+    LOG_TRACE(M_(rep));
+    return states.states(0).ok();
+  }
   return false;
 }
 
