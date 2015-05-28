@@ -421,22 +421,22 @@ namespace virtdb { namespace util {
     bool ret = false;
     if( wait_valid(SHORT_TIMEOUT_MS) )
     {
-      size_t nretries = 10;
-      size_t sleep_ms = SHORT_TIMEOUT_MS;
-      ret = socket_.send(msg, flags);
-      while( !ret && nretries > 0 )
+      try
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-        std::cerr << "retry sending. "
-                  << " msg.size: " << msg.size()
-                  << " sleep_ms: " << sleep_ms
-                  << " flags: " << flags
-                  << " nretries: " << nretries
-                  << "\n";
         ret = socket_.send(msg, flags);
-        --nretries;
-        sleep_ms += SHORT_TIMEOUT_MS;
       }
+      catch( const zmq::error_t & e )
+      {
+        std::cerr << "caught " << e.what() << "\n";
+#ifdef RELEASE
+        if( type_ == ZMQ_REQ ) set_relaxed(true);
+#endif
+        throw;
+      }
+      
+#ifdef RELEASE
+      if( type_ == ZMQ_REQ ) set_relaxed(false);
+#endif
       return ret;
     }
     else
