@@ -331,15 +331,21 @@ namespace virtdb { namespace connector {
         }
         case pb::MonitoringRequest::GET_STATES:
         {
-          if( !req.has_getsts() )             { THROW_("missing GetStates from MonitoringRequest"); }
-          auto const & req_msg = req.getsts();
+          std::string name;
+          bool has_name = false;
+          if( req.has_getsts() && req.getsts().has_name() )
+          {
+            has_name = true;
+            name = req.getsts().name();
+          }
+          
           auto states = rep->mutable_states();
           {
             lock l(mtx_);
             for( auto const & i : components_ )
             {
               // filter by name if given
-              if( req_msg.has_name() && i != req_msg.name() )
+              if( has_name && i != name )
                 continue;
               
               auto status = states->add_states();
