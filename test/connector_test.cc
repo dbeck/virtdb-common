@@ -84,6 +84,55 @@ TEST_F(ConnMonitoringTest, SetStates)
   EXPECT_TRUE(check_ok(cli, name));
 }
 
+TEST_F(ConnMonitoringTest, ComponentError)
+{
+  const char * name = "ConnMonitoringTest-ComponentError";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  monitoring_client cli{cctx_, ep_clnt, "monitoring-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  
+  EXPECT_TRUE(send_comperr(cli, "apple", name, false));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_comperr(cli, "peach", name, false));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_comperr(cli, "apple", name, true));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_comperr(cli, "peach", name, true));
+  EXPECT_TRUE(check_ok(cli, name));
+}
+
+bool
+ConnMonitoringTest::send_comperr(connector::monitoring_client & cli,
+                                const std::string & reporting,
+                                 const std::string & impacted,
+                                 bool clear)
+{
+  std::promise<void> rep_promise;
+  std::future<void>  on_rep{rep_promise.get_future()};
+  
+  pb::MonitoringRequest req;
+  req.set_type(pb::MonitoringRequest::COMPONENT_ERROR);
+  auto stats = req.mutable_comperr();
+  stats->set_reportedby(reporting);
+  stats->set_impactedpeer(impacted);
+  stats->set_type(clear?(pb::MonitoringRequest::ComponentError::CLEAR):(pb::MonitoringRequest::ComponentError::UPSTREAM_ERROR));
+  pb::MonitoringReply rep;
+  
+  auto proc_rep = [&](const pb::MonitoringReply & r) {
+    rep.MergeFrom(r);
+    rep_promise.set_value();
+    return true;
+  };
+  
+  EXPECT_TRUE(cli.send_request(req, proc_rep, 10000));
+  EXPECT_EQ(on_rep.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  if( rep.has_err() )
+    return false;
+  EXPECT_EQ(rep.type(), pb::MonitoringReply::COMPONENT_ERROR);
+  return !rep.has_err();
+}
+
+
 bool
 ConnMonitoringTest::send_state(connector::monitoring_client & cli,
                              const std::string & name,

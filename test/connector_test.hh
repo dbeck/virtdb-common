@@ -31,6 +31,11 @@ namespace virtdb { namespace test {
     bool send_state(connector::monitoring_client & cli,
                     const std::string & name,
                     bool clear);
+
+    bool send_comperr(connector::monitoring_client & cli,
+                      const std::string & reporting,
+                      const std::string & impacted,
+                      bool clear);
     
     bool check_ok(connector::monitoring_client & cli,
                   const std::string & name);

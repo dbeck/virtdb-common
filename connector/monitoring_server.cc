@@ -6,6 +6,8 @@
 #include <connector/monitoring_server.hh>
 #include <logger.hh>
 #include <time.h>
+#include <tuple>
+#include <set>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -46,9 +48,10 @@ namespace virtdb { namespace connector {
           uint64_t time_stamp = i.first;
           ret.second = time_stamp;
           auto const & obj = i.second;
-          if( obj->type() != interface::pb::MonitoringRequest::SetState::CLEAR )
+          if( obj->type() != pb::MonitoringRequest::SetState::CLEAR )
           {
             ret.first = false;
+            return ret;
           }
           break;
         }
@@ -59,16 +62,25 @@ namespace virtdb { namespace connector {
       auto it = component_error_map_.find(name);
       if( it != component_error_map_.end() )
       {
+        std::set<std::string> compos;
+        
         for( auto const & i : it->second )
         {
           uint64_t time_stamp = i.first;
           if( ret.second < time_stamp ) ret.second = time_stamp;
           auto const & obj = i.second;
-          if( obj->type() != interface::pb::MonitoringRequest::ComponentError::CLEAR )
+          if( compos.count(obj->reportedby()) == 0 )
           {
-            ret.first = false;
+            if( obj->type() != pb::MonitoringRequest::ComponentError::CLEAR )
+            {
+              ret.first = false;
+              return ret;
+            }
+            else
+            {
+              compos.insert(obj->reportedby());
+            }
           }
-          break;
         }
       }
     }
@@ -77,14 +89,14 @@ namespace virtdb { namespace connector {
   }
   
   void
-  monitoring_server::locked_add_events(interface::pb::MonitoringReply::Status & s,
+  monitoring_server::locked_add_events(pb::MonitoringReply::Status & s,
                                        const std::string & name) const
   {
     typedef std::pair<uint64_t, uint64_t> msg_id;
 
-    std::map<msg_id, interface::pb::MonitoringReply::Event> events;
+    std::map<msg_id, pb::MonitoringReply::Event> events;
     
-    auto add_event = [&events](interface::pb::MonitoringReply::Event & e)
+    auto add_event = [&events](pb::MonitoringReply::Event & e)
     {
       msg_id id{e.epoch(),0};
       for( auto it=events.find(id); it != events.end(); ++it )
@@ -111,10 +123,10 @@ namespace virtdb { namespace connector {
         {
           uint64_t time_stamp = i.first;
           auto const & obj = i.second;
-          interface::pb::MonitoringReply::Event ev;
+          pb::MonitoringReply::Event ev;
           ev.set_epoch(time_stamp);
           auto req = ev.mutable_request();
-          req->set_type(interface::pb::MonitoringRequest::REPORT_STATS);
+          req->set_type(pb::MonitoringRequest::REPORT_STATS);
           auto inner = req->mutable_repstats();
           inner->MergeFrom(*obj);
           add_event(ev);
@@ -130,10 +142,10 @@ namespace virtdb { namespace connector {
         {
           uint64_t time_stamp = i.first;
           auto const & obj = i.second;
-          interface::pb::MonitoringReply::Event ev;
+          pb::MonitoringReply::Event ev;
           ev.set_epoch(time_stamp);
           auto req = ev.mutable_request();
-          req->set_type(interface::pb::MonitoringRequest::SET_STATE);
+          req->set_type(pb::MonitoringRequest::SET_STATE);
           auto inner = req->mutable_setst();
           inner->MergeFrom(*obj);
           add_event(ev);
@@ -149,10 +161,10 @@ namespace virtdb { namespace connector {
         {
           uint64_t time_stamp = i.first;
           auto const & obj = i.second;
-          interface::pb::MonitoringReply::Event ev;
+          pb::MonitoringReply::Event ev;
           ev.set_epoch(time_stamp);
           auto req = ev.mutable_request();
-          req->set_type(interface::pb::MonitoringRequest::COMPONENT_ERROR);
+          req->set_type(pb::MonitoringRequest::COMPONENT_ERROR);
           auto inner = req->mutable_comperr();
           inner->MergeFrom(*obj);
           add_event(ev);
@@ -168,10 +180,10 @@ namespace virtdb { namespace connector {
         {
           uint64_t time_stamp = i.first;
           auto const & obj = i.second;
-          interface::pb::MonitoringReply::Event ev;
+          pb::MonitoringReply::Event ev;
           ev.set_epoch(time_stamp);
           auto req = ev.mutable_request();
-          req->set_type(interface::pb::MonitoringRequest::REQUEST_ERROR);
+          req->set_type(pb::MonitoringRequest::REQUEST_ERROR);
           auto inner = req->mutable_reqerr();
           inner->MergeFrom(*obj);
           add_event(ev);
@@ -179,10 +191,10 @@ namespace virtdb { namespace connector {
       }
     }
     
-    for( auto const & e : events )
+    for( auto it = events.begin(); it != events.end(); ++it )
     {
       auto tmp_ev = s.add_events();
-      tmp_ev->MergeFrom(e.second);
+      tmp_ev->MergeFrom(it->second);
     }
   }
   
@@ -211,7 +223,7 @@ namespace virtdb { namespace connector {
               auto res = report_stats_map_.insert(std::make_pair(req_msg.name(),report_stats_list()));
               it = res.first;
             }
-            report_stats_sptr tmp{new interface::pb::MonitoringRequest::ReportStats{req_msg}};
+            report_stats_sptr tmp{new pb::MonitoringRequest::ReportStats{req_msg}};
             {
               it->second.push_front(std::make_pair(::time(NULL), tmp));
               if( it->second.size() > 5 )
@@ -243,15 +255,22 @@ namespace virtdb { namespace connector {
               auto res = set_state_map_.insert(std::make_pair(req_msg.name(),set_state_list()));
               it = res.first;
             }
-            set_state_sptr tmp{new interface::pb::MonitoringRequest::SetState{req_msg}};
+            set_state_sptr tmp{new pb::MonitoringRequest::SetState{req_msg}};
             {
               it->second.push_front(std::make_pair(::time(NULL), tmp));
-              if( it->second.size() > 5 )
+              typedef std::set<pb::MonitoringRequest::SetState::Types> comp_state_set;
+              comp_state_set comp_states;
+              
+              for( auto ei=it->second.begin(); ei!=it->second.end(); ++ei )
               {
-                // only keep the last 5 entries
-                auto erase_from = it->second.begin();
-                for( int i=0; i<5; ++i ) ++erase_from;
-                it->second.erase( erase_from, it->second.end() );
+                if( comp_states.count(req_msg.type()) > 0 )
+                {
+                  ei = it->second.erase(ei);
+                }
+                else
+                {
+                  comp_states.insert(req_msg.type());
+                }
               }
             }
             components_.insert(req_msg.name());
@@ -276,16 +295,29 @@ namespace virtdb { namespace connector {
               auto res = component_error_map_.insert(std::make_pair(req_msg.impactedpeer(),component_error_list()));
               it = res.first;
             }
-            component_error_sptr tmp{new interface::pb::MonitoringRequest::ComponentError{req_msg}};
+            component_error_sptr tmp{new pb::MonitoringRequest::ComponentError{req_msg}};
             
             {
               it->second.push_front(std::make_pair(::time(NULL), tmp));
-              if( it->second.size() > 5 )
+              typedef std::pair<std::string, pb::MonitoringRequest::ComponentError::Types> reported_component_type;
+              typedef std::set<reported_component_type> error_set;
+              error_set  errors;
+              
+              for( auto ei=it->second.begin(); ei!=it->second.end(); ++ei )
               {
-                // only keep the last 5 entries
-                auto erase_from = it->second.begin();
-                for( int i=0; i<5; ++i ) ++erase_from;
-                it->second.erase( erase_from, it->second.end() );
+                reported_component_type typ = std::make_pair(ei->second->reportedby(), ei->second->type());
+                if( errors.count(typ) > 0 )
+                {
+                  if( ei->second->reportedby() == req_msg.reportedby() )
+                  {
+                    LOG_TRACE("removing: " << V_(ei->first) << M_(*ei->second) << "after inserted" << M_(req_msg));
+                    ei = it->second.erase(ei);
+                  }
+                }
+                else
+                {
+                  errors.insert(typ);
+                }
               }
             }
             components_.insert(req_msg.reportedby());
@@ -312,7 +344,7 @@ namespace virtdb { namespace connector {
               auto res = request_error_map_.insert(std::make_pair(req_msg.impactedpeer(),request_error_list()));
               it = res.first;
             }
-            request_error_sptr tmp{new interface::pb::MonitoringRequest::RequestError{req_msg}};
+            request_error_sptr tmp{new pb::MonitoringRequest::RequestError{req_msg}};
             {
               it->second.push_front(std::make_pair(::time(NULL), tmp));
               if( it->second.size() > 5 )
