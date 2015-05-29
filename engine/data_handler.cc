@@ -44,6 +44,8 @@ namespace virtdb { namespace engine {
                                    }));
     
     feeder_.reset(new feeder(collector_));
+    // TODO : rationalize this
+    feeder_->next_block_timeout_ms(300000);
   }
 
   const std::map<column_id_t, size_t> &
