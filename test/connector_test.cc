@@ -675,6 +675,8 @@ TEST_F(ConnEndpointTest, Register)
     conn->set_type(pb::ConnectionType::REQ_REP);
     
     ep_clnt.register_endpoint(ep_data);
+    for( int i=0; i<20 && nreg==0; ++i )
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
     EXPECT_GT(nreg, 0);
     ep_data.set_validforms(1);
     // other client deregisters
