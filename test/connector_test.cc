@@ -570,16 +570,18 @@ TEST_F(ConnEndpointTest, Register)
   endpoint_client ep_clnt2(cctx_, global_mock_ep, "EndpointClientTest2");
   EXPECT_EQ("EndpointClientTest", ep_clnt.name());
   
+  relative_time rt;
+  
   std::atomic<int> nreg{0};
   std::shared_ptr<std::promise<void>> prom_ptr{new std::promise<void>()};
   std::shared_ptr<std::future<void>> fut_ptr{new std::future<void>{prom_ptr->get_future()}};
   
-  auto ep_callback = [&nreg, &prom_ptr](const pb::EndpointData & ep)
+  auto ep_callback = [&nreg, &prom_ptr, &rt](const pb::EndpointData & ep)
   {
     if( ep.name() == "EndpointClientTest" &&
         ep.svctype() == pb::ServiceType::OTHER )
     {
-      std::cout << "\nEP CB: " << ep.DebugString() << "\n";
+      std::cout << "\nEP CB: " << ep.DebugString() << " @" << rt.get_msec() << "\n";
       for( auto & conn : ep.connections() )
       {
         if( conn.type() == pb::ConnectionType::REQ_REP )
@@ -600,14 +602,14 @@ TEST_F(ConnEndpointTest, Register)
   
   std::atomic<int> neps{0};
   
-  auto count_eps = [&neps](const pb::EndpointData & ep)
+  auto count_eps = [&neps, &rt](const pb::EndpointData & ep)
   {
     if( ep.name() != "config-service" &&
         ep.name() != "ip_discovery" &&
         ep.name() != "security-service" &&
         ep.name() != "monitoring-service" )
     {
-      std::cout << "count_eps: " << ep.DebugString() << "\n";
+      std::cout << "count_eps: " << ep.DebugString() << " @" << rt.get_msec() << "\n";
       ++neps;
     }
   };
