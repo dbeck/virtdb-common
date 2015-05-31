@@ -577,8 +577,9 @@ TEST_F(ConnEndpointTest, Register)
   auto ep_callback = [&nreg, &prom_ptr](const pb::EndpointData & ep)
   {
     if( ep.name() == "EndpointClientTest" &&
-       ep.svctype() == pb::ServiceType::OTHER )
+        ep.svctype() == pb::ServiceType::OTHER )
     {
+      std::cout << "\nEP CB: " << ep.DebugString() << "\n";
       for( auto & conn : ep.connections() )
       {
         if( conn.type() == pb::ConnectionType::REQ_REP )
