@@ -692,12 +692,16 @@ TEST_F(ConnEndpointTest, Register)
     pb::EndpointData ep_data;
     ep_data.set_name(ep_clnt.name());
     ep_data.set_svctype(pb::ServiceType::OTHER);
+    ep_data.set_cmd(pb::EndpointData::ADD);
     
     auto conn = ep_data.add_connections();
     conn->add_address("test-address2");
     conn->set_type(pb::ConnectionType::REQ_REP);
     
     ep_clnt.register_endpoint(ep_data);
+    // trying uni cpu support
+    std::this_thread::yield();
+    
     EXPECT_EQ(fut_ptr->wait_for(std::chrono::seconds(10)),std::future_status::ready);
     EXPECT_GT(nreg, 0);
     ep_data.set_validforms(1);
