@@ -22,3 +22,22 @@
 	path = rocksdb
 	url = https://github.com/starschema/rocksdb.git
 	branch = master
+[submodule "deps_/gtest"]
+	path = deps_/gtest
+	url = https://github.com/starschema/virtdb-gtest.git
+	branch = gtest-1.7.0
+[submodule "deps_/proto"]
+	path = deps_/proto
+	url = https://github.com/starschema/virtdb-proto.git
+[submodule "deps_/logger"]
+	path = deps_/logger
+	url = https://github.com/starschema/virtdb-logger.git
+[submodule "deps_/utils"]
+	path = deps_/utils
+	url = https://github.com/starschema/virtdb-utils.git
+[submodule "deps_/fsm"]
+	path = deps_/fsm
+	url = https://github.com/starschema/virtdb-fsm.git
+[submodule "deps_/queue"]
+	path = deps_/queue
+	url = https://github.com/starschema/virtdb-queue.git
