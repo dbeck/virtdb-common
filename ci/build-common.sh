@@ -34,6 +34,12 @@ if [ $? -ne 0 ]; then echo "Failed to make tests in $COMPONENT"; exit 10; fi
 out/Debug/gtest_main
 if [ $? -ne 0 ]; then echo "$COMPONENT tests failed"; exit 10; fi
 
+make gtest_main_cachedb
+if [ $? -ne 0 ]; then echo "Failed to make cachedb tests in $COMPONENT"; exit 10; fi
+
+out/Debug/gtest_main_cachedb
+if [ $? -ne 0 ]; then echo "$COMPONENT cachedb tests failed"; exit 10; fi
+
 make 
 if [ $? -ne 0 ]; then echo "Failed to make all in $COMPONENT"; exit 10; fi
 

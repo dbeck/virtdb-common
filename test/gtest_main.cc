@@ -5,7 +5,6 @@
 #include "connector_test.hh"
 #include "engine_test.hh"
 #include "fault_test.hh"
-#include "cachedb_test.hh"
 #include "cfgsvc_mock.hh"
 #include <connector/server_context.hh>
 #include <connector/client_context.hh>

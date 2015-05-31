@@ -486,9 +486,7 @@
       'dependencies':      [
                              'deps_/gtest/gyp/gtest.gyp:gtest_lib',
                              'deps_/proto/proto.gyp:proto',
-                             'dsproxy_with_faults',
-                             'cachedb_with_faults',
-                             'rocksdb',
+                             'common_with_faults',
                            ],
       'include_dirs':      [ './deps_/gtest/include/', ],
       'cflags':            [ '-std=c++11', '-Wall', ],
@@ -501,8 +499,25 @@
                              'test/datasrc_test.cc',      'test/datasrc_test.hh',
                              'test/engine_test.cc',       'test/engine_test.hh',
                              'test/fault_test.cc',        'test/fault_test.hh',
-                             'test/cachedb_test.cc',      'test/cachedb_test.hh',
                              'test/cfgsvc_mock.cc',       'test/cfgsvc_mock.hh',
+                           ],
+    },
+    {
+      'target_name':       'gtest_main_cachedb',
+      'type':              'executable',
+      'defines':           [ 'INJECT_FAULTS', ],
+      'dependencies':      [
+                             'deps_/gtest/gyp/gtest.gyp:gtest_lib',
+                             'deps_/proto/proto.gyp:proto',
+                             'dsproxy_with_faults',
+                             'cachedb_with_faults',
+                             'rocksdb',
+                           ],
+      'include_dirs':      [ './deps_/gtest/include/', ],
+      'cflags':            [ '-std=c++11', '-Wall', ],
+      'sources':           [
+                             'test/gtest_main_cachedb.cc',
+                             'test/cachedb_test.cc',      'test/cachedb_test.hh',
                            ],
     },
     {
