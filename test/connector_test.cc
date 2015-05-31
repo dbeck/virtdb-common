@@ -840,6 +840,7 @@ TEST_F(ConnConfigTest, CheckSubChannel)
   std::shared_ptr<pb::Config> cfg_sub_res;
   std::promise<void> cfg_promise;
   std::future<void> on_cfg{cfg_promise.get_future()};
+  std::atomic<int> cnt{0};
   
   
   EXPECT_TRUE(cfg_clnt.wait_valid_sub(1000));
@@ -853,7 +854,9 @@ TEST_F(ConnConfigTest, CheckSubChannel)
     if( cfg->name() == name )
     {
       cfg_sub_res = cfg;
-      cfg_promise.set_value();
+      ++cnt;
+      if( cnt == 1 )
+        cfg_promise.set_value();
     }
   };
   
@@ -895,6 +898,7 @@ TEST_F(ConnConfigTest, CheckSubChannel)
   }
   
   EXPECT_EQ(on_cfg.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(cnt.load(), 1);
 }
 
 TEST_F(ConnServerBaseTest, ConstuctHostSet)
