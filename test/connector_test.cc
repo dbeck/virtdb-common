@@ -571,8 +571,10 @@ TEST_F(ConnEndpointTest, Register)
   EXPECT_EQ("EndpointClientTest", ep_clnt.name());
   
   std::atomic<int> nreg{0};
+  std::shared_ptr<std::promise<void>> prom_ptr{new std::promise<void>()};
+  std::shared_ptr<std::future<void>> fut_ptr{new std::future<void>{prom_ptr->get_future()}};
   
-  auto ep_callback = [&nreg](const pb::EndpointData & ep)
+  auto ep_callback = [&nreg, &prom_ptr](const pb::EndpointData & ep)
   {
     if( ep.name() == "EndpointClientTest" &&
        ep.svctype() == pb::ServiceType::OTHER )
@@ -586,6 +588,8 @@ TEST_F(ConnEndpointTest, Register)
             if( addr.find("test-address") == 0 )
             {
               ++nreg;
+              if( nreg == 1 )
+                prom_ptr->set_value();
             }
           }
         }
@@ -608,6 +612,10 @@ TEST_F(ConnEndpointTest, Register)
   };
   
   {
+    nreg = 0;
+    prom_ptr.reset(new std::promise<void>());
+    fut_ptr.reset(new std::future<void>{prom_ptr->get_future()});
+
     // check env, count endpoints
     pb::EndpointData ep_data;
     ep_data.set_name("EndpointClientTest-CountEPs");
@@ -624,6 +632,10 @@ TEST_F(ConnEndpointTest, Register)
   
   // register a dummy endpoint
   {
+    nreg = 0;
+    prom_ptr.reset(new std::promise<void>());
+    fut_ptr.reset(new std::future<void>{prom_ptr->get_future()});
+
     pb::EndpointData ep_data;
     ep_data.set_name(ep_clnt.name());
     ep_data.set_svctype(pb::ServiceType::OTHER);
@@ -645,6 +657,10 @@ TEST_F(ConnEndpointTest, Register)
   
   // register another dummy endpoint without a watch
   {
+    nreg = 0;
+    prom_ptr.reset(new std::promise<void>());
+    fut_ptr.reset(new std::future<void>{prom_ptr->get_future()});
+
     pb::EndpointData ep_data;
     ep_data.set_name(ep_clnt.name());
     ep_data.set_svctype(pb::ServiceType::OTHER);
@@ -666,6 +682,10 @@ TEST_F(ConnEndpointTest, Register)
   
   // another register
   {
+    nreg = 0;
+    prom_ptr.reset(new std::promise<void>());
+    fut_ptr.reset(new std::future<void>{prom_ptr->get_future()});
+
     pb::EndpointData ep_data;
     ep_data.set_name(ep_clnt.name());
     ep_data.set_svctype(pb::ServiceType::OTHER);
@@ -675,8 +695,7 @@ TEST_F(ConnEndpointTest, Register)
     conn->set_type(pb::ConnectionType::REQ_REP);
     
     ep_clnt.register_endpoint(ep_data);
-    for( int i=0; i<20 && nreg==0; ++i )
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    EXPECT_EQ(fut_ptr->wait_for(std::chrono::seconds(10)),std::future_status::ready);
     EXPECT_GT(nreg, 0);
     ep_data.set_validforms(1);
     // other client deregisters
@@ -688,6 +707,10 @@ TEST_F(ConnEndpointTest, Register)
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   
   {
+    nreg = 0;
+    prom_ptr.reset(new std::promise<void>());
+    fut_ptr.reset(new std::future<void>{prom_ptr->get_future()});
+
     // check env, count endpoints
     pb::EndpointData ep_data;
     ep_data.set_name("EndpointClientTest-CountEPs");
