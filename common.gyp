@@ -2,7 +2,7 @@
   'variables': {
     'proto_libdir' :      '<!(pkg-config --libs-only-L protobuf)',
     'zmq_libdir' :        '<!(pkg-config --libs-only-L libzmq)',
-    'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+    'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install /usr/local/lib /opt)',
     'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none/)',
     'has_sodium':         '<!(./file_exists.sh <(sodium_libdir))',
     'common_ldflags':   [
@@ -327,7 +327,10 @@
       'target_name':                   'common',
       'type':                          'static_library',
       'hard_dependency':                1,
-      'dependencies':                [ 'lz4', 'deps_/proto/proto.gyp:proto', ],
+      'dependencies':                [
+                                       'lz4',
+                                       'deps_/proto/proto.gyp:proto',
+                                     ],
       'cflags':                      [ '-std=c++11', '-Wall', ],
       'sources':                     [ '<@(common_sources)', ],
     },
