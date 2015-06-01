@@ -261,7 +261,8 @@ namespace virtdb { namespace connector {
               typedef std::set<pb::MonitoringRequest::SetState::Types> comp_state_set;
               comp_state_set comp_states;
               
-              for( auto ei=it->second.begin(); ei!=it->second.end(); ++ei )
+              int len = it->second.size();
+              for( auto ei=it->second.begin(); ei!=it->second.end() && len > 0; ++ei )
               {
                 if( comp_states.count(req_msg.type()) > 0 )
                 {
@@ -271,6 +272,7 @@ namespace virtdb { namespace connector {
                 {
                   comp_states.insert(req_msg.type());
                 }
+                --len;
               }
             }
             components_.insert(req_msg.name());
@@ -303,14 +305,15 @@ namespace virtdb { namespace connector {
               typedef std::set<reported_component_type> error_set;
               error_set  errors;
               
-              for( auto ei=it->second.begin(); ei!=it->second.end(); ++ei )
+              int len = it->second.size();
+              for( auto ei=it->second.begin(); ei!=it->second.end() && len > 0; ++ei )
               {
                 reported_component_type typ = std::make_pair(ei->second->reportedby(), ei->second->type());
                 if( errors.count(typ) > 0 )
                 {
                   if( ei->second->reportedby() == req_msg.reportedby() )
                   {
-                    LOG_TRACE("removing: " << V_(ei->first) << M_(*ei->second) << "after inserted" << M_(req_msg));
+                    LOG_TRACE("removing: " << V_(ei->first) << M_(*ei->second) << "after inserted" << M_(req_msg) << V_(len) << V_(errors.size()));
                     ei = it->second.erase(ei);
                   }
                 }
@@ -318,6 +321,7 @@ namespace virtdb { namespace connector {
                 {
                   errors.insert(typ);
                 }
+                --len;
               }
             }
             components_.insert(req_msg.reportedby());

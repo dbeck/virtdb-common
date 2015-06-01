@@ -99,6 +99,15 @@ TEST_F(ConnMonitoringTest, ComponentError)
   EXPECT_FALSE(check_ok(cli, name));
   EXPECT_TRUE(send_comperr(cli, "peach", name, true));
   EXPECT_TRUE(check_ok(cli, name));
+
+  EXPECT_TRUE(send_comperr(cli, "apple", name, false));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_comperr(cli, "peach", name, false));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_comperr(cli, "apple", name, true));
+  EXPECT_FALSE(check_ok(cli, name));
+  EXPECT_TRUE(send_comperr(cli, "peach", name, true));
+  EXPECT_TRUE(check_ok(cli, name));
 }
 
 bool
@@ -581,7 +590,7 @@ TEST_F(ConnEndpointTest, Register)
     if( ep.name() == "EndpointClientTest" &&
         ep.svctype() == pb::ServiceType::OTHER )
     {
-      std::cout << "\nEP CB: " << ep.DebugString() << " @" << rt.get_msec() << "\n";
+      // std::cout << "\nEP CB: " << ep.DebugString() << " @" << rt.get_msec() << "\n";
       for( auto & conn : ep.connections() )
       {
         if( conn.type() == pb::ConnectionType::REQ_REP )
@@ -843,7 +852,7 @@ TEST_F(ConnConfigTest, CheckSubChannel)
   std::atomic<int> cnt{0};
   
   
-  EXPECT_TRUE(cfg_clnt.wait_valid_sub(1000));
+  EXPECT_TRUE(cfg_clnt.wait_valid_sub(10000));
   
   auto config_watch = [&](const std::string & provider_name,
                           const std::string & channel,
@@ -858,10 +867,21 @@ TEST_F(ConnConfigTest, CheckSubChannel)
       if( cnt == 1 )
         cfg_promise.set_value();
     }
+    /*
+    else
+    {
+      std::cout << "Unexpected: " << cfg->DebugString() << " on channel: " << channel << "\n";
+    }
+    */
   };
   
   // set monitor
   cfg_clnt.watch(name, config_watch);
+  
+  // give a chance to other threads to do their work and make sure we give enough time for
+  // the config service to settle
+  std::this_thread::yield();
+  std::this_thread::sleep_for(std::chrono::seconds(1));
   
   {
     pb::Config cfg_req, cfg_rep;
@@ -875,7 +895,7 @@ TEST_F(ConnConfigTest, CheckSubChannel)
       child->set_key("Config Parameter");
       {
         auto child_l2 = child->add_children();
-        child_l2->set_key("Value");
+        child_l2->set_key(std::string("Value-")+std::to_string(std::rand()));
         auto value_l2 = child_l2->mutable_value();
         value_l2->set_type(pb::Kind::STRING);
       }
@@ -1203,6 +1223,7 @@ TEST_F(ConnCertStoreTest, CreateTempKey)
   std::string authcode;
   EXPECT_TRUE(create_temp_key(cli, name, authcode));
   EXPECT_FALSE(authcode.empty());
+  EXPECT_TRUE(delete_key(cli, name));
 }
 
 TEST_F(ConnCertStoreTest, ApproveTempKey)
@@ -1453,9 +1474,11 @@ TEST_F(ConnSrcsysCredTest, GetCredential)
   srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
   EXPECT_TRUE(cli.wait_valid(100));
   EXPECT_FALSE(get_cred(cli, name, "bad-token"));
-  EXPECT_FALSE(get_cred(cli, name, "token"));
-  EXPECT_TRUE(set_cred(cli, name, "token"));
-  EXPECT_TRUE(get_cred(cli, name, "token"));
+  std::string token{"token"};
+  token += std::to_string(std::rand());
+  EXPECT_FALSE(get_cred(cli, name, token));
+  EXPECT_TRUE(set_cred(cli, name, token));
+  EXPECT_TRUE(get_cred(cli, name, token));
   EXPECT_FALSE(get_cred(cli, name, "bad-token"));
 }
 
@@ -1489,7 +1512,13 @@ TEST_F(ConnSrcsysCredTest, GetTemplate)
   endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
   EXPECT_TRUE(cli.wait_valid(100));
-  EXPECT_FALSE(get_tmpl(cli, name));
+  
+  static bool once = true;
+  if( once )
+  {
+    EXPECT_FALSE(get_tmpl(cli, name));
+    once = false;
+  }
   EXPECT_TRUE(set_tmpl(cli, name));
   EXPECT_TRUE(get_tmpl(cli, name));
 }

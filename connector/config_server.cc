@@ -64,13 +64,26 @@ namespace virtdb { namespace connector {
     if( rep && rep->has_name() )
     {
       // generate a hash on the request
-      std::string hash;
-      std::string msg_string{request.DebugString()};
-      util::hex_util(XXH64(msg_string.c_str(), msg_string.size(), 0), hash);
+      std::string hash64, hash32;
+      int bs = request.ByteSize();
+      if( bs > 0 )
+      {
+        util::flex_alloc<uint8_t, 512> buffer(bs);
+        if( request.SerializeToArray(buffer.get(), bs) )
+        {
+          util::hex_util(XXH64(buffer.get(), bs, 0xDeadBeaf), hash64);
+          util::hex_util(XXH32(buffer.get(), bs, 0), hash32);
+        }
+      }
       
+      if( hash32.empty() ) hash32 = std::to_string(std::rand());
+      if( hash64.empty() ) hash64 = std::to_string(std::rand());
+      
+      std::string hash{hash32+hash64};
       std::string subscription{rep->name()};
       
       bool suppress = false;
+      bool has_config = false;
       {
         lock l(mtx_);
         auto it = hashes_.find(request.name());
@@ -84,18 +97,6 @@ namespace virtdb { namespace connector {
       if( !suppress )
       {
         publish(subscription,rep);
-      }
-      else if( LOG_TRACE_IS_ENABLED )
-      {
-        auto it = configs_.find(request.name());
-        if( it == configs_.end() )
-        {
-          LOG_ERROR("hash algo fail. no such config yet: " << M_(request));
-        }
-        else
-        {
-          LOG_TRACE("not publishing, already has request: " << M_(it->second));
-        }
       }
     }
   }

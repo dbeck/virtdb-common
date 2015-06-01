@@ -17,6 +17,17 @@ namespace virtdb { namespace logger {
     std::mutex                              g_mutex_;
   }
   
+  uint32_t
+  header_store::size()
+  {
+    uint32_t ret = 0;
+    {
+      std::lock_guard<std::mutex> lock(g_mutex_);
+      ret = g_header_map_.size();
+    }
+    return ret;
+  }
+
   const log_record *
   header_store::get(uint32_t id)
   {
