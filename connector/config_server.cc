@@ -82,7 +82,21 @@ namespace virtdb { namespace connector {
       
       LOG_INFO("publishing config" << V_(subscription) << V_(rep->name()) << V_(hash) << V_(suppress));
       if( !suppress )
+      {
         publish(subscription,rep);
+      }
+      else if( LOG_TRACE_IS_ENABLED )
+      {
+        auto it = configs_.find(request.name());
+        if( it == configs_.end() )
+        {
+          LOG_ERROR("hash algo fail. no such config yet: " << M_(request));
+        }
+        else
+        {
+          LOG_TRACE("not publishing, already has request: " << M_(it->second));
+        }
+      }
     }
   }
 
