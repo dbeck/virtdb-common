@@ -404,9 +404,31 @@ namespace virtdb { namespace util {
       catch( const zmq::error_t & e )
       {
         std::cerr << "caught '" << e.what() << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
+        if( type_ == ZMQ_REQ )
+        {
+          std::string errmsg{e.what()};
+          if( errmsg.find("current state") != std::string::npos )
+          {
+            if( poll_in(10) )
+            {
+              zmq::message_t m;
+              auto ret = socket_.recv(&m);
+              if( ret )
+              {
+                std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                while( m.more() )
+                {
+                  ret = socket_.recv(&m);
+                  std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                  if( !ret ) break;
+                }
+              }
+            }
+          }
 #ifdef RELEASE
-        if( type_ == ZMQ_REQ ) set_relaxed(true);
+          set_relaxed(true);
 #endif
+        }
         throw;
       }
       
@@ -439,9 +461,31 @@ namespace virtdb { namespace util {
       catch( const zmq::error_t & e )
       {
         std::cerr << "caught '" << e.what() << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
+        if( type_ == ZMQ_REQ )
+        {
+          std::string errmsg{e.what()};
+          if( errmsg.find("current state") != std::string::npos )
+          {
+            if( poll_in(10) )
+            {
+              zmq::message_t m;
+              auto ret = socket_.recv(&m);
+              if( ret )
+              {
+                std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                while( m.more() )
+                {
+                  ret = socket_.recv(&m);
+                  std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                  if( !ret ) break;
+                }
+              }
+            }
+          }
 #ifdef RELEASE
-        if( type_ == ZMQ_REQ ) set_relaxed(true);
+          set_relaxed(true);
 #endif
+        }
         throw;
       }
       
