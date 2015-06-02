@@ -83,7 +83,6 @@ namespace virtdb { namespace connector {
       std::string subscription{rep->name()};
       
       bool suppress = false;
-      bool has_config = false;
       {
         lock l(mtx_);
         auto it = hashes_.find(request.name());

@@ -852,6 +852,7 @@ TEST_F(ConnConfigTest, CheckSubChannel)
   std::atomic<int> cnt{0};
   
   
+  EXPECT_TRUE(cfg_clnt.wait_valid_req(10000));
   EXPECT_TRUE(cfg_clnt.wait_valid_sub(10000));
   
   auto config_watch = [&](const std::string & provider_name,
@@ -874,14 +875,19 @@ TEST_F(ConnConfigTest, CheckSubChannel)
     }
     */
   };
-  
-  // set monitor
+
+  // give a chance to other threads to do their work and make sure we give enough time for
+  // the config service to settle
+  std::this_thread::yield();
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // set monitor
   cfg_clnt.watch(name, config_watch);
   
   // give a chance to other threads to do their work and make sure we give enough time for
   // the config service to settle
   std::this_thread::yield();
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   
   {
     pb::Config cfg_req, cfg_rep;
