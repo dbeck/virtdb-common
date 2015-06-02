@@ -9,15 +9,6 @@ SODIUM_CFLAGS        := $(shell pkg-config --cflags libsodium) -I$(HOME)/libsodi
 
 PROTOBUF_LDFLAGS  := $(shell pkg-config --libs protobuf)
 
-# FIXME integrate libtool better ...
-GTEST_PATH           := $(BUILD_ROOT)/gtest
-GTEST_CONFIG_STATUS  := $(GTEST_PATH)/config.status
-GTEST_LIBDIR         := $(GTEST_PATH)/lib/
-GTEST_INCLUDE        := $(GTEST_PATH)/include
-GTEST_LIBS           := -lgtest
-GTEST_LDFLAGS        := -L$(GTEST_LIBDIR) -L$(GTEST_LIBDIR)/.libs $(GTEST_LIBS)
-GTEST_CFLAGS         := -I$(GTEST_INCLUDE)
-
 # FIXME on Windows
 FIX_CXX_11_BUG =
 LINUX_LDFLAGS =
@@ -32,17 +23,17 @@ ifeq ($(shell uname), Darwin)
 MAC_CFLAGS := -DCOMMON_MAC_BUILD
 endif
 
-BASIC_COMMON_INCLUDES := -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/proto -I$(BUILD_ROOT)/cppzmq -I$(BUILD_ROOT)/lz4/lib
+BASIC_COMMON_INCLUDES := -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/deps_/proto -I$(BUILD_ROOT)/cppzmq -I$(BUILD_ROOT)/lz4/lib
 
 ifeq ($(RELEASE), 1)
 $(info DOING RELEASE BUILD)
-CXXFLAGS += -Wall -O3 -DNDEBUG -DRELEASE -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(MAC_CFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(SODIUM_CFLAGS) $(GTEST_CFLAGS) $(BASIC_COMMON_INCLUDES)
-LDFLAGS += $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(SODIUM_LDFLAGS)  $(GTEST_LDFLAGS)
+CXXFLAGS += -Wall -O3 -DNDEBUG -DRELEASE -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(MAC_CFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(SODIUM_CFLAGS) $(BASIC_COMMON_INCLUDES)
+LDFLAGS += $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(SODIUM_LDFLAGS)
 CFLAGS += -Wall -O3 -DNDEBUG -DRELEASE -fPIC
 else
 $(info DOING DEBUG BUILD)
-CXXFLAGS += -Wall -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(MAC_CFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(SODIUM_CFLAGS) $(GTEST_CFLAGS) $(BASIC_COMMON_INCLUDES)
-LDFLAGS += -g3 $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(SODIUM_LDFLAGS)  $(GTEST_LDFLAGS)
+CXXFLAGS += -Wall -g3 -std=c++11 -fPIC $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(MAC_CFLAGS) $(PROTOBUF_CFLAGS) $(ZMQ_CFLAGS) $(SODIUM_CFLAGS) $(BASIC_COMMON_INCLUDES)
+LDFLAGS += -g3 $(FIX_CXX_11_BUG) $(LINUX_LDFLAGS) $(PROTOBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(SODIUM_LDFLAGS)
 CFLAGS += -Wall -g3 -fPIC
 endif
 
@@ -72,50 +63,23 @@ LZ4_OBJECTS        := $(patsubst %.c,%.o,$(LZ4_SRCS))
 MURMUR3_OBJECTS    := $(patsubst %.c,%.o,$(MURMUR3_SRCS))
 TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
 
-PROTO_LIB  := proto/libproto.a
+PROTO_LIB  := deps_/proto/libproto.a
 COMMON_LIB := libcommon.a
 
-# all: $(COMMON_LIB) # gtest-test
 all: $(COMMON_LIB)
-
-gtest-test: gtest-pkg-build-all test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECT) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB)
-	g++ -o test/gtest_main test/gtest_main.o $(UTIL_OBJECTS) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(TEST_OBJECTS) $(PROTO_LIB) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(LDFLAGS)
 
 $(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(UTIL_OBJECTS)
 	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
 
 $(PROTO_LIB):
 	@echo "building proto project in ./proto"
-	cd ./proto; make -f proto.mk all
+	cd ./deps_/proto; make -f proto.mk all
 	@echo "proto project built"
 
-gtest-pkg-build-all: gtest-pkg-configure gtest-pkg-lib
-
-gtest-pkg-configure: $(GTEST_CONFIG_STATUS)
-
-$(GTEST_CONFIG_STATUS):
-	@echo "doing configure in gtest in " $(GTEST_PATH)
-	cd $(GTEST_PATH) ; ./configure
-	@echo "configure done in gtest"
-
-# NOTE: assumption: the libdir will be created during build
-gtest-pkg-lib: $(GTEST_LIBDIR)
-
-$(GTEST_LIBDIR):
-	@echo "building the gtest package"
-	@make -C $(GTEST_PATH)
-	@echo "building finished in gtest package"
-
-gtest-pkg-clean:
-	@echo "cleaning the gtest package"
-	@make -C $(GTEST_PATH) clean
-	@rm -Rf $(GTEST_LIBDIR)
-	@echo "cleaning finished in gtest package"
-
-clean: gtest-pkg-clean
+clean: 
 	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS)
-	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc test/*.o test/gtest_main
-	cd ./proto; make -f proto.mk clean
+	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc 
+	cd ./deps_/proto; make -f proto.mk clean
 	@echo "checking for suspicious files"
 	@find . -type f -name "*.so"
 	@find . -type f -name "*.a"
