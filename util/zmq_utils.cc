@@ -415,11 +415,11 @@ namespace virtdb { namespace util {
               auto ret = socket_.recv(&m);
               if( ret )
               {
-                std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
                 while( m.more() )
                 {
                   ret = socket_.recv(&m);
-                  std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                  std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
                   if( !ret ) break;
                 }
               }
@@ -472,11 +472,11 @@ namespace virtdb { namespace util {
               auto ret = socket_.recv(&m);
               if( ret )
               {
-                std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
                 while( m.more() )
                 {
                   ret = socket_.recv(&m);
-                  std::cerr << "read unexpected data of: " << m.size() << " bytes";
+                  std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
                   if( !ret ) break;
                 }
               }
