@@ -384,6 +384,13 @@ namespace virtdb { namespace util {
   zmq_socket_wrapper::send(const void *buf, size_t len, int flags)
   {
     size_t ret = 0;
+    
+    if( !len || !buf || len > util::MAX_0MQ_MESSAGE_SIZE )
+    {
+      buf = nullptr;
+      len = 0;
+    }
+    
     if( wait_valid(SHORT_TIMEOUT_MS) )
     {
       try
