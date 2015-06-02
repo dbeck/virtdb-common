@@ -119,15 +119,15 @@ namespace virtdb { namespace util {
         closed_ = true;
       }
     }
-    catch( const std::exception & e )
-    {
-      std::cerr << "exception during ZMQ socket close: "
-                << e.what();
-    }
     catch( const zmq::error_t & e )
     {
       std::cerr << "ZMQ exception during ZMQ socket close: "
                 << e.what();
+    }
+    catch( const std::exception & e )
+    {
+      std::cerr << "exception during ZMQ socket close: "
+      << e.what();
     }
     catch( ... )
     {
@@ -138,15 +138,19 @@ namespace virtdb { namespace util {
   void
   zmq_socket_wrapper::set_correlate(bool yesno)
   {
+    /* BUGGY WARNING , experimental code, needs more testing
     int opt = (yesno?1:0);
     socket_.setsockopt(ZMQ_REQ_CORRELATE, &opt, sizeof(opt));
+    */
   }
   
   void
   zmq_socket_wrapper::set_relaxed(bool yesno)
   {
+    /* BUGGY WARNING , experimental code, needs more testing
     int opt = (yesno?1:0);
     socket_.setsockopt(ZMQ_REQ_RELAXED, &opt, sizeof(opt));
+    */
   }
   
   zmq_socket_wrapper::~zmq_socket_wrapper()
@@ -160,15 +164,15 @@ namespace virtdb { namespace util {
       }
       if( !cl ) close();
     }
-    catch( const std::exception & e )
-    {
-      std::cerr << "exception during ZMQ socket close + destroy: "
-                << e.what();
-    }
     catch( const zmq::error_t & e )
     {
       std::cerr << "ZMQ exception during ZMQ socket close + destroy:"
                 << e.what();
+    }
+    catch( const std::exception & e )
+    {
+      std::cerr << "exception during ZMQ socket close + destroy: "
+      << e.what();
     }
     catch( ... )
     {
@@ -399,7 +403,7 @@ namespace virtdb { namespace util {
       }
       catch( const zmq::error_t & e )
       {
-        std::cerr << "caught " << e.what() << "\n";
+        std::cerr << "caught '" << e.what() << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
 #ifdef RELEASE
         if( type_ == ZMQ_REQ ) set_relaxed(true);
 #endif
@@ -434,7 +438,7 @@ namespace virtdb { namespace util {
       }
       catch( const zmq::error_t & e )
       {
-        std::cerr << "caught " << e.what() << "\n";
+        std::cerr << "caught '" << e.what() << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
 #ifdef RELEASE
         if( type_ == ZMQ_REQ ) set_relaxed(true);
 #endif
