@@ -31,14 +31,20 @@ gyp --depth=. -fmake
 make gtest_main
 if [ $? -ne 0 ]; then echo "Failed to make tests in $COMPONENT"; exit 10; fi
 
-out/Debug/gtest_main --gtest_repeat=10
-if [ $? -ne 0 ]; then echo "$COMPONENT tests failed"; exit 10; fi
+for i in 1 2 3 4 5 6 7 8 9 10
+do
+  out/Debug/gtest_main
+  if [ $? -ne 0 ]; then echo "$COMPONENT tests failed: iteration #$i"; exit 10; fi
+done
 
 make gtest_main_cachedb
 if [ $? -ne 0 ]; then echo "Failed to make cachedb tests in $COMPONENT"; exit 10; fi
 
-out/Debug/gtest_main_cachedb --gtest_repeat=10
-if [ $? -ne 0 ]; then echo "$COMPONENT cachedb tests failed"; exit 10; fi
+for i in 1 2 3 4 5 6 7 8 9 10
+do
+  out/Debug/gtest_main_cachedb 
+  if [ $? -ne 0 ]; then echo "$COMPONENT cachedb tests failed: iteration #$i"; exit 10; fi
+done
 
 make 
 if [ $? -ne 0 ]; then echo "Failed to make all in $COMPONENT"; exit 10; fi
