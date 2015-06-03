@@ -40,4 +40,21 @@ namespace virtdb { namespace connector {
     
   }
   
+  bool
+  monitoring_client::report_state(const std::string & name,
+                                  interface::pb::MonitoringRequest_SetState_Types t)
+  {
+    using namespace virtdb::interface::pb;
+    MonitoringRequest req;
+    req.set_type(MonitoringRequest::SET_STATE);
+    auto inner = req.mutable_setst();
+    inner->set_name(name);
+    inner->set_type(t);
+    
+    return send_request(req,
+                        [](const MonitoringReply & rep) { return true; },
+                        util::DEFAULT_TIMEOUT_MS);
+  }
+
+  
 }}

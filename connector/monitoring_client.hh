@@ -23,6 +23,9 @@ namespace virtdb { namespace connector {
                         bool is_up,
                         const std::string & reported_by);
     
+    bool report_state(const std::string & name,
+                      interface::pb::MonitoringRequest_SetState_Types t);
+    
     virtual ~monitoring_client();
     virtual void cleanup();
   };
