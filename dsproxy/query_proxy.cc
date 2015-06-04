@@ -3,7 +3,8 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "query_proxy.hh"
+#include <dsproxy/query_proxy.hh>
+#include <connector/monitoring_client.hh>
 
 namespace virtdb { namespace dsproxy {
   
@@ -89,6 +90,10 @@ namespace virtdb { namespace dsproxy {
       return;
     }
     
+    using namespace virtdb::connector;
+    using namespace virtdb::interface;
+    auto mon_cli = monitoring_client::global_instance();
+    
     if( !q->has_queryid() ||
         !q->has_table() ||
         !q->fields_size() )
@@ -100,6 +105,14 @@ namespace virtdb { namespace dsproxy {
                 V_(q->fields_size()) <<
                 V_(q->limit()) <<
                 V_(q->filter_size()));
+      
+      if( mon_cli )
+        mon_cli->report_bad_table_request(server_ctx_->service_name(),
+                                          pb::MonitoringRequest::RequestError::INVALID_REQUEST,
+                                          q->queryid(),
+                                          q->table(),
+                                          (q->has_schema()?q->schema().c_str():nullptr),
+                                          "Missing fields from Query");
       return;
     }
     
@@ -140,6 +153,17 @@ namespace virtdb { namespace dsproxy {
       if( !client_sptr_ )
       {
         LOG_ERROR("query client not yet initialized");
+        if( mon_cli )
+        {
+          mon_cli->report_bad_table_request(server_ctx_->service_name(),
+                                            pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
+                                            q->queryid(),
+                                            q->table(),
+                                            (q->has_schema()?q->schema().c_str():nullptr),
+                                            "Upstream provider not connected");
+          mon_cli->report_state(server_ctx_->service_name(),
+                                pb::MonitoringRequest::SetState::NOT_INITIALIZED);
+        }
         return;
       }
       client_copy = client_sptr_;
@@ -216,7 +240,16 @@ namespace virtdb { namespace dsproxy {
         // delegating the request to the data provider
         if( sent )
         {
-          client_copy->send_request(*q);          
+          if( !client_copy->send_request(*q) )
+          {
+            if( mon_cli )
+              mon_cli->report_bad_table_request(server_ctx_->service_name(),
+                                                pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
+                                                q->queryid(),
+                                                q->table(),
+                                                (q->has_schema()?q->schema().c_str():nullptr),
+                                                "Failed to forward request");
+          }
         }
       }
       else if( query_action == dont_forward )
@@ -232,7 +265,16 @@ namespace virtdb { namespace dsproxy {
       }
       else
       {
-        client_copy->send_request(*q);
+        if( !client_copy->send_request(*q) )
+        {
+          if( mon_cli )
+            mon_cli->report_bad_table_request(server_ctx_->service_name(),
+                                              pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
+                                              q->queryid(),
+                                              q->table(),
+                                              (q->has_schema()?q->schema().c_str():nullptr),
+                                              "Failed to forward request");
+        }
       }
     }
     else
