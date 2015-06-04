@@ -42,6 +42,12 @@ namespace virtdb { namespace connector {
                              const char * schema = nullptr,
                              const char * msg = nullptr);
     
+    bool
+    report_upstream_error(const std::string & impacted_peer,
+                          const std::string & reported_by,
+                          const char * msg = nullptr,
+                          bool clear = false);
+    
     static void set_global_instance(sptr s);
     static sptr global_instance();
     

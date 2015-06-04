@@ -53,7 +53,6 @@ namespace virtdb { namespace connector {
     return send_request(req,
                         [](const MonitoringReply & rep) { return true; },
                         util::DEFAULT_TIMEOUT_MS);
-    
   }
   
   bool
@@ -94,6 +93,31 @@ namespace virtdb { namespace connector {
     
     if( schema )  inner->set_schema(schema);
     if( msg )     inner->set_message(msg);
+    
+    return send_request(req,
+                        [](const MonitoringReply & rep) { return true; },
+                        util::DEFAULT_TIMEOUT_MS);
+  }
+  
+  bool
+  monitoring_client::report_upstream_error(const std::string & impacted_peer,
+                                           const std::string & reported_by,
+                                           const char * msg,
+                                           bool clear)
+  {
+    using namespace virtdb::interface::pb;
+    MonitoringRequest req;
+    req.set_type(MonitoringRequest::COMPONENT_ERROR);
+    auto inner = req.mutable_comperr();
+    
+    if( clear )
+      inner->set_type(MonitoringRequest::ComponentError::UPSTREAM_ERROR);
+    else
+      inner->set_type(MonitoringRequest::ComponentError::CLEAR);
+    
+    inner->set_impactedpeer(impacted_peer);
+    inner->set_reportedby(reported_by);
+    if( msg ) inner->set_message(msg);
     
     return send_request(req,
                         [](const MonitoringReply & rep) { return true; },
