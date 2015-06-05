@@ -111,9 +111,9 @@ namespace virtdb { namespace connector {
     auto inner = req.mutable_comperr();
     
     if( clear )
-      inner->set_type(MonitoringRequest::ComponentError::UPSTREAM_ERROR);
-    else
       inner->set_type(MonitoringRequest::ComponentError::CLEAR);
+    else
+      inner->set_type(MonitoringRequest::ComponentError::UPSTREAM_ERROR);
     
     inner->set_impactedpeer(impacted_peer);
     inner->set_reportedby(reported_by);
