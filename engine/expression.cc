@@ -60,16 +60,14 @@ const ::std::string& expression::value() const {
     return simple.value();
 }
 
-bool expression::set_composite(expression* _left, expression* _right)
+bool expression::set_composite(sptr _left, sptr _right)
 {
-    if (_left == nullptr || _right == nullptr || _left == _right)
+    if (!_left || !_right || _left == _right)
     {
         return false;
     }
-    delete left_ptr;
-    delete right_ptr;
-    left_ptr = _left;
-    right_ptr = _right;
+    left_ptr   = _left;
+    right_ptr  = _right;
     return true;
 }
 
