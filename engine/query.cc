@@ -122,6 +122,7 @@ query::column_name_by_id(column_id_t id) const
 
 void query::add_filter(std::shared_ptr<expression> filter_expression)
 {
+    if( !filter_expression ) return;
     std::map<int, std::string> filter_columns = filter_expression->columns();
     for (auto it = filter_columns.begin(); it != filter_columns.end(); it++)
     {
