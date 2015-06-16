@@ -13,7 +13,8 @@ namespace virtdb { namespace connector {
                    std::bind(&query_server::handler_function,
                              this,
                              std::placeholders::_1),
-                   pb::ServiceType::QUERY)
+                   pb::ServiceType::QUERY),
+    ctx_{ctx}
   {
     pb::EndpointData ep_data;
     
@@ -91,6 +92,7 @@ namespace virtdb { namespace connector {
         !qsptr->has_table()   ||
         !qsptr->fields_size() )
     {
+      ctx_->increase_stat("Invalid query");
       auto q = qsptr;
       LOG_ERROR("cannot handle invalid query" <<
                 V_(q->queryid()) <<
@@ -101,6 +103,8 @@ namespace virtdb { namespace connector {
                 V_(q->filter_size()));
       return;
     }
+    
+    ctx_->increase_stat("Valid query");
     
     // query monitors
     const std::string & n = name();

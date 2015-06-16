@@ -3,7 +3,7 @@
 #define LOG_SCOPED_IS_ENABLED false
 #endif //RELEASE
 
-#include "meta_data_server.hh"
+#include <connector/meta_data_server.hh>
 #include <regex>
 
 using namespace virtdb::interface;
@@ -26,7 +26,8 @@ namespace virtdb { namespace connector {
                   pb::ServiceType::META_DATA),
     pub_base_type(ctx,
                   cfg_client,
-                  pb::ServiceType::META_DATA)
+                  pb::ServiceType::META_DATA),
+    ctx_{ctx}
   {
     pb::EndpointData ep_data;
     {
@@ -65,9 +66,9 @@ namespace virtdb { namespace connector {
     rep_base_type::rep_item_sptr rep{new rep_item};
     
     {
+      ctx_->increase_stat("Update cached wildcard metadata");
       lock l(tables_mtx_);
       for( const auto & it : tables_ )
-        
       {
         auto tmp_tab = rep->add_tables();
         // selectively merge everything except fields
@@ -122,11 +123,16 @@ namespace virtdb { namespace connector {
         req.schema() == ".*" &&
         req.name() == ".*" )
     {
+      
       rep = get_wildcard_data();
       LOG_INFO("returning cached wildcard metadata");
     }
     
-    if( !rep )
+    if( rep )
+    {
+      ctx_->increase_stat("Returing cached wildcard metadata");
+    }
+    else
     {
       rep.reset(new rep_item);
       
@@ -143,13 +149,14 @@ namespace virtdb { namespace connector {
         bool with_fields = req.withfields();
         
         for( const auto & it : tables_ )
-          
         {
+          
           if( std::regex_match(it.second->name(),
                                table_regex,
                                std::regex_constants::match_any |
                                std::regex_constants::format_sed ) )
           {
+            
             if( !match_schema || std::regex_match(it.second->schema(),
                                                   schema_regex,
                                                   std::regex_constants::match_any |
@@ -188,6 +195,7 @@ namespace virtdb { namespace connector {
     
     if( rep->tables_size() == 0 )
     {
+      ctx_->increase_stat("Error gathering metadata");
       LOG_ERROR("couldn't gather metadata for" << M_(req));
     }
     
@@ -218,10 +226,12 @@ namespace virtdb { namespace connector {
     auto it = tables_.find(key);
     if( it == tables_.end() )
     {
+      ctx_->increase_stat("Table metadata added");
       tables_.insert(std::make_pair(key,table));
     }
     else
     {
+      ctx_->increase_stat("Table metadata updated");
       it->second = table;
     }
   }
@@ -233,6 +243,7 @@ namespace virtdb { namespace connector {
     lock l(tables_mtx_);
     table_map::key_type key(schema, name);
     tables_.erase(key);
+    ctx_->increase_stat("Table metadata removed");
   }
   
   bool

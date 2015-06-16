@@ -31,6 +31,8 @@ namespace virtdb { namespace dsproxy {
   bool
   query_proxy::reconnect(const std::string & server)
   {
+    server_ctx_->increase_stat("Reconnect query proxy to server");
+
     {
       std::unique_lock<std::mutex> l(mtx_);
       client_sptr_.reset(new connector::query_client(client_ctx_,
@@ -90,6 +92,8 @@ namespace virtdb { namespace dsproxy {
       return;
     }
     
+    server_ctx_->increase_stat("Incoming query");
+    
     using namespace virtdb::connector;
     using namespace virtdb::interface;
     auto mon_cli = monitoring_client::global_instance();
@@ -98,6 +102,9 @@ namespace virtdb { namespace dsproxy {
         !q->has_table() ||
         !q->fields_size() )
     {
+      
+      server_ctx_->increase_stat("Invalid query");
+      
       LOG_ERROR("cannot handle invalid query" <<
                 V_(q->queryid()) <<
                 V_(q->table()) <<
@@ -135,10 +142,12 @@ namespace virtdb { namespace dsproxy {
         cmd_query = true;
         if( q->querycontrol() == interface::pb::Query::STOP )
         {
+          server_ctx_->increase_stat("Query has STOP command");
           stop_query = true;
         }
         else if( q->querycontrol() == interface::pb::Query::RESEND_CHUNK )
         {
+          server_ctx_->increase_stat("Query has RESEND command");
           resend_chunk = true;
           resend_chunk_copy = on_resend_chunk_;
         }
@@ -203,6 +212,7 @@ namespace virtdb { namespace dsproxy {
     {
       if( stop_query )
       {
+        server_ctx_->increase_stat("Forwarding query");
         client_copy->send_request(*q);
       }
       else if( resend_chunk && resend_chunk_copy )
@@ -240,6 +250,7 @@ namespace virtdb { namespace dsproxy {
         // delegating the request to the data provider
         if( sent )
         {
+          server_ctx_->increase_stat("Forwarding query");
           if( !client_copy->send_request(*q) )
           {
             if( mon_cli )
@@ -254,6 +265,7 @@ namespace virtdb { namespace dsproxy {
       }
       else if( query_action == dont_forward )
       {
+        server_ctx_->increase_stat("Query action is dont_forward");
         LOG_TRACE("not forwarding the query to" <<
                   V_(client_copy->server()) <<
                   V_(q->queryid()) <<
@@ -265,6 +277,7 @@ namespace virtdb { namespace dsproxy {
       }
       else
       {
+        server_ctx_->increase_stat("Forwarding query");
         if( !client_copy->send_request(*q) )
         {
           if( mon_cli )
@@ -279,6 +292,7 @@ namespace virtdb { namespace dsproxy {
     }
     else
     {
+      server_ctx_->increase_stat("Query received multiple times");
       LOG_TRACE("skip sending the query multiple times" <<
                 V_(q->queryid()));
     }

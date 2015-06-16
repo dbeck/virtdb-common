@@ -11,7 +11,8 @@ namespace virtdb { namespace connector {
                                config_client & cfg_client)
   : pub_base_type(ctx,
                   cfg_client,
-                  pb::ServiceType::COLUMN)
+                  pb::ServiceType::COLUMN),
+    ctx_{ctx}
   {
     pb::EndpointData ep_data;
     {
@@ -29,4 +30,12 @@ namespace virtdb { namespace connector {
   {
   }
   
+  void
+  column_server::publish(const std::string & channel,
+                         pub_base_type::pub_item_sptr item_sptr)
+  {
+    pub_base_type::publish(channel, item_sptr);
+    ctx_->increase_stat("Column message");
+  }
+
 }}

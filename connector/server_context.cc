@@ -2,6 +2,7 @@
 
 #include <connector/server_context.hh>
 #include <connector/endpoint_client.hh>
+#include <connector/monitoring_client.hh>
 #include <util/hex_util.hh>
 #include <xxhash.h>
 #include <logger.hh>
@@ -62,6 +63,17 @@ namespace virtdb { namespace connector {
       {
         LOG_ERROR("caugth" << E_(e));
       }
+    }
+  }
+  
+  void
+  server_context::increase_stat(const std::string & name,
+                                double by_value)
+  {
+    auto instance = monitoring_client::global_instance();
+    if( instance )
+    {
+      instance->add_stat(service_name(), name, by_value);
     }
   }
   

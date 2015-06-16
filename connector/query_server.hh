@@ -17,9 +17,10 @@ namespace virtdb { namespace connector {
     typedef std::map<std::string, query_monitor>           monitor_map;
     typedef std::lock_guard<std::mutex>                    lock;
     
-    monitor_map            query_monitors_;
-    monitor_map            table_monitors_;
-    mutable std::mutex     monitors_mtx_;
+    server_context::sptr     ctx_;
+    monitor_map              query_monitors_;
+    monitor_map              table_monitors_;
+    mutable std::mutex       monitors_mtx_;
     
     void handler_function(query_sptr);
     

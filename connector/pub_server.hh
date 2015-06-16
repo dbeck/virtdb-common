@@ -113,8 +113,9 @@ namespace virtdb { namespace connector {
         *(conn().add_address()) = ep;
     }
     
-    void publish(const std::string & channel,
-                 pub_item_sptr item_sptr)
+    virtual void
+    publish(const std::string & channel,
+            pub_item_sptr item_sptr)
     {
       queue_.push(std::make_pair(channel, item_sptr));
     }

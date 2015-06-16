@@ -124,4 +124,69 @@ namespace virtdb { namespace connector {
                         util::DEFAULT_TIMEOUT_MS);
   }
   
+  void
+  monitoring_client::set_stat(const std::string & app,
+                              const std::string & name,
+                              double value)
+  {
+    lock lck(mtx_);
+    auto it = statistics_.find(app);
+    if( it == statistics_.end() )
+    {
+      auto rit = statistics_.insert(std::make_pair(app, stat_map()));
+      it = rit.first;
+    }
+    it->second.insert(std::make_pair(name, value));
+  }
+  
+  void
+  monitoring_client::add_stat(const std::string & app,
+                              const std::string & name,
+                              double value)
+  {
+    lock lck(mtx_);
+    auto it = statistics_.find(app);
+    if( it == statistics_.end() )
+    {
+      auto rit = statistics_.insert(std::make_pair(app, stat_map()));
+      it = rit.first;
+    }
+    {
+      auto dit = it->second.find(name);
+      if( dit != it->second.end() )
+        value += dit->second;
+    }
+    (it->second)[name] = value;
+  }
+  
+  bool
+  monitoring_client::send_statistics(const std::string & app)
+  {
+    using namespace virtdb::interface::pb;
+    stat_map to_send;
+    {
+      lock lck(mtx_);
+      if( statistics_.count(app) == 0 )
+      {
+        // it is OK for not reporting empty statistics
+        return true;
+      }
+      to_send = statistics_[app];
+    }
+    MonitoringRequest req;
+    req.set_type(MonitoringRequest::REPORT_STATS);
+    auto inner = req.mutable_repstats();
+    inner->set_name(app);
+    for( auto const & s : to_send )
+    {
+      auto x = inner->add_stats();
+      x->set_name(s.first);
+      x->set_stat(s.second);
+    }
+    
+    return send_request(req,
+                        [](const MonitoringReply & rep) { return true; },
+                        util::DEFAULT_TIMEOUT_MS);
+  }
+  
 }}

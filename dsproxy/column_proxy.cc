@@ -31,9 +31,11 @@ namespace virtdb { namespace dsproxy {
                             });
         LOG_TRACE("subscribed to" << V_(query_id));
         subscriptions_.insert(query_id);
+        server_ctx_->increase_stat("Subscribed to query");
       }
       else
       {
+        server_ctx_->increase_stat("Already subscribed to query");
         LOG_TRACE("already subscribed to" << V_(query_id));
       }
     }
@@ -58,6 +60,11 @@ namespace virtdb { namespace dsproxy {
         client_sptr_->remove_watch(query_id);
         LOG_TRACE("unsubscribed from" << V_(query_id));
         subscriptions_.erase(query_id);
+        server_ctx_->increase_stat("Unsubscribed from query");
+      }
+      else
+      {
+        server_ctx_->increase_stat("Already unsubscribed from query");
       }
     }
     else
@@ -100,6 +107,8 @@ namespace virtdb { namespace dsproxy {
   {
     using namespace virtdb::interface;
     
+    server_ctx_->increase_stat("Reconnect column proxy to server");
+    
     {
       std::unique_lock<std::mutex> l(mtx_);
       subscriptions_.clear();
@@ -115,10 +124,12 @@ namespace virtdb { namespace dsproxy {
     
     if( ret )
     {
+      server_ctx_->increase_stat("Column proxy connected to server");
       LOG_TRACE("column client connected to:" << V_(server));
     }
     else
     {
+      server_ctx_->increase_stat("Column proxy failed to connect");
       LOG_ERROR("column client connection to" <<
                 V_(server) << "timed out in" <<
                 V_(util::SHORT_TIMEOUT_MS));
@@ -135,6 +146,7 @@ namespace virtdb { namespace dsproxy {
   {
     try
     {
+      server_ctx_->increase_stat("Incoming column to be handled");
       handler_(provider_name,
                channel,
                subscription,
@@ -178,6 +190,7 @@ namespace virtdb { namespace dsproxy {
               V_(data->seqno()) <<
               V_(data->name()) <<
               V_(data->endofdata())); */
+    server_ctx_->increase_stat("Publishing column");
     server_.publish(data->queryid(), data);
   }
   

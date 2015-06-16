@@ -35,6 +35,8 @@ namespace virtdb { namespace connector {
     
     // utilities
     void keep_alive(endpoint_client & ep_cli);
+    void increase_stat(const std::string & name,
+                       double by_value=1.0);
     
     // setters
     void service_name(const std::string & name);

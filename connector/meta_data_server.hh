@@ -27,6 +27,7 @@ namespace virtdb { namespace connector {
     
     // TODO: replace map<> with a better structure, more optimal for regex search
     
+    server_context::sptr          ctx_;
     table_map                     tables_;
     on_request                    on_request_;
     rep_base_type::rep_item_sptr  wildcard_cache_;
@@ -38,7 +39,7 @@ namespace virtdb { namespace connector {
                       rep_base_type::rep_item_sptr);
     void process_replies(const rep_base_type::req_item & req,
                          rep_base_type::send_rep_handler handler);
-    
+        
   public:
     meta_data_server(server_context::sptr ctx,
                      config_client & cfg_client);

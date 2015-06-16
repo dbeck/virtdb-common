@@ -35,6 +35,7 @@ namespace virtdb { namespace dsproxy {
   bool
   meta_proxy::reconnect(const std::string & server)
   {
+    server_ctx_->increase_stat("Reconnect to metadata server");
     {
       std::unique_lock<std::mutex> l(mtx_);
       client_sptr_.reset(new connector::meta_data_client(client_ctx_,
@@ -84,6 +85,8 @@ namespace virtdb { namespace dsproxy {
   {
     server_.watch_requests([&](const interface::pb::MetaDataRequest & req)
     {
+      server_ctx_->increase_stat("Metadata proxy request");
+
       std::string table;
       if( req.has_name() ) table = req.name();
       
@@ -95,13 +98,19 @@ namespace virtdb { namespace dsproxy {
       {
         // fast path: when we already have this table with fields
         if( server_.has_fields(schema, table) )
+        {
+          server_ctx_->increase_stat("Returning cached table metadata");
           return;
+        }
       }
       else
       {
         // fast path: when we already have this table
         if( server_.has_table(schema, table) )
+        {
+          server_ctx_->increase_stat("Returning cached metadata list");
           return;
+        }
       }
       
       client_sptr client_copy;
@@ -119,6 +128,8 @@ namespace virtdb { namespace dsproxy {
       
       if( !client_copy->wait_valid(util::SHORT_TIMEOUT_MS) )
       {
+        server_ctx_->increase_stat("No valid upstream metadata server");
+
         LOG_ERROR("cannot serve request" <<
                   M_(req) <<
                   "because meta client connection to" <<
@@ -129,6 +140,7 @@ namespace virtdb { namespace dsproxy {
       }
       
       size_t timeout_ms = 60000;
+      server_ctx_->increase_stat("Forwarding metadata request");
       bool send_res = client_copy->send_request(req,
                                                 [&](const interface::pb::MetaData & rep)
       {
@@ -162,6 +174,7 @@ namespace virtdb { namespace dsproxy {
       
       if( !send_res )
       {
+        server_ctx_->increase_stat("Failed to forward metadata request");
         LOG_ERROR("failed to forward meta-data request to" <<
                   V_(client_copy->server()) <<
                   "within" <<
