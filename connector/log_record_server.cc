@@ -328,6 +328,20 @@ namespace virtdb { namespace connector {
     
     double elapsed_ms = data.elapsedmicrosec() / 1000.0;
     
+    {
+      // prefix with local time
+      char time_str[27];
+      time_str[0] = 0;
+      time_t t = ::time(NULL);
+      ::ctime_r(&t, time_str);
+      time_str[26] = 0;
+      for( int i=0; i<27; ++i )
+        if( time_str[i] == '\r' || time_str[i] == '\n' )
+          time_str[i] = 0;
+    
+      std::cerr << time_str << ' ';
+    }
+
     std::cerr << '[' << proc_info.pid() << ':' << data.threadid() << "]"
               << host_and_name.str()
               << " (" << level_string(head.level())
