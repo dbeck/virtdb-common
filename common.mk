@@ -23,7 +23,7 @@ ifeq ($(shell uname), Darwin)
 MAC_CFLAGS := -DCOMMON_MAC_BUILD
 endif
 
-BASIC_COMMON_INCLUDES := -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/deps_/proto -I$(BUILD_ROOT)/cppzmq -I$(BUILD_ROOT)/lz4/lib
+BASIC_COMMON_INCLUDES := -I$(BUILD_ROOT)/. -I$(BUILD_ROOT)/deps_/proto -I$(BUILD_ROOT)/cppzmq -I$(BUILD_ROOT)/lz4/lib -I$(BUILD_ROOT)/deps_/fsm/src
 
 ifeq ($(RELEASE), 1)
 $(info DOING RELEASE BUILD)
@@ -64,22 +64,29 @@ MURMUR3_OBJECTS    := $(patsubst %.c,%.o,$(MURMUR3_SRCS))
 TEST_OBJECTS       := $(patsubst %.cc,%.o,$(TEST_SRCS))
 
 PROTO_LIB  := deps_/proto/libproto.a
+FSM_LIB    := deps_/fsm/libfsm.a
 COMMON_LIB := libcommon.a
 
 all: $(COMMON_LIB)
 
-$(COMMON_LIB): $(PROTO_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(UTIL_OBJECTS)
+$(COMMON_LIB): $(PROTO_LIB) $(FSM_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(UTIL_OBJECTS)
 	ar rcsv $(COMMON_LIB) $(LOGGER_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(PROTO_LIB) $(UTIL_OBJECTS)
 
 $(PROTO_LIB):
-	@echo "building proto project in ./proto"
+	@echo "building proto project in ./desp_/proto"
 	cd ./deps_/proto; make -f proto.mk all
 	@echo "proto project built"
+
+$(FSM_LIB):
+	@echo "building fsm project in ./deps_/fsm"
+	cd ./deps_/fsm; make -f fsm.mk all
+	@echo "fsm project built"
 
 clean: 
 	rm -f $(PROTO_LIB) $(LOGGER_OBJECTS) $(UTIL_OBJECTS) $(CONNECTOR_OBJECTS) $(ENGINE_OBJECTS) $(DATASRC_OBJECTS) $(FAULT_OBJECTS) $(LZ4_OBJECTS) $(MURMUR3_OBJECTS) $(TEST_OBJECTS)
 	rm -f *.a *.o *.pb.cc *.pb.h *.pb.desc 
 	cd ./deps_/proto; make -f proto.mk clean
+	cd ./deps_/fsm; make -f fsm.mk clean
 	@echo "checking for suspicious files"
 	@find . -type f -name "*.so"
 	@find . -type f -name "*.a"
