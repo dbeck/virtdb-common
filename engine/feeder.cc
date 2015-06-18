@@ -225,7 +225,7 @@ namespace virtdb { namespace engine {
                                        const timer::clock_type::time_point & started_at)
         {
           auto now = timer::clock_type::now();
-          return now < started_at+std::chrono::seconds(300);
+          return now < started_at+std::chrono::seconds(600);
         }, "RESEND TIMER" });
       
       loop::sptr lp(new loop{[this](uint16_t seqno,
@@ -235,7 +235,7 @@ namespace virtdb { namespace engine {
         
         auto n_columns    = collector_->n_columns();
         auto got_columns  = collector_->get(act_block_+1,
-                                            (iteration+1)*1000,
+                                            ((iteration*5)+1)*1000,
                                             1000,
                                             readers_);
         
