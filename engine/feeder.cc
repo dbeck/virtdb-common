@@ -371,8 +371,24 @@ namespace virtdb { namespace engine {
       transition::sptr tr{new transition{ST_IN_PROGRESS_, EV_OK_ , ST_IN_PROGRESS_ , "All columns arrived" }};
       action::sptr act(new action{[this](uint16_t seqno,
                                          transition & trans,
-                                         state_machine & sm){ ++act_block_; },"STEP ACT BLOCK"});
+                                         state_machine & sm){ 
+        ++act_block_; 
+      },"STEP ACT BLOCK"});
+      action::sptr sched(new action{[this](uint16_t seqno,
+                                          transition & trans,
+                                          state_machine & sm){ 
+        collector_->background_process(act_block_+1);
+      },"SCHEDULE BACKGROUND DECOMPRESS"});
+      action::sptr erase(new action{[this](uint16_t seqno,
+                                           transition & trans,
+                                           state_machine & sm){ 
+        if( act_block_ > 1 )
+          collector_->erase(act_block_-2);
+      },"DROP OLD DATA"});
+
       tr->set_action(1, act);
+      tr->set_action(2, sched);
+      tr->set_action(3, erase);
       state_machine_.add_transition(tr);
       // terminate at: ST_IN_PROGRESS_
     }
