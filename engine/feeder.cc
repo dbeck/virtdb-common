@@ -188,7 +188,7 @@ namespace virtdb { namespace engine {
                                             readers_);
         if( n_columns == got_columns )
         {
-          if( last == 0 )
+          if( last == (act_block_+1) )
           {
             // this is the last block
             trans.default_state(ST_COMPLETE_);
@@ -277,7 +277,7 @@ namespace virtdb { namespace engine {
                                             readers_);
         if( n_columns == got_columns )
         {
-          if( last == 0 )
+          if( last == (act_block_+1) )
           {
             // this is the last block
             trans.default_state(ST_COMPLETE_);
@@ -310,7 +310,6 @@ namespace virtdb { namespace engine {
                                          transition & trans,
                                          state_machine & sm){
         
-        auto n_columns    = collector_->n_columns();
         auto got_columns  = collector_->get(0,
                                             1,
                                             10,
@@ -425,6 +424,7 @@ namespace virtdb { namespace engine {
   feeder::fetch_next()
   {
     auto prev_state = last_state_;
+    state_machine_.enqueue(EV_NEED_DATA_);
     last_state_ = state_machine_.run(prev_state);
     
     switch( last_state_ )
