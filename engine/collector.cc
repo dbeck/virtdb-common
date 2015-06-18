@@ -151,6 +151,7 @@ namespace virtdb { namespace engine {
                  uint64_t process_timeout_ms,
                  reader_sptr_vec & results)
   {
+    // wait for data. get() returns { row_vector[], non_nil_count }
     auto row = collector_.get(block_id, data_timeout_ms);
     
     if( row.second != collector_.n_columns() )
@@ -169,23 +170,32 @@ namespace virtdb { namespace engine {
     
     for( auto & i : row.first )
     {
+      // items in the row can be nullptr
       if( i.get() )
       {
+        // check if we have a reader initialized
         if( !i->reader_ )
         {
+          // if no reader is associated with the column sptr
+          // then we need to do that asynchronously
           ++n_process_started_;
           queue_.push(i);
           ++n_pushed;
+          // we still need a placeholder so every column in the
+          // the result set is valid
           results.push_back(reader_sptr());
         }
         else
         {
+          // we have the reader so we add it to the result vector
           ++n_ok;
           results.push_back(i->reader_);
         }
       }
       else
       {
+        // we have no column sptr yet which implies no reader
+        // we still need to add a placeholder into the result set
         results.push_back(reader_sptr());
       }
     }
@@ -199,16 +209,23 @@ namespace virtdb { namespace engine {
              n_process_started() == n_process_done() )
     {
       // pushed none and all blocks processed
+      // this means: no new column has arrived since our last check
+      //   n_ok will tell the caller that not all columns has valid readers
       return n_ok;
     }
     else
     {
+      // throw away everything and wait for the queue that assigns readers
+      // is empty
       results.clear();
       queue_.wait_empty(std::chrono::milliseconds(process_timeout_ms));
 
+      // now recheck the table collector but only give 1 ms to complete
       n_ok = 0;
       row = collector_.get(block_id, 1);
       
+      // go through the results again either add a valid reader if available
+      // or an empty sptr
       for( auto & i : row.first )
       {
         if( i.get() && i->reader_ )

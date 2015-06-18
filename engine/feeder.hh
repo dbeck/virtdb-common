@@ -4,6 +4,7 @@
 #include <util/value_type_reader.hh>
 #include <util/timer_service.hh>
 #include <util/relative_time.hh>
+#include <fsm/state_machine.hh>
 
 namespace virtdb { namespace engine {
 
@@ -24,8 +25,15 @@ namespace virtdb { namespace engine {
     util::timer_service          timer_svc_;
     util::relative_time          timer_;
     std::atomic<uint64_t>        next_block_timeout_ms_;
+    fsm::state_machine           state_machine_;
+    uint16_t                     last_state_;
     
     vtr::status next_block();
+    
+    void trace(uint16_t seqno,
+               const std::string & desc,
+               const fsm::transition & trans,
+               const fsm::state_machine & sm);
     
   public:
     feeder(collector::sptr cll);

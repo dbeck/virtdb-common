@@ -330,6 +330,10 @@
       'dependencies':                [
                                        'lz4',
                                        'deps_/proto/proto.gyp:proto',
+                                       'deps_/fsm/fsm.gyp:fsm',
+                                     ],
+      'include_dirs':                [
+                                       './deps_/fsm/src/',
                                      ],
       'cflags':                      [ '-std=c++11', '-Wall', ],
       'sources':                     [ '<@(common_sources)', ],
@@ -359,7 +363,14 @@
       ],
       'target_name':                   'common_with_faults',
       'type':                          'static_library',
-      'dependencies':                [ 'lz4', 'deps_/proto/proto.gyp:proto', ],
+      'dependencies':                [
+                                       'lz4',
+                                       'deps_/proto/proto.gyp:proto',
+                                       'deps_/fsm/fsm.gyp:fsm',
+                                     ],
+      'include_dirs':                [
+                                       './deps_/fsm/src/',
+                                     ],
       'cflags':                      [ '-std=c++11', '-Wall', ],
       'sources':                     [ '<@(common_sources)', ],
     },
@@ -486,9 +497,13 @@
       'dependencies':      [
                              'deps_/gtest/gyp/gtest.gyp:gtest_lib',
                              'deps_/proto/proto.gyp:proto',
+                             'deps_/fsm/fsm.gyp:fsm',
                              'common_with_faults',
                            ],
-      'include_dirs':      [ './deps_/gtest/include/', ],
+      'include_dirs':      [
+                             './deps_/gtest/include/',
+                             './deps_/fsm/src/',
+                           ],
       'cflags':            [ '-std=c++11', '-Wall', ],
       'sources':           [
                              'test/gtest_main.cc',
