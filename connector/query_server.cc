@@ -80,7 +80,6 @@ namespace virtdb { namespace connector {
       os << query_id << '/' << schema << '/' << table;
       return os.str();
     }
-    
   }
   
   void
@@ -105,6 +104,36 @@ namespace virtdb { namespace connector {
     }
     
     ctx_->increase_stat("Valid query");
+    ctx_->increase_stat("Query field count", qsptr->fields_size());
+    if( qsptr->has_querycontrol() )
+    {
+      ctx_->increase_stat("Query has control command");
+      switch ( qsptr->querycontrol() )
+      {
+        case interface::pb::Query::RESEND_CHUNK:
+          ctx_->increase_stat("Query has RESEND_CHUNK command");
+          break;
+          
+        case interface::pb::Query::RESEND_TABLE:
+          ctx_->increase_stat("Query has RESEND_TABLE command");
+          break;
+
+        case interface::pb::Query::STOP:
+          ctx_->increase_stat("Query has STOP command");
+          break;
+
+        default:
+          ctx_->increase_stat("Query has unknown command");
+          break;
+      }
+    }
+    
+    if( qsptr->seqnos_size() > 0 )
+    {
+      ctx_->increase_stat("Query has sequence numbers");
+      ctx_->increase_stat("Query sequence number count",
+                          qsptr->seqnos_size());
+    }
     
     // query monitors
     const std::string & n = name();
