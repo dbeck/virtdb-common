@@ -31,7 +31,7 @@ namespace virtdb { namespace dsproxy {
   bool
   query_dispatcher::reconnect(const std::string & server)
   {
-    server_ctx_->increase_stat("Reconnect query proxy to server");
+    server_ctx_->increase_stat("Connect query proxy to server");
 
     {
       std::unique_lock<std::mutex> l(mtx_);
@@ -155,18 +155,22 @@ namespace virtdb { namespace dsproxy {
         cmd_query = true;
         if( q->querycontrol() == interface::pb::Query::STOP )
         {
-          server_ctx_->increase_stat("Query has stop command");
+          server_ctx_->increase_stat("Query has STOP command (dispatcher)");
           stop_query = true;
         }
         else if( q->querycontrol() == interface::pb::Query::RESEND_CHUNK )
         {
-          server_ctx_->increase_stat("Query has RESEND command");
+          server_ctx_->increase_stat("Query has RESEND_CHUNK command (dispatcher)");
           if( q->has_segmentid() )
           {
-            server_ctx_->increase_stat("Query has RESEND (segment) command");
+            server_ctx_->increase_stat("Query has RESEND_CHUNK (segment) command (dispatcher)");
             resend_chunk = true;
             resend_chunk_copy = on_resend_chunk_;
           }
+        }
+        else if( q->querycontrol() == interface::pb::Query::RESEND_TABLE )
+        {
+          server_ctx_->increase_stat("Query has RESEND_TABLE command (dispatcher)");
         }
       }
       

@@ -107,7 +107,7 @@ namespace virtdb { namespace dsproxy {
   {
     using namespace virtdb::interface;
     
-    server_ctx_->increase_stat("Reconnect column proxy to server");
+    server_ctx_->increase_stat("Connect column proxy to server");
     
     {
       std::unique_lock<std::mutex> l(mtx_);

@@ -106,34 +106,36 @@ namespace virtdb { namespace connector {
     
     ctx_->increase_stat("Valid query");
     ctx_->increase_stat("Query field count", qsptr->fields_size());
+    
     if( qsptr->has_querycontrol() )
     {
-      ctx_->increase_stat("Query has control command");
+      ctx_->increase_stat("Query has control command (vanilla)");
       switch ( qsptr->querycontrol() )
       {
         case interface::pb::Query::RESEND_CHUNK:
-          ctx_->increase_stat("Query has RESEND_CHUNK command");
+          ctx_->increase_stat("Query has RESEND_CHUNK command (vanilla)");
           break;
           
         case interface::pb::Query::RESEND_TABLE:
-          ctx_->increase_stat("Query has RESEND_TABLE command");
+          ctx_->increase_stat("Query has RESEND_TABLE command (vanilla)");
           break;
 
         case interface::pb::Query::STOP:
-          ctx_->increase_stat("Query has STOP command");
+          ctx_->increase_stat("Query has STOP command (vanilla)");
           break;
 
         default:
-          ctx_->increase_stat("Query has unknown command");
+          ctx_->increase_stat("Query has unknown command (vanilla)");
           break;
       }
     }
     
     if( qsptr->seqnos_size() > 0 )
     {
-      ctx_->increase_stat("Query has sequence numbers");
-      ctx_->increase_stat("Query sequence number count",
-                          qsptr->seqnos_size());
+      ctx_->increase_stat("Query has sequence numbers (vanilla)");
+      ctx_->increase_stat("Query resend field count (vanilla)",
+                          qsptr->seqnos_size()*
+                          qsptr->fields_size());
     }
     
     // query monitors

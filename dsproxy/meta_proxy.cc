@@ -35,7 +35,7 @@ namespace virtdb { namespace dsproxy {
   bool
   meta_proxy::reconnect(const std::string & server)
   {
-    server_ctx_->increase_stat("Reconnect to metadata server");
+    server_ctx_->increase_stat("Connect to metadata server");
     {
       std::unique_lock<std::mutex> l(mtx_);
       client_sptr_.reset(new connector::meta_data_client(client_ctx_,
