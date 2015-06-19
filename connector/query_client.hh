@@ -5,17 +5,19 @@
 
 namespace virtdb { namespace connector {
   
-  class query_client final :
+  class query_client :
       public push_client<interface::pb::Query>
   {
     typedef push_client<interface::pb::Query> push_base_type;
     
   public:
+    typedef std::shared_ptr<query_client> sptr;
+    
     query_client(client_context::sptr ctx,
                  endpoint_client & ep_clnt,
                  const std::string & server);
     
-    ~query_client();
+    virtual ~query_client();
     
     void cleanup();
   };

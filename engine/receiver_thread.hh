@@ -23,7 +23,8 @@ namespace virtdb {  namespace engine {
   class receiver_thread
   {
   public:
-    typedef std::shared_ptr<data_handler> handler_sptr;
+    typedef std::shared_ptr<receiver_thread>   sptr;
+    typedef std::shared_ptr<data_handler>      handler_sptr;
     
   private:
     typedef virtdb::connector::push_client<virtdb::interface::pb::Query> query_push_client;

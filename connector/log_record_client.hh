@@ -14,11 +14,12 @@ namespace virtdb { namespace connector {
   class log_record_client final :
       public sub_client<interface::pb::LogRecord>
   {
-    typedef sub_client<interface::pb::LogRecord>                         sub_base_type;
+    typedef sub_client<interface::pb::LogRecord>                 sub_base_type;
     
   public:
     typedef std::function<void(const std::string & name,
                                interface::pb::LogRecord & rec)>  log_monitor;
+    typedef std::shared_ptr<log_record_client>                   sptr;
     
   private:
     typedef std::map<std::string, log_monitor>   monitor_map;
