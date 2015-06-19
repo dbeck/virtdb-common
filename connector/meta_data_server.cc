@@ -53,9 +53,24 @@ namespace virtdb { namespace connector {
   meta_data_server::get_wildcard_data()
   {
     rep_base_type::rep_item_sptr ret;
+    int64_t table_count = 0;
+    {
+      lock l(tables_mtx_);
+      table_count = tables_.size();
+    }
+
     {
       lock wcl(wildcard_cache_mtx_);
       ret = wildcard_cache_;
+      if( ret )
+      {
+        if( table_count != ret->tables_size() )
+        {
+          // drop wildcard cache as table list has different number of tables
+          ret.reset();
+          wildcard_cache_.reset();
+        }
+      }
     }
     return ret;
   }
@@ -64,7 +79,8 @@ namespace virtdb { namespace connector {
   meta_data_server::update_wildcard_data()
   {
     rep_base_type::rep_item_sptr rep{new rep_item};
-    
+
+    // TODO: we should refresh this from time to time
     {
       ctx_->increase_stat("Update cached wildcard metadata");
       lock l(tables_mtx_);
@@ -88,7 +104,12 @@ namespace virtdb { namespace connector {
     
     {
       lock wcl(wildcard_cache_mtx_);
-      wildcard_cache_ = rep;
+      if( !tables_.empty() )
+      {
+        ctx_->increase_stat("Cached wildcard tables", rep->tables_size());
+        // never cache empty wildcard data
+        wildcard_cache_ = rep;
+      }
     }
   }
   
@@ -125,7 +146,7 @@ namespace virtdb { namespace connector {
     {
       
       rep = get_wildcard_data();
-      LOG_INFO("returning cached wildcard metadata");
+      LOG_INFO("returning cached wildcard metadata" << V_(rep->tables_size()));
     }
     
     if( rep )

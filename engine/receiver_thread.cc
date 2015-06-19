@@ -1,20 +1,15 @@
-// Standard headers
-#include <chrono>
-#include <vector>
-
-// Google Protocol Buffers
-#include "data.pb.h"
-
-// ZeroMQ
-#include "cppzmq/zmq.hpp"
 
 // VirtDB headers
 #include <logger.hh>
 #include <connector/push_client.hh>
 #include <connector/sub_client.hh>
-#include "receiver_thread.hh"
-#include "data_handler.hh"
-#include "query.hh"
+#include <engine/receiver_thread.hh>
+#include <engine/data_handler.hh>
+#include <engine/query.hh>
+
+// Standard headers
+#include <chrono>
+#include <vector>
 
 using namespace virtdb::engine;
 using namespace virtdb::connector;
@@ -87,10 +82,10 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
       channel_id +=  " " + query_data.segment_id();
     }
     data_client->watch(channel_id,
-                      [&,query_id,node](const std::string & provider_name,
-                                        const std::string & channel,
-                                        const std::string & subscription,
-                                        std::shared_ptr<interface::pb::Column> column)
+                      [this,query_id,node](const std::string & provider_name,
+                                           const std::string & channel,
+                                           const std::string & subscription,
+                                           std::shared_ptr<interface::pb::Column> column)
                       {
                         if( query_id != column->queryid() )
                         {
@@ -120,6 +115,7 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
                         }
                         
                         auto handler = get_data_handler(column->queryid());
+
                         if (handler.get())
                         {
                           handler->push(column->name(), column);
@@ -138,6 +134,7 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
 
   {
     lock l(mtx_);
+    // LOG_TRACE("saving data handler for" << V_((int64_t)node));
     active_queries_[node] =
       handler_sptr(new data_handler(query_data,
                                     [query_data, query_cli](const std::vector<std::string> & cols,
@@ -169,7 +166,6 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
                                     }
                                     ));
   }
-  
 }
 
 void
