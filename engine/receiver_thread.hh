@@ -5,15 +5,8 @@
 #include <map>
 #include <memory>
 #include <mutex>
-
-namespace virtdb
-{
-  namespace connector
-  {
-    template<typename PUSH_ITEM> class push_client;
-    template<typename SUB_ITEM> class sub_client;
-  }
-}
+#include <connector/query_client.hh>
+#include <connector/column_client.hh>
 
 namespace virtdb {  namespace engine {
 
@@ -33,8 +26,8 @@ namespace virtdb {  namespace engine {
     std::map<long, handler_sptr>  active_queries_;
     std::mutex                    mtx_;
     
-    void add_query(query_push_client& query_client,
-                   virtdb::connector::sub_client<virtdb::interface::pb::Column>& data_client,
+    void add_query(connector::query_client::sptr query_cli,
+                   connector::column_client::sptr data_client,
                    long node,
                    const virtdb::engine::query& query);
     
@@ -45,19 +38,24 @@ namespace virtdb {  namespace engine {
     receiver_thread();
     virtual ~receiver_thread();
     
-    void remove_query(virtdb::connector::sub_client<virtdb::interface::pb::Column>& data_client, long node);
     handler_sptr get_data_handler(long node);
     handler_sptr get_data_handler(std::string queryid);
+
+    void
+    remove_query(connector::column_client::sptr data_client,
+                 long node);
+
+    void
+    send_query(connector::query_client::sptr query_cli,
+               connector::column_client::sptr data_client,
+               long node,
+               const virtdb::engine::query& query);
     
-    void send_query(query_push_client& query_client,
-                    virtdb::connector::sub_client<virtdb::interface::pb::Column>& data_client,
-                    long node,
-                    const virtdb::engine::query& query);
-    
-    void stop_query(const std::string& table_name,
-                    query_push_client& query_client,
-                    long node,
-                    const std::string& segment_id);
+    void
+    stop_query(const std::string& table_name,
+               connector::query_client::sptr cli,
+               long node,
+               const std::string& segment_id);
   };
 
   

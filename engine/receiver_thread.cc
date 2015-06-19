@@ -27,20 +27,20 @@ receiver_thread::~receiver_thread()
 {
 }
 
-void receiver_thread::send_query(push_client<interface::pb::Query>& query_client,
-                                 sub_client<interface::pb::Column>& data_client,
+void receiver_thread::send_query(connector::query_client::sptr query_cli,
+                                 connector::column_client::sptr data_client,
                                  long node,
-                                 const query& query_data)
+                                 const virtdb::engine::query& query_data)
 {
-    add_query(query_client, data_client, node, query_data);
-    query_client.wait_valid();  // TODO : handle timeout here
-    query_client.send_request(query_data.get_message());
+    add_query(query_cli, data_client, node, query_data);
+    query_cli->wait_valid();  // TODO : handle timeout here
+    query_cli->send_request(query_data.get_message());
     LOG_INFO("Sent query with id" << V_(query_data.id()) << V_(query_data.table_name()));
 }
 
 void
 receiver_thread::stop_query(const std::string& table_name,
-                            query_push_client& query_client,
+                            connector::query_client::sptr cli,
                             long node,
                             const std::string& segment_id)
 {
@@ -51,15 +51,18 @@ receiver_thread::stop_query(const std::string& table_name,
     stop_query.set_queryid(h->query_id());
     stop_query.set_table(table_name);
     stop_query.set_querycontrol(virtdb::interface::pb::Query_Command_STOP);
-    stop_query.set_segmentid(segment_id);
+    
+    if( !segment_id.empty() )
+      stop_query.set_segmentid(segment_id);
+    
     LOG_TRACE("Sending stop query." <<
               V_(stop_query.queryid()) <<
               V_(stop_query.table()) <<
               V_((int64_t)stop_query.querycontrol()));
     
-    if( query_client.wait_valid(30000) )
+    if( cli->wait_valid(30000) )
     {
-      query_client.send_request(stop_query);
+      cli->send_request(stop_query);
     }
     else
     {
@@ -70,8 +73,8 @@ receiver_thread::stop_query(const std::string& table_name,
 
 
 void
-receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
-                           sub_client<interface::pb::Column>& data_client,
+receiver_thread::add_query(connector::query_client::sptr query_cli,
+                           connector::column_client::sptr data_client,
                            long node,
                            const query& query_data)
 {
@@ -83,7 +86,7 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
     {
       channel_id +=  " " + query_data.segment_id();
     }
-    data_client.watch(channel_id,
+    data_client->watch(channel_id,
                       [&,query_id,node](const std::string & provider_name,
                                         const std::string & channel,
                                         const std::string & subscription,
@@ -137,8 +140,8 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
     lock l(mtx_);
     active_queries_[node] =
       handler_sptr(new data_handler(query_data,
-                                    [query_data, &query_client](const std::vector<std::string> & cols,
-                                                                sequence_id_t seqno)
+                                    [query_data, query_cli](const std::vector<std::string> & cols,
+                                                            sequence_id_t seqno)
                                     {
                                       std::ostringstream os;
                                       for( auto const & c : cols ) { os << c << " "; }
@@ -162,7 +165,7 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
                                       }
                                       new_query.add_seqnos(seqno);
                                       new_query.set_querycontrol(virtdb::interface::pb::Query_Command_RESEND_CHUNK);
-                                      query_client.send_request(new_query);
+                                      query_cli->send_request(new_query);
                                     }
                                     ));
   }
@@ -170,7 +173,7 @@ receiver_thread::add_query(push_client<interface::pb::Query>& query_client,
 }
 
 void
-receiver_thread::remove_query(sub_client<interface::pb::Column>& data_client,
+receiver_thread::remove_query(connector::column_client::sptr data_client,
                               long node)
 {
   lock l(mtx_);
@@ -178,7 +181,7 @@ receiver_thread::remove_query(sub_client<interface::pb::Column>& data_client,
   if( it == active_queries_.end() )
     return;
   
-  data_client.remove_watch(it->second->query_id());
+  data_client->remove_watch(it->second->query_id());
   active_queries_.erase(it);
 }
 
