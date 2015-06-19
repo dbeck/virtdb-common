@@ -146,7 +146,11 @@ namespace virtdb { namespace connector {
     {
       
       rep = get_wildcard_data();
-      LOG_INFO("returning cached wildcard metadata" << V_(rep->tables_size()));
+      int64_t tables_size = 0;
+      if( rep )
+        tables_size = rep->tables_size();
+      
+      LOG_INFO("returning cached wildcard metadata" << V_(tables_size));
     }
     
     if( rep )
