@@ -37,6 +37,7 @@ namespace virtdb { namespace connector {
     
     void publish_meta(const rep_base_type::req_item&,
                       rep_base_type::rep_item_sptr);
+    
     void process_replies(const rep_base_type::req_item & req,
                          rep_base_type::send_rep_handler handler);
         
@@ -57,7 +58,7 @@ namespace virtdb { namespace connector {
     void remove_watch();
     
     rep_base_type::rep_item_sptr get_wildcard_data();
-    void update_wildcard_data();
+    void update_wildcard_data(rep_base_type::rep_item_sptr rep=rep_base_type::rep_item_sptr());
   };
   
 }}
