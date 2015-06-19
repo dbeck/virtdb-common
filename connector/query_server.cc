@@ -89,7 +89,7 @@ namespace virtdb { namespace connector {
     
     if( !qsptr->has_queryid() ||
         !qsptr->has_table()   ||
-        !qsptr->fields_size() )
+       (qsptr->fields_size() == 0 && qsptr->querycontrol() != interface::pb::Query::STOP) )
     {
       ctx_->increase_stat("Invalid query");
       auto q = qsptr;
@@ -99,7 +99,8 @@ namespace virtdb { namespace connector {
                 V_(q->schema()) <<
                 V_(q->fields_size()) <<
                 V_(q->limit()) <<
-                V_(q->filter_size()));
+                V_(q->filter_size()) <<
+                V_(q->has_querycontrol()));
       return;
     }
     

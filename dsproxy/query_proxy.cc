@@ -100,7 +100,7 @@ namespace virtdb { namespace dsproxy {
     
     if( !q->has_queryid() ||
         !q->has_table() ||
-        !q->fields_size() )
+        (q->fields_size() == 0 && q->querycontrol() != interface::pb::Query::STOP) )
     {
       
       server_ctx_->increase_stat("Invalid query");
