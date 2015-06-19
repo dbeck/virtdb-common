@@ -62,11 +62,14 @@ namespace virtdb { namespace connector {
     {
       lock wcl(wildcard_cache_mtx_);
       ret = wildcard_cache_;
+      
       if( ret )
       {
-        if( table_count != ret->tables_size() )
+        if( table_count != ret->tables_size() ||
+            ret->tables_size() == 0 )
         {
           // drop wildcard cache as table list has different number of tables
+          // or table list is empty
           ret.reset();
           wildcard_cache_.reset();
         }
@@ -76,9 +79,9 @@ namespace virtdb { namespace connector {
   }
   
   void
-  meta_data_server::update_wildcard_data(rep_base_type::rep_item_sptr rep)
+  meta_data_server::update_wildcard_data()
   {
-    if( !rep ) rep.reset(new rep_item);
+    rep_base_type::rep_item_sptr rep{new rep_item};
 
     // TODO: we should refresh this from time to time
     {
@@ -104,7 +107,7 @@ namespace virtdb { namespace connector {
     
     {
       lock wcl(wildcard_cache_mtx_);
-      if( !tables_.empty() && rep->tables_size() > 0 )
+      if( rep->tables_size() > 0 )
       {
         ctx_->increase_stat("Cached wildcard tables", rep->tables_size());
         // never cache empty wildcard data
@@ -149,7 +152,7 @@ namespace virtdb { namespace connector {
       is_wildcard = true;
     }
     
-    if( rep )
+    if( rep && rep->tables_size() && is_wildcard && req.withfields() == false )
     {
       int64_t tables_size = 0;
       tables_size = rep->tables_size();
@@ -209,11 +212,6 @@ namespace virtdb { namespace connector {
               }
             }
           }
-        }
-        
-        if( is_wildcard && rep->tables_size() > 0 )
-        {
-          update_wildcard_data(rep);
         }
         
         {

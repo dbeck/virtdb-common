@@ -58,7 +58,7 @@ namespace virtdb { namespace connector {
     void remove_watch();
     
     rep_base_type::rep_item_sptr get_wildcard_data();
-    void update_wildcard_data(rep_base_type::rep_item_sptr rep=rep_base_type::rep_item_sptr());
+    void update_wildcard_data();
   };
   
 }}
