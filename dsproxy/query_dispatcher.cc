@@ -329,9 +329,9 @@ namespace virtdb { namespace dsproxy {
             seqnos.insert(sn);
           }
           
-          for( auto fl : q->fields() )
+          for( auto nm : q->fields() )
           {
-            columns.insert(fl.name());
+            columns.insert(nm);
           }
           
           sent = resend_chunk_copy(q->queryid(),

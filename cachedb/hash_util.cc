@@ -70,21 +70,19 @@ namespace virtdb { namespace cachedb {
       
       XXH64_state_t tab_state = base_state;
       
-      for( auto const & field_in : in.fields() )
+      for( auto const & nm : in.fields() )
       {
         XXH64_state_t field_state = base_state;
 
-        int byte_size = field_in.ByteSize();
+        int byte_size = nm.size();
         if( byte_size <= 0 ) throw 'y';
         
-        util::flex_alloc<char, 128> buffer(byte_size);
-        field_in.SerializePartialToArray(buffer.get(), byte_size);
         if( XXH64_update(&field_state,
-                         buffer.get(),
+                         nm.c_str(),
                          byte_size ) != XXH_OK ) throw 'u';
         
         if( XXH64_update(&tab_state,
-                         buffer.get(),
+                         nm.c_str(), 
                          byte_size ) != XXH_OK ) throw 'w';
         
         // hash the field
@@ -92,7 +90,7 @@ namespace virtdb { namespace cachedb {
         util::hex_util( XXH64_digest(&field_state), tmp_col_hash);
         
         // store the hash value
-        tmp_cols_out[field_in.name()] = tmp_col_hash;
+        tmp_cols_out[nm] = tmp_col_hash;
       }
       
       util::hex_util( XXH64_digest(&tab_state), tmp_tab_out);

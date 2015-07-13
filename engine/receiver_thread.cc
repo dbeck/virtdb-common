@@ -156,9 +156,7 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
                                       new_query.set_segmentid(query_data.segment_id());
                                       for( auto const & colname : cols )
                                       {
-                                        auto * field = new_query.add_fields();
-                                        auto const & tmp_field = query_data.get_field(colname);
-                                        field->CopyFrom(tmp_field);
+                                        new_query.add_fields(colname);
                                       }
                                       new_query.add_seqnos(seqno);
                                       new_query.set_querycontrol(virtdb::interface::pb::Query_Command_RESEND_CHUNK);

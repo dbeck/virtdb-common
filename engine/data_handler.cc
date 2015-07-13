@@ -22,7 +22,7 @@ namespace virtdb { namespace engine {
     for (size_t i = 0; i < n_columns; ++i)
     {
       column_id_t col_id = query_data.column_id(i);
-      std::string col_name = query_data.column(i).name();
+      std::string col_name = query_data.column(i);
       name_to_query_col_[col_name]  = i;
       column_id_to_query_col_[col_id] = i;
       columns_.push_back(col_name);
