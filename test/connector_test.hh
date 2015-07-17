@@ -89,7 +89,8 @@ namespace virtdb { namespace test {
                   const std::string & srcsys);
     
     bool get_tmpl(connector::srcsys_credential_client & cli,
-                  const std::string & srcsys);
+                  const std::string & srcsys,
+                  size_t & count);
   };
   
   class ConnIpDiscoveryTest : public ConnectorCommon { };

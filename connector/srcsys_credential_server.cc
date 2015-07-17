@@ -81,11 +81,13 @@ namespace virtdb { namespace connector {
           
           {
             lock l(mtx_);
-            auto it = credentials_.find(nt);
-            if( it == credentials_.end() ) { THROW_("no such source system credential"); }
             auto * repcreds = rep->mutable_getcred();
-            auto * tmp = repcreds->mutable_creds();
-            tmp->MergeFrom(*(it->second));
+            auto it = credentials_.find(nt);
+            if( it != credentials_.end() )
+            {
+              auto * tmp = repcreds->mutable_creds();
+              tmp->MergeFrom(*(it->second));
+            }
           }
           
           rep->set_type(pb::SourceSystemCredentialReply::GET_CREDENTIAL);
@@ -142,10 +144,12 @@ namespace virtdb { namespace connector {
           
           {
             lock l(mtx_);
-            auto it = templates_.find(gettmpl.sourcesysname());
-            if( it == templates_.end() ) { THROW_("no template for source system"); }
             auto * tmp = rep->mutable_gettmpl();
-            tmp->MergeFrom(*(it->second));
+            auto it = templates_.find(gettmpl.sourcesysname());
+            if( it != templates_.end() )
+            {
+              tmp->MergeFrom(*(it->second));
+            }
           }
 
           rep->set_type(pb::SourceSystemCredentialReply::GET_TEMPLATE);

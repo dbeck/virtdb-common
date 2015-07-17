@@ -1423,7 +1423,8 @@ ConnSrcsysCredTest::set_tmpl(connector::srcsys_credential_client & cli,
 
 bool
 ConnSrcsysCredTest::get_tmpl(connector::srcsys_credential_client & cli,
-                             const std::string & srcsys)
+                             const std::string & srcsys,
+                             size_t & count)
 {
   std::promise<void> rep_promise;
   std::future<void>  on_rep{rep_promise.get_future()};
@@ -1448,7 +1449,7 @@ ConnSrcsysCredTest::get_tmpl(connector::srcsys_credential_client & cli,
     return false;
   EXPECT_EQ(rep.type(), pb::SourceSystemCredentialReply::GET_TEMPLATE);
   EXPECT_TRUE(rep.has_gettmpl());
-  EXPECT_NE(rep.gettmpl().templates_size(), 0);
+  count = rep.gettmpl().templates_size();
   return !rep.has_err();
 }
 
@@ -1507,7 +1508,9 @@ TEST_F(ConnSrcsysCredTest, SetTemplate)
   srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
   EXPECT_TRUE(cli.wait_valid(100));
   EXPECT_TRUE(set_tmpl(cli, name));
-  EXPECT_TRUE(get_tmpl(cli, name));
+  size_t count = 0;
+  EXPECT_TRUE(get_tmpl(cli, name, count));
+  EXPECT_EQ(count, 1);
   EXPECT_TRUE(set_tmpl(cli, name));
   EXPECT_TRUE(set_tmpl(cli, name));
 }
@@ -1522,11 +1525,15 @@ TEST_F(ConnSrcsysCredTest, GetTemplate)
   static bool once = true;
   if( once )
   {
-    EXPECT_FALSE(get_tmpl(cli, name));
+    size_t count = 0;
+    EXPECT_TRUE(get_tmpl(cli, name, count));
+    EXPECT_EQ(count, 0);
     once = false;
   }
   EXPECT_TRUE(set_tmpl(cli, name));
-  EXPECT_TRUE(get_tmpl(cli, name));
+  size_t count = 0;
+  EXPECT_TRUE(get_tmpl(cli, name, count));
+  EXPECT_EQ(count, 1);
 }
 
 /*
