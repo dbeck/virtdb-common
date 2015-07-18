@@ -17,10 +17,9 @@ namespace virtdb {  namespace engine {
   class expression;
   
   class query {
-  private:
     std::map<int, column_id_t> columns; // column_number -> column_id
-    std::unique_ptr<virtdb::interface::pb::Query> query_data =
-    std::unique_ptr<virtdb::interface::pb::Query>(new virtdb::interface::pb::Query);
+    std::unique_ptr<virtdb::interface::pb::Query> query_data = 
+      std::unique_ptr<virtdb::interface::pb::Query>(new virtdb::interface::pb::Query);
     
   public:
     typedef std::function<void(const std::vector<std::string> &, sequence_id_t)> resend_function_t;
@@ -65,6 +64,9 @@ namespace virtdb {  namespace engine {
     
     // Schema
     void set_schema(const std::string& schema);
+
+    // User Token
+    void set_usertoken(const std::string& token);
     
     // Accessing encapsulated object
     virtdb::interface::pb::Query& get_message();

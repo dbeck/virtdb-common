@@ -121,6 +121,11 @@ namespace virtdb {  namespace engine {
   {
     query_data->set_schema(schema);
   }
+
+  void query::set_usertoken(const std::string& token)
+  {
+    query_data->set_usertoken(token);
+  }
   
   pb::Query& query::get_message()
   {
