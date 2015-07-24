@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <connector/srcsys_credential_client.hh>
 #include <memory>
 
 namespace virtdb { namespace connector {
@@ -8,7 +9,6 @@ namespace virtdb { namespace connector {
   // forward declarations
   class client_context;
   class cert_store_client;
-  class srcsys_credential_client;
   class monitoring_client;
 }}
 
@@ -87,6 +87,10 @@ namespace virtdb { namespace test {
     
     bool set_tmpl(connector::srcsys_credential_client & cli,
                   const std::string & srcsys);
+
+    bool set_tmpl(connector::srcsys_credential_client & cli,
+                  const std::string & srcsys,
+                  const connector::srcsys_credential_client::name_type_map & m);
     
     bool get_tmpl(connector::srcsys_credential_client & cli,
                   const std::string & srcsys,

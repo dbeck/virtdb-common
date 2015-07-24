@@ -1393,6 +1393,14 @@ ConnSrcsysCredTest::del_cred(connector::srcsys_credential_client & cli,
 
 bool
 ConnSrcsysCredTest::set_tmpl(connector::srcsys_credential_client & cli,
+                             const std::string & srcsys,
+                             const connector::srcsys_credential_client::name_type_map & m)
+{
+  return cli.set_template(srcsys, m);
+}
+
+bool
+ConnSrcsysCredTest::set_tmpl(connector::srcsys_credential_client & cli,
                              const std::string & srcsys)
 {
   std::promise<void> rep_promise;
@@ -1511,6 +1519,23 @@ TEST_F(ConnSrcsysCredTest, SetTemplate)
   size_t count = 0;
   EXPECT_TRUE(get_tmpl(cli, name, count));
   EXPECT_EQ(count, 1);
+  EXPECT_TRUE(set_tmpl(cli, name));
+  EXPECT_TRUE(set_tmpl(cli, name));
+}
+
+TEST_F(ConnSrcsysCredTest, SetTemplate2)
+{
+  const char * name = "ConnSrcsysCredTest-SetTemplate2";
+  endpoint_client ep_clnt(cctx_, global_mock_ep, name);
+  srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
+  EXPECT_TRUE(cli.wait_valid(100));
+  srcsys_credential_client::name_type_map m;
+  m["hello"] = pb::FieldTemplate::FieldType::FieldTemplate_FieldType_STRING;
+  m["world"] = pb::FieldTemplate::FieldType::FieldTemplate_FieldType_PASSWORD;
+  EXPECT_TRUE(set_tmpl(cli, name, m));
+  size_t count = 0;
+  EXPECT_TRUE(get_tmpl(cli, name, count));
+  EXPECT_EQ(count, 2);
   EXPECT_TRUE(set_tmpl(cli, name));
   EXPECT_TRUE(set_tmpl(cli, name));
 }
