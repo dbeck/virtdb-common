@@ -7,15 +7,24 @@ using namespace virtdb::interface;
 namespace virtdb { namespace connector {
   
   query_server::query_server(server_context::sptr ctx,
-                             config_client & cfg_client)
+                             config_client & cfg_client,
+                             user_manager_client::sptr umgr_cli,
+                             srcsys_credential_client::sptr sscred_cli)
   : pull_base_type(ctx,
                    cfg_client,
                    std::bind(&query_server::handler_function,
                              this,
                              std::placeholders::_1),
                    pb::ServiceType::QUERY),
-    ctx_{ctx}
+    ctx_{ctx},
+    umgr_cli_{umgr_cli},
+    sscred_cli_{sscred_cli}
   {
+    if( !ctx || !umgr_cli || ! sscred_cli  )
+    {
+      THROW_("invalid parameter");
+    }
+    
     pb::EndpointData ep_data;
     
     ep_data.set_name(cfg_client.get_endpoint_client().name());
@@ -32,11 +41,12 @@ namespace virtdb { namespace connector {
     template <typename FUN, typename ITEM>
     void call_monitor(FUN & fun,
                       ITEM & item,
-                      const std::string & src)
+                      const std::string & src,
+                      query_context::sptr qctx)
     {
       try
       {
-        fun(src, item);
+        fun(src, item, qctx);
       }
       catch (const std::exception & e)
       {
@@ -53,13 +63,17 @@ namespace virtdb { namespace connector {
     void fire_monitors(CONTAINER & container,
                        ITEM & item,
                        const std::string & key,
-                       const std::string & src)
+                       const std::string & src,
+                       query_context::sptr qctx)
     {
       try
       {
         auto it = container.find(key);
         if( it != container.end() )
-          call_monitor(it->second, item, src);
+          call_monitor(it->second,
+                       item,
+                       src,
+                       qctx);
       }
       catch (const std::exception & e)
       {
@@ -100,9 +114,79 @@ namespace virtdb { namespace connector {
                 V_(q->fields_size()) <<
                 V_(q->limit()) <<
                 V_(q->filter_size()) <<
-                V_(q->has_querycontrol()));
+                V_(q->has_querycontrol()) <<
+                V_(q->has_usertoken()));
       return;
     }
+    
+    if( !qsptr->has_usertoken() )
+    {
+      ctx_->increase_stat("Missing user token");
+      auto q = qsptr;
+      LOG_ERROR("missing user token" <<
+                V_(q->queryid()) <<
+                V_(q->table()) <<
+                V_(q->schema()) <<
+                V_(q->fields_size()) <<
+                V_(q->limit()) <<
+                V_(q->filter_size()) <<
+                V_(q->has_querycontrol()) <<
+                V_(q->has_usertoken()));
+      return;
+    }
+    
+    // TODO : query context
+    query_context::sptr qctx{new query_context};
+    {
+      qctx->query(qsptr);
+    
+      query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
+      query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
+      
+      if( !umgr_cli_->get_srcsys_token(qsptr->usertoken(),
+                                       ctx_->service_name(),
+                                       *tok_reply,
+                                       util::DEFAULT_TIMEOUT_MS) )
+      {
+        auto q = qsptr;
+        ctx_->increase_stat("User token check failed");
+        LOG_ERROR("cannot validate user token" <<
+                  V_(ctx_->service_name()) <<
+                  V_(q->queryid()) <<
+                  V_(q->table()) <<
+                  V_(q->schema()) <<
+                  V_(q->fields_size()) <<
+                  V_(q->limit()) <<
+                  V_(q->filter_size()) <<
+                  V_(q->has_querycontrol()) <<
+                  V_(q->has_usertoken()));
+        return;
+      }
+      qctx->token(tok_reply);
+      
+      if( !sscred_cli_->get_credential(tok_reply->sourcesystoken(),
+                                       ctx_->service_name(),
+                                       *cred_reply,
+                                       util::DEFAULT_TIMEOUT_MS) )
+      {
+        auto q = qsptr;
+        ctx_->increase_stat("Invalid source system token");
+        LOG_ERROR("cannot validate source system token" <<
+                  V_(ctx_->service_name()) <<
+                  V_(q->queryid()) <<
+                  V_(q->table()) <<
+                  V_(q->schema()) <<
+                  V_(q->fields_size()) <<
+                  V_(q->limit()) <<
+                  V_(q->filter_size()) <<
+                  V_(q->has_querycontrol()) <<
+                  V_(q->has_usertoken()));
+        return;
+      }
+      
+      qctx->credentials(cred_reply);
+    }
+    
     
     ctx_->increase_stat("Valid query");
     ctx_->increase_stat("Query field count", qsptr->fields_size());
@@ -140,8 +224,8 @@ namespace virtdb { namespace connector {
     
     // query monitors
     const std::string & n = name();
-    fire_monitors(query_monitors_, qsptr, qsptr->queryid(), n);
-    fire_monitors(query_monitors_, qsptr, "", n);
+    fire_monitors(query_monitors_, qsptr, qsptr->queryid(), n, qctx);
+    fire_monitors(query_monitors_, qsptr, "", n, qctx);
     
     std::string query_id = qsptr->queryid();
     std::string schema   = qsptr->schema();
@@ -150,14 +234,14 @@ namespace virtdb { namespace connector {
     // table monitors
     if( !table_monitors_.empty() )
     {
-      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,table), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,""), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",table), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,table), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",""), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,""), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key("","",table), n);
-      fire_monitors(table_monitors_, qsptr, gen_table_key("","",""), n);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,table), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,schema,""), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",table), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,table), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key(query_id,"",""), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("",schema,""), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("","",table), n, qctx);
+      fire_monitors(table_monitors_, qsptr, gen_table_key("","",""), n, qctx);
     }
   }
   

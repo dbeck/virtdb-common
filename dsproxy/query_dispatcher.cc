@@ -444,14 +444,18 @@ namespace virtdb { namespace dsproxy {
   
   query_dispatcher::query_dispatcher(connector::server_context::sptr sr_ctx,
                                      connector::client_context::sptr cl_ctx,
-                                     connector::config_client & cfg_clnt)
+                                     connector::config_client & cfg_clnt,
+                                     connector::user_manager_client::sptr umgr_cli,
+                                     connector::srcsys_credential_client::sptr sscred_cli)
   : server_ctx_{sr_ctx},
     client_ctx_{cl_ctx},
-    server_{sr_ctx, cfg_clnt},
+    server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli},
     ep_client_(&(cfg_clnt.get_endpoint_client()))
   {
     server_.watch("", [&](const std::string & provider_name,
-                          connector::query_server::query_sptr q) {
+                          connector::query_server::query_sptr q,
+                          connector::query_context::sptr qctx) {
+      
       std::string segment_id;
       if( q->has_segmentid() )
         segment_id = q->segmentid();

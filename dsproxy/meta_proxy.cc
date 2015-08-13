@@ -77,15 +77,29 @@ namespace virtdb { namespace dsproxy {
   
   meta_proxy::meta_proxy(connector::server_context::sptr sr_ctx,
                          connector::client_context::sptr cl_ctx,
-                         connector::config_client & cfg_clnt)
+                         connector::config_client & cfg_clnt,
+                         connector::user_manager_client::sptr umgr_cli,
+                         connector::srcsys_credential_client::sptr sscred_cli)
   : server_ctx_{sr_ctx},
     client_ctx_{cl_ctx},
-    server_{sr_ctx, cfg_clnt},
+    server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli},
     ep_client_{&(cfg_clnt.get_endpoint_client())}
   {
-    server_.watch_requests([&](const interface::pb::MetaDataRequest & req)
+    server_.watch_requests([&](const interface::pb::MetaDataRequest & req,
+                               connector::query_context::sptr qctx)
     {
       server_ctx_->increase_stat("Metadata proxy request");
+      
+      std::string sstok;
+      if( qctx && qctx->token() && qctx->token()->has_sourcesystoken() )
+        sstok = qctx->token()->sourcesystoken();
+      
+      auto store = server_.get_store(sstok);
+      if( !store )
+      {
+        LOG_ERROR("invalid store returned for" << V_(sstok));
+        return;
+      }
 
       std::string table;
       if( req.has_name() ) table = req.name();
@@ -97,7 +111,7 @@ namespace virtdb { namespace dsproxy {
       if( req.withfields() )
       {
         // fast path: when we already have this table with fields
-        if( server_.has_fields(schema, table) )
+        if( store->has_fields(schema, table) )
         {
           server_ctx_->increase_stat("Returning cached table metadata");
           return;
@@ -106,7 +120,7 @@ namespace virtdb { namespace dsproxy {
       else
       {
         // fast path: when we already have this table
-        if( server_.has_table(schema, table) )
+        if( store->has_table(schema, table) )
         {
           server_ctx_->increase_stat("Returning cached metadata list");
           return;
@@ -149,7 +163,7 @@ namespace virtdb { namespace dsproxy {
           std::shared_ptr<interface::pb::TableMeta>
             tab_sptr{new interface::pb::TableMeta{tm}};
           
-          server_.add_table(tab_sptr);
+          store->add_table(tab_sptr);
           
           if( tab_sptr->fields_size() == 0 )
           {
@@ -159,11 +173,11 @@ namespace virtdb { namespace dsproxy {
             // check in 1 sec that we have the full meta_data
             // remove it from the cache if not
             
-            timer_service_.schedule(60000,[this,schema_tmp,table_tmp]() {
-              if( !server_.has_fields(schema_tmp, table_tmp) )
+            timer_service_.schedule(60000,[this,schema_tmp,table_tmp,store]() {
+              if( !store->has_fields(schema_tmp, table_tmp) )
               {
                 // LOG_TRACE("removing empty data" << V_(schema_tmp) << V_(table_tmp));
-                server_.remove_table(schema_tmp, table_tmp);
+                store->remove_table(schema_tmp, table_tmp);
               }
               return false;
             });

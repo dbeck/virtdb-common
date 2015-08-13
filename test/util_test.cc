@@ -8,6 +8,7 @@
 #include <util/relative_time.hh>
 #include <util/hash_file.hh>
 #include <util/zmq_utils.hh>
+#include <util/field_helper.hh>
 #include <future>
 #include <thread>
 
@@ -46,6 +47,26 @@ namespace
 #define MEASURE_ME measure INTERNAL_LOCAL_VAR(_m_) { __FILE__, __LINE__, __func__ };
 
 // UtilLZ4UtilTest
+
+TEST_F(UtilFieldHelperTest, GetSet)
+{
+  using namespace virtdb::interface;
+  
+  field_helper fh;
+  EXPECT_EQ(fh.get_property<int64_t>("dummy", -1), -1);
+  fh.set_property<std::string>("dummy", "Hello");
+  EXPECT_EQ(fh.get_property<std::string>("dummy", "Hello"), "Hello");
+  fh.remove_property("dummy");
+  EXPECT_EQ(fh.get_property<std::string>("dummy", "World"), "World");
+  fh.set_property<float>("Foo", 1.1);
+  
+  pb::Field fld;
+  fh.save(fld);
+  
+  field_helper fh2;
+  fh.init(fld);
+  EXPECT_FLOAT_EQ(fh.get_property<float>("Foo", 9.9), 1.1);
+}
 
 TEST_F(UtilTableCollectorTest, MultiThreaded)
 {

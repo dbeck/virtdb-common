@@ -59,7 +59,9 @@ namespace virtdb { namespace dsproxy {
     void remove_watch();
     query_dispatcher(connector::server_context::sptr sr_ctx,
                      connector::client_context::sptr cl_ctx,
-                     connector::config_client & cfg_client);
+                     connector::config_client & cfg_client,
+                     connector::user_manager_client::sptr umgr_cli,
+                     connector::srcsys_credential_client::sptr sscred_cli);
     ~query_dispatcher();
     
   private:

@@ -62,4 +62,44 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
+  bool
+  srcsys_credential_client::get_credential(const std::string & srcsys_token,
+                                           const std::string & srcsys_name,
+                                           interface::pb::SourceSystemCredentialReply::GetCredential & cred,
+                                           unsigned long timeout_ms)
+  {
+    using namespace virtdb::interface;
+    
+    pb::SourceSystemCredentialRequest req;
+    
+    {
+      req.set_type(pb::SourceSystemCredentialRequest::GET_CREDENTIAL);
+      auto * inner = req.mutable_getcred();
+      inner->set_sourcesysname(srcsys_name);
+      inner->set_sourcesystoken(srcsys_token);
+    }
+    
+    pb::SourceSystemCredentialReply rep;
+    
+    auto proc_rep = [&](const pb::SourceSystemCredentialReply & r) {
+      rep.MergeFrom(r);
+      return true;
+    };
+    
+    bool ret = send_request(req, proc_rep, timeout_ms);
+    if( ret && !rep.has_err() && rep.has_getcred() )
+    {
+      auto & rep_cred = rep.getcred();
+      cred.CopyFrom(rep_cred);
+      return true;
+    }
+    
+    if( rep.has_err() )
+    {
+      LOG_ERROR("failed to get source system credential" << V_(srcsys_name) << V_(rep.err().msg()));
+    }
+    
+    return false;
+  }
+  
 }}

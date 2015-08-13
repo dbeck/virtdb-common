@@ -55,6 +55,7 @@
                           'util/value_type_reader.cc',  'util/value_type_reader.hh',
                           'util/value_type_writer.cc',  'util/value_type_writer.hh',
                           'util/hash_file.cc',          'util/hash_file.hh',
+                          'util/field_helper.cc',       'util/field_helper.hh',
                           # logger support
                           'logger.hh',
                           'logger/macros.hh',        'logger/on_return.hh',
@@ -86,6 +87,7 @@
                           'connector/log_record_server.cc',          'connector/log_record_server.hh',
                           'connector/meta_data_client.cc',           'connector/meta_data_client.hh',
                           'connector/meta_data_server.cc',           'connector/meta_data_server.hh',
+                          'connector/meta_data_store.cc',            'connector/meta_data_store.hh',
                           'connector/query_client.cc',               'connector/query_client.hh',
                           'connector/query_server.cc',               'connector/query_server.hh',
                           'connector/user_manager_server.cc',        'connector/user_manager_server.hh',
@@ -96,6 +98,7 @@
                           'connector/cert_store_client.cc',          'connector/cert_store_client.hh',
                           'connector/server_context.cc',             'connector/server_context.hh',  
                           'connector/client_context.cc',             'connector/client_context.hh',  
+                          'connector/query_context.cc',              'connector/query_context.hh',  
                           'connector/monitoring_server.cc',          'connector/monitoring_server.hh',
                           'connector/monitoring_client.cc',          'connector/monitoring_client.hh',
                           # data helpers

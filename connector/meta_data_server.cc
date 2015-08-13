@@ -12,7 +12,9 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
   
   meta_data_server::meta_data_server(server_context::sptr ctx,
-                                     config_client & cfg_client)
+                                     config_client & cfg_client,
+                                     user_manager_client::sptr umgr_cli,
+                                     srcsys_credential_client::sptr sscred_cli)
   : rep_base_type(ctx,
                   cfg_client,
                   std::bind(&meta_data_server::process_replies,
@@ -27,8 +29,15 @@ namespace virtdb { namespace connector {
     pub_base_type(ctx,
                   cfg_client,
                   pb::ServiceType::META_DATA),
-    ctx_{ctx}
+    ctx_{ctx},
+    user_mgr_cli_{umgr_cli},
+    sscred_cli_{sscred_cli}
   {
+    if( !ctx || !umgr_cli || !sscred_cli)
+    {
+      THROW_("invalid parameter");
+    }
+
     pb::EndpointData ep_data;
     {
       ep_data.set_name(cfg_client.get_endpoint_client().name());
@@ -42,6 +51,31 @@ namespace virtdb { namespace connector {
     }
   }
   
+  bool
+  meta_data_server::get_srcsys_token(const std::string & input_token,
+                                     query_context::sptr qctx)
+  {
+    if( !user_mgr_cli_->wait_valid(100) )
+    {
+      LOG_ERROR("user manager client is not valid" << V_(ctx_->service_name()));
+      return false;
+    }
+    
+    // TODO : let's cache this later ...
+    if( !user_mgr_cli_->get_srcsys_token(input_token,
+                                         ctx_->service_name(),
+                                         *(qctx->token()),
+                                         util::DEFAULT_TIMEOUT_MS) )
+    {
+      return false;
+    }
+    
+    return sscred_cli_->get_credential(qctx->token()->sourcesystoken(),
+                                       ctx_->service_name(),
+                                       *(qctx->credentials()),
+                                       util::DEFAULT_TIMEOUT_MS);
+  }
+  
   void
   meta_data_server::publish_meta(const rep_base_type::req_item&,
                                  rep_base_type::rep_item_sptr)
@@ -49,84 +83,37 @@ namespace virtdb { namespace connector {
     // TODO : what do we publish here ... ????
   }
   
-  meta_data_server::rep_base_type::rep_item_sptr
-  meta_data_server::get_wildcard_data()
-  {
-    rep_base_type::rep_item_sptr ret;
-    int64_t table_count = 0;
-    {
-      lock l(tables_mtx_);
-      table_count = tables_.size();
-    }
-
-    {
-      lock wcl(wildcard_cache_mtx_);
-      ret = wildcard_cache_;
-      
-      if( ret )
-      {
-        if( table_count != ret->tables_size() ||
-            ret->tables_size() == 0 )
-        {
-          // drop wildcard cache as table list has different number of tables
-          // or table list is empty
-          ret.reset();
-          wildcard_cache_.reset();
-        }
-      }
-    }
-    return ret;
-  }
-  
-  void
-  meta_data_server::update_wildcard_data()
-  {
-    rep_base_type::rep_item_sptr rep{new rep_item};
-
-    // TODO: we should refresh this from time to time
-    {
-      ctx_->increase_stat("Update cached wildcard metadata");
-      lock l(tables_mtx_);
-      for( const auto & it : tables_ )
-      {
-        auto tmp_tab = rep->add_tables();
-        // selectively merge everything except fields
-        if( it.second->has_name() )
-          tmp_tab->set_name(it.second->name());
-        
-        if( it.second->has_schema() )
-          tmp_tab->set_schema(it.second->schema());
-        
-        for( auto const & c : it.second->comments() )
-          tmp_tab->add_comments()->MergeFrom(c);
-        
-        for( auto const & p : it.second->properties() )
-          tmp_tab->add_properties()->MergeFrom(p);
-      }
-    }
-    
-    {
-      lock wcl(wildcard_cache_mtx_);
-      if( rep->tables_size() > 0 )
-      {
-        ctx_->increase_stat("Cached wildcard tables", rep->tables_size());
-        // never cache empty wildcard data
-        wildcard_cache_ = rep;
-      }
-    }
-  }
-  
   void
   meta_data_server::process_replies(const rep_base_type::req_item & req,
                                     rep_base_type::send_rep_handler handler)
   {
+    query_context::sptr qctx{new query_context};
+    {
+      query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
+      query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
+      qctx->token(tok_reply);
+      qctx->credentials(cred_reply);
+    }
+    interface::pb::UserManagerReply::GetSourceSysToken srcsys_token;
+    if( req.has_usertoken() )
+    {
+      if( !get_srcsys_token(req.usertoken(), qctx) )
+      {
+        LOG_ERROR("cannot gather source system token for" << M_(req));
+      }
+    }
+    else
+    {
+      LOG_ERROR("no user token in metadata request" << M_(req));
+    }
+    
     {
       lock l(watch_mtx_);
       if( on_request_ )
       {
         try
         {
-          on_request_(req);
+          on_request_(req, qctx);
         }
         catch(const std::exception & e)
         {
@@ -148,7 +135,9 @@ namespace virtdb { namespace connector {
         req.schema() == ".*" &&
         req.name() == ".*" )
     {
-      rep = get_wildcard_data();
+      auto store = get_store(srcsys_token);
+      if( store )
+        rep = store->get_wildcard_data();
       is_wildcard = true;
     }
     
@@ -163,61 +152,10 @@ namespace virtdb { namespace connector {
     {
       rep.reset(new rep_item);
       
-      {
-        lock l(tables_mtx_);
-        bool match_schema = (req.has_schema() && !req.schema().empty());
-        
-        std::regex table_regex{req.name(), std::regex::extended};
-        std::regex schema_regex;
-        
-        if( match_schema )
-          schema_regex.assign(req.schema(), std::regex::extended);
-        
-        bool with_fields = req.withfields();
-        
-        for( const auto & it : tables_ )
-        {
-          
-          if( std::regex_match(it.second->name(),
-                               table_regex,
-                               std::regex_constants::match_any |
-                               std::regex_constants::format_sed ) )
-          {
-            
-            if( !match_schema || std::regex_match(it.second->schema(),
-                                                  schema_regex,
-                                                  std::regex_constants::match_any |
-                                                  std::regex_constants::format_sed ) )
-            {
-              auto tmp_tab = rep->add_tables();
-              if( with_fields )
-              {
-                // merge everything
-                tmp_tab->MergeFrom(*(it.second));
-              }
-              else
-              {
-                // selectively merge everything except fields
-                if( it.second->has_name() )
-                  tmp_tab->set_name(it.second->name());
-                
-                if( it.second->has_schema() )
-                  tmp_tab->set_schema(it.second->schema());
-                
-                for( auto const & c : it.second->comments() )
-                  tmp_tab->add_comments()->MergeFrom(c);
-                
-                for( auto const & p : it.second->properties() )
-                  tmp_tab->add_properties()->MergeFrom(p);
-              }
-            }
-          }
-        }
-        
-        {
-          LOG_TRACE("processing" << M_(req) << M_(*rep));
-        }
-      }
+      meta_data_store::sptr store_ptr;
+      rep = store_ptr->get_tables_regexp(req.schema(),
+                                         req.name(),
+                                         req.withfields());
     }
     
     if( rep->tables_size() == 0 )
@@ -244,70 +182,26 @@ namespace virtdb { namespace connector {
     on_request_.swap(empty);
   }
   
-  void
-  meta_data_server::add_table(table_sptr table)
+  meta_data_store::sptr
+  meta_data_server::get_store(const std::string & srcsys_token)
   {
-    // TODO: replace map<> with a better structure, more optimal for regex search
-    lock l(tables_mtx_);
-    table_map::key_type key(table->schema(), table->name());
-    auto it = tables_.find(key);
-    if( it == tables_.end() )
+    meta_data_store::sptr ret;
     {
-      ctx_->increase_stat("Table metadata added");
-      tables_.insert(std::make_pair(key,table));
+      lock l(stores_mtx_);
+      if( meta_stores_.count(srcsys_token) == 0 )
+      {
+        ret.reset(new meta_data_store);
+        meta_stores_[srcsys_token] = ret;
+      }
+      ret = meta_stores_[srcsys_token];
     }
-    else
-    {
-      ctx_->increase_stat("Table metadata updated");
-      it->second = table;
-    }
+    return ret;
   }
   
-  void
-  meta_data_server::remove_table(const std::string & schema,
-                                 const std::string & name)
+  meta_data_store::sptr
+  meta_data_server::get_store(const interface::pb::UserManagerReply::GetSourceSysToken & srcsys_token)
   {
-    lock l(tables_mtx_);
-    table_map::key_type key(schema, name);
-    tables_.erase(key);
-    ctx_->increase_stat("Table metadata removed");
-  }
-  
-  bool
-  meta_data_server::has_table(const std::string & schema,
-                              const std::string & name)
-  {
-    lock l(tables_mtx_);
-    table_map::key_type key(schema, name);
-    return (tables_.count(key) > 0);
-  }
-  
-  meta_data_server::table_sptr
-  meta_data_server::get_table(const std::string & schema,
-                              const std::string & name)
-  {
-    lock l(tables_mtx_);
-    table_map::key_type key(schema, name);
-    auto it = tables_.find(key);
-    if( it == tables_.end() )
-      return table_sptr();
-    else
-      return it->second;
-  }
-  
-  bool
-  meta_data_server::has_fields(const std::string & schema,
-                               const std::string & name)
-  {
-    lock l(tables_mtx_);
-    table_map::key_type key(schema, name);
-    auto it = tables_.find(key);
-    if( it == tables_.end() )
-      return false;
-    else if( it->second->fields_size() > 0 )
-      return true;
-    else
-      return false;
+    return get_store(srcsys_token.sourcesystoken());
   }
 
   meta_data_server::~meta_data_server() {}

@@ -59,4 +59,38 @@ namespace virtdb { namespace connector {
     return false;
   }
   
+  bool
+  user_manager_client::get_srcsys_token(const std::string & input_token,
+                                        const std::string & srcsys_name,
+                                        interface::pb::UserManagerReply::GetSourceSysToken & result,
+                                        unsigned long timeout_ms)
+  {
+    bool ret = false;
+    interface::pb::UserManagerRequest req;
+    req.set_type(interface::pb::UserManagerRequest::GET_SOURCESYS_TOKEN);
+    auto * ssreq = req.mutable_getsstok();
+    ssreq->set_loginortabletoken(input_token);
+    ssreq->set_sourcesysname(srcsys_name);
+    
+    interface::pb::UserManagerReply rep;
+
+    auto fun = [&rep](const interface::pb::UserManagerReply & tmp_rep) {
+      rep.MergeFrom(tmp_rep);
+      return true;
+    };
+    
+    bool res = this->send_request(req, fun, timeout_ms);
+    if( !res || rep.has_err() || rep.type() != interface::pb::UserManagerReply::GET_SOURCESYS_TOKEN )
+    {
+      if( rep.has_err() )
+      {
+        LOG_ERROR(V_(rep.err().msg()));
+      }
+      return false;
+    }
+
+    result.CopyFrom(rep.getsstok());
+    return true;
+  }
+  
 }}

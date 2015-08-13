@@ -8,6 +8,8 @@
 
 namespace virtdb { namespace test {
   
+  class UtilFieldHelperTest : public ::testing::Test { };
+  
   class UtilActiveQueueTest : public ::testing::Test
   {
   protected:
