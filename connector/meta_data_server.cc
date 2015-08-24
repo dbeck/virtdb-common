@@ -94,7 +94,6 @@ namespace virtdb { namespace connector {
       qctx->token(tok_reply);
       qctx->credentials(cred_reply);
     }
-    interface::pb::UserManagerReply::GetSourceSysToken srcsys_token;
     if( req.has_usertoken() )
     {
       if( !get_srcsys_token(req.usertoken(), qctx) )
@@ -106,7 +105,9 @@ namespace virtdb { namespace connector {
     {
       LOG_ERROR("no user token in metadata request" << M_(req));
     }
-    
+
+    std::string sstok{qctx->token()->sourcesystoken()};
+
     {
       lock l(watch_mtx_);
       if( on_request_ )
@@ -129,15 +130,15 @@ namespace virtdb { namespace connector {
     
     rep_base_type::rep_item_sptr rep;
     bool is_wildcard = false;
+    
+    auto store = get_store(sstok);
 
     if( req.has_schema() &&
         req.has_name() &&
         req.schema() == ".*" &&
         req.name() == ".*" )
     {
-      auto store = get_store(srcsys_token);
-      if( store )
-        rep = store->get_wildcard_data();
+      rep = store->get_wildcard_data();
       is_wildcard = true;
     }
     
@@ -151,17 +152,21 @@ namespace virtdb { namespace connector {
     else
     {
       rep.reset(new rep_item);
-      
-      meta_data_store::sptr store_ptr;
-      rep = store_ptr->get_tables_regexp(req.schema(),
-                                         req.name(),
-                                         req.withfields());
+      store = get_store(sstok);
+      rep = store->get_tables_regexp(req.schema(),
+                                     req.name(),
+                                     req.withfields());
     }
     
-    if( rep->tables_size() == 0 )
+    if( !rep )
     {
       ctx_->increase_stat("Error gathering metadata");
-      LOG_ERROR("couldn't gather metadata for" << M_(req));
+      LOG_ERROR("couldn't gather metadata for" << V_(store->size()) << M_(req));
+    }
+    else if( rep->tables_size() == 0 )
+    {
+      ctx_->increase_stat("Metadata is empty");
+      LOG_ERROR("couldn't gather metadata for" << V_(store->size()) << M_(req));
     }
     
     handler(rep, false);
@@ -190,8 +195,9 @@ namespace virtdb { namespace connector {
       lock l(stores_mtx_);
       if( meta_stores_.count(srcsys_token) == 0 )
       {
-        ret.reset(new meta_data_store);
+        ret.reset(new meta_data_store{srcsys_token});
         meta_stores_[srcsys_token] = ret;
+        LOG_TRACE("created new meta data store for" << V_(srcsys_token));
       }
       ret = meta_stores_[srcsys_token];
     }

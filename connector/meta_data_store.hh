@@ -18,15 +18,19 @@ namespace virtdb { namespace connector {
     typedef std::map<schema_table, table_sptr>            table_map;
     typedef std::lock_guard<std::mutex>                   lock;
     
+    
+    std::string           name_;
     table_map             tables_;
     meta_sptr             wildcard_cache_;
     mutable std::mutex    tables_mtx_;
     mutable std::mutex    wildcard_mtx_;
-    
+
+    meta_data_store() = delete;
+
   public:
     typedef std::shared_ptr<meta_data_store> sptr;
     
-    meta_data_store();
+    meta_data_store(const std::string & name);
     virtual ~meta_data_store();
     
     void add_table(table_sptr table);

@@ -13,9 +13,13 @@ using namespace virtdb::util;
 
 namespace virtdb { namespace connector {
   
-  meta_data_store::meta_data_store() {}
+  meta_data_store::meta_data_store(const std::string & name)
+  : name_{name}
+  {
+  }
+  
   meta_data_store::~meta_data_store() {}
-   
+  
   void
   meta_data_store::add_table(table_sptr table)
   {
@@ -29,9 +33,11 @@ namespace virtdb { namespace connector {
     {
       THROW_("table name is empty");
     }
+    key.second = table->name();
     
     {
       lock lck(tables_mtx_);
+      LOG_TRACE("updating" << V_(tables_.count(key)) << V_(key.first) << V_(key.second) << V_(table->fields_size()));
       tables_[key] = table;
     }
   }
@@ -99,6 +105,7 @@ namespace virtdb { namespace connector {
       lock lck(tables_mtx_);
       ret = tables_.size();
     }
+    LOG_TRACE(V_(name_) << V_(ret));
     return ret;
   }
    
@@ -119,6 +126,7 @@ namespace virtdb { namespace connector {
     meta_sptr res{new interface::pb::MetaData};
     // TODO: we should refresh this from time to time
     {
+      size_t added = 0;
       lock l(tables_mtx_);
       for( const auto & it : tables_ )
       {
@@ -135,7 +143,10 @@ namespace virtdb { namespace connector {
         
         for( auto const & p : it.second->properties() )
           tmp_tab->add_properties()->MergeFrom(p);
+        
+        ++added;
       }
+      LOG_TRACE(V_(name_) << V_(added) << "tables to result");
     }
     
     {
@@ -145,6 +156,10 @@ namespace virtdb { namespace connector {
         // never cache empty wildcard data
         wildcard_cache_ = res;
       }
+      else
+      {
+        LOG_TRACE(V_(name_) << "not updating wildcard cache with empty metadata");
+      }
     }
   }
   
@@ -153,11 +168,15 @@ namespace virtdb { namespace connector {
                                      const std::string & table_regexp,
                                      bool with_fields)
   {
+    LOG_TRACE(V_(name_) << V_(schema_regexp) << V_(table_regexp) << V_(with_fields));
+
     meta_data_store::meta_sptr rep;
     if( table_regexp.empty() ) return rep;
     
     lock l(tables_mtx_);
     bool match_schema = !schema_regexp.empty();
+
+    LOG_TRACE(V_(name_) << V_(match_schema) << V_(table_regexp) << V_(tables_.size()));
     
     std::regex table_regex{table_regexp, std::regex::extended};
     std::regex schema_regex;
@@ -165,9 +184,11 @@ namespace virtdb { namespace connector {
     if( match_schema )
       schema_regex.assign(schema_regexp, std::regex::extended);
     
+    rep.reset(new interface::pb::MetaData);
+    
     for( const auto & it : tables_ )
     {
-      
+      // LOG_TRACE("matching" << V_(it.second->name()) << V_(table_regexp));
       if( std::regex_match(it.second->name(),
                            table_regex,
                            std::regex_constants::match_any |
@@ -182,6 +203,11 @@ namespace virtdb { namespace connector {
           auto tmp_tab = rep->add_tables();
           if( with_fields )
           {
+            if( !it.second )
+            {
+              LOG_ERROR("missing field info for" << V_(table_regexp) << V_(with_fields));
+              return meta_data_store::meta_sptr();
+            }
             // merge everything
             tmp_tab->MergeFrom(*(it.second));
           }
