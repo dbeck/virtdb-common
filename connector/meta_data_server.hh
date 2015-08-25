@@ -60,6 +60,8 @@ namespace virtdb { namespace connector {
     
     void watch_requests(on_request);
     void remove_watch();
+    
+    server_context::sptr ctx();
   };
   
 }}

@@ -37,7 +37,7 @@ namespace virtdb { namespace connector {
     
     {
       lock lck(tables_mtx_);
-      LOG_TRACE("updating" << V_(tables_.count(key)) << V_(key.first) << V_(key.second) << V_(table->fields_size()));
+      // LOG_TRACE("updating" << V_(tables_.count(key)) << V_(key.first) << V_(key.second) << V_(table->fields_size()));
       tables_[key] = table;
     }
   }

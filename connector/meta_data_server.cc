@@ -211,5 +211,11 @@ namespace virtdb { namespace connector {
   }
 
   meta_data_server::~meta_data_server() {}
+  
+  server_context::sptr
+  meta_data_server::ctx()
+  {
+    return ctx_;
+  }
 }}
 
