@@ -233,4 +233,11 @@ namespace virtdb { namespace connector {
     return rep;
   }
   
+  const std::string &
+  meta_data_store::name() const
+  {
+    return name_;
+  }
+
+  
 }}

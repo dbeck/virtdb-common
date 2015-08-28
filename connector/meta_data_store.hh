@@ -54,6 +54,8 @@ namespace virtdb { namespace connector {
     bool has_fields(const std::string & schema,
                     const std::string & name) const;
     
+    const std::string & name() const;
+    
     size_t size() const;
   };
   
