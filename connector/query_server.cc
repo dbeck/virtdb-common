@@ -135,15 +135,18 @@ namespace virtdb { namespace connector {
       return;
     }
     
+    std::string svc_name{service_name()};
     query_context::sptr qctx{new query_context};
     {
       qctx->query(qsptr);
     
       query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
       query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
+            
+      std::string user_token{qsptr->usertoken()};
       
-      if( !umgr_cli_->get_srcsys_token(qsptr->usertoken(),
-                                       service_name(),
+      if( !umgr_cli_->get_srcsys_token(user_token,
+                                       svc_name,
                                        *tok_reply,
                                        util::DEFAULT_TIMEOUT_MS) )
       {
@@ -151,7 +154,7 @@ namespace virtdb { namespace connector {
         ctx_->increase_stat("User token check failed");
         LOG_ERROR("cannot validate user token" <<
                   V_(ctx_->service_name()) <<
-                  V_(service_name()) <<
+                  V_(svc_name) <<
                   V_(q->queryid()) <<
                   V_(q->table()) <<
                   V_(q->schema()) <<
@@ -163,9 +166,9 @@ namespace virtdb { namespace connector {
         return;
       }
       qctx->token(tok_reply);
-      
+            
       if( !sscred_cli_->get_credential(tok_reply->sourcesystoken(),
-                                       service_name(),
+                                       svc_name,
                                        *cred_reply,
                                        util::DEFAULT_TIMEOUT_MS) )
       {
@@ -173,7 +176,7 @@ namespace virtdb { namespace connector {
         ctx_->increase_stat("Invalid source system token");
         LOG_ERROR("cannot validate source system token" <<
                   V_(ctx_->service_name()) <<
-                  V_(service_name()) <<
+                  V_(svc_name) <<
                   V_(q->queryid()) <<
                   V_(q->table()) <<
                   V_(q->schema()) <<

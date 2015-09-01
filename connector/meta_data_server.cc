@@ -95,6 +95,7 @@ namespace virtdb { namespace connector {
       qctx->token(tok_reply);
       qctx->credentials(cred_reply);
     }
+    
     if( req.has_usertoken() )
     {
       std::string svc_name{rep_base_type::service_name()};

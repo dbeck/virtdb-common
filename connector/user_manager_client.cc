@@ -65,12 +65,26 @@ namespace virtdb { namespace connector {
                                         interface::pb::UserManagerReply::GetSourceSysToken & result,
                                         unsigned long timeout_ms)
   {
-    bool ret = false;
+    if( input_token.empty() )
+    {
+      LOG_ERROR("empty input token");
+      return false;
+    }
+    
+    if( srcsys_name.empty() )
+    {
+      LOG_ERROR("empty srcsys_name");
+      return false;
+    }
+    
+    std::string itok{input_token};
+    std::string sname{srcsys_name};
+        
     interface::pb::UserManagerRequest req;
     req.set_type(interface::pb::UserManagerRequest::GET_SOURCESYS_TOKEN);
-    auto * ssreq = req.mutable_getsstok();
-    ssreq->set_loginortabletoken(input_token);
-    ssreq->set_sourcesysname(srcsys_name);
+    auto * ssreq = req.mutable_getsstok();        
+    ssreq->set_loginortabletoken(itok);
+    ssreq->set_sourcesysname(sname);
     
     interface::pb::UserManagerReply rep;
 
@@ -84,7 +98,7 @@ namespace virtdb { namespace connector {
     {
       if( rep.has_err() )
       {
-        LOG_ERROR(V_(rep.err().msg()) << V_(srcsys_name));
+        LOG_ERROR(V_(rep.err().msg()) << V_(sname));
       }
       return false;
     }

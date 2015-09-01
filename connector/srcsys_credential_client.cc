@@ -70,13 +70,28 @@ namespace virtdb { namespace connector {
   {
     using namespace virtdb::interface;
     
+    if( srcsys_token.empty() )
+    {
+      LOG_ERROR("empty srcsys token");
+      return false;
+    }
+    
+    if( srcsys_name.empty() )
+    {
+      LOG_ERROR("empty srcsys_name");
+      return false;
+    }
+    
+    std::string itok{srcsys_token};
+    std::string sname{srcsys_name};
+        
     pb::SourceSystemCredentialRequest req;
     
     {
       req.set_type(pb::SourceSystemCredentialRequest::GET_CREDENTIAL);
       auto * inner = req.mutable_getcred();
-      inner->set_sourcesysname(srcsys_name);
-      inner->set_sourcesystoken(srcsys_token);
+      inner->set_sourcesysname(sname);
+      inner->set_sourcesystoken(itok);
     }
     
     pb::SourceSystemCredentialReply rep;
@@ -96,7 +111,7 @@ namespace virtdb { namespace connector {
     
     if( rep.has_err() )
     {
-      LOG_ERROR("failed to get source system credential" << V_(srcsys_name) << V_(rep.err().msg()));
+      LOG_ERROR("failed to get source system credential" << V_(sname) << V_(rep.err().msg()));
     }
     
     return false;
