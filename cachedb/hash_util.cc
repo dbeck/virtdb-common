@@ -39,9 +39,15 @@ namespace virtdb { namespace cachedb {
                        in.schema().size()) != XXH_OK ) throw 's';
       
       if( XXH64_update(&base_state,
-                         in.table().c_str(),
-                         in.table().size()) != XXH_OK ) throw 'x';
-      
+                       in.table().c_str(),
+                       in.table().size()) != XXH_OK ) throw 'x';
+                       
+      // add token if present  
+      if( in.has_usertoken() &&
+          XXH64_update(&base_state,
+                       in.usertoken().c_str(),
+                       in.usertoken().size()) != XXH_OK ) throw 'u';
+
       // add flter data
       if( in.filter_size() > 0 )
       {
@@ -67,7 +73,7 @@ namespace virtdb { namespace cachedb {
                          &limit,
                          sizeof(limit)) != XXH_OK ) throw 'l';
       }
-      
+            
       XXH64_state_t tab_state = base_state;
       
       for( auto const & nm : in.fields() )
