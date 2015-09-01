@@ -135,7 +135,6 @@ namespace virtdb { namespace connector {
       return;
     }
     
-    // TODO : query context
     query_context::sptr qctx{new query_context};
     {
       qctx->query(qsptr);
@@ -144,7 +143,7 @@ namespace virtdb { namespace connector {
       query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
       
       if( !umgr_cli_->get_srcsys_token(qsptr->usertoken(),
-                                       ctx_->service_name(),
+                                       service_name(),
                                        *tok_reply,
                                        util::DEFAULT_TIMEOUT_MS) )
       {
@@ -152,6 +151,7 @@ namespace virtdb { namespace connector {
         ctx_->increase_stat("User token check failed");
         LOG_ERROR("cannot validate user token" <<
                   V_(ctx_->service_name()) <<
+                  V_(service_name()) <<
                   V_(q->queryid()) <<
                   V_(q->table()) <<
                   V_(q->schema()) <<
@@ -165,7 +165,7 @@ namespace virtdb { namespace connector {
       qctx->token(tok_reply);
       
       if( !sscred_cli_->get_credential(tok_reply->sourcesystoken(),
-                                       ctx_->service_name(),
+                                       service_name(),
                                        *cred_reply,
                                        util::DEFAULT_TIMEOUT_MS) )
       {
@@ -173,6 +173,7 @@ namespace virtdb { namespace connector {
         ctx_->increase_stat("Invalid source system token");
         LOG_ERROR("cannot validate source system token" <<
                   V_(ctx_->service_name()) <<
+                  V_(service_name()) <<
                   V_(q->queryid()) <<
                   V_(q->table()) <<
                   V_(q->schema()) <<
@@ -185,8 +186,7 @@ namespace virtdb { namespace connector {
       }
       
       qctx->credentials(cred_reply);
-    }
-    
+    }    
     
     ctx_->increase_stat("Valid query");
     ctx_->increase_stat("Query field count", qsptr->fields_size());

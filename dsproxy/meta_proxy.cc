@@ -38,8 +38,10 @@ namespace virtdb { namespace dsproxy {
     server_ctx_->increase_stat("Connect to metadata server");
     {
       std::unique_lock<std::mutex> l(mtx_);
+      client_ctx_->name(server);
       client_sptr_.reset(new connector::meta_data_client(client_ctx_,
-                                                         *ep_client_, server));
+                                                         *ep_client_,
+                                                         server));
     }
     bool ret = client_sptr_->wait_valid(util::SHORT_TIMEOUT_MS);
     if( ret )
@@ -85,9 +87,20 @@ namespace virtdb { namespace dsproxy {
     server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli},
     ep_client_{&(cfg_clnt.get_endpoint_client())}
   {
+    // make sure we return the client name as the server name for the sake of proxying
+    server_.meta_data_server::rep_base_type::override_service_name( [this](connector::server_context::sptr){ return client_ctx_->name(); } );
+    server_.meta_data_server::pub_base_type::override_service_name( [this](connector::server_context::sptr){ return client_ctx_->name(); } );
+    
     server_.watch_requests([&](const interface::pb::MetaDataRequest & req,
                                connector::query_context::sptr qctx)
     {
+      LOG_SCOPED("request arrived" <<
+                 V_(server_.meta_data_server::rep_base_type::name()) <<
+                 V_(server_.meta_data_server::rep_base_type::service_name()) <<
+                 V_(req.schema()) <<
+                 V_(req.name())
+                 );
+      
       server_ctx_->increase_stat("Metadata proxy request");
       
       std::string sstok;
@@ -114,6 +127,7 @@ namespace virtdb { namespace dsproxy {
         if( store->has_fields(schema, table) )
         {
           server_ctx_->increase_stat("Returning cached table metadata");
+          LOG_TRACE("already have" << V_(schema) << V_(table));
           return;
         }
       }
@@ -123,6 +137,7 @@ namespace virtdb { namespace dsproxy {
         if( store->has_table(schema, table) )
         {
           server_ctx_->increase_stat("Returning cached metadata list");
+          LOG_TRACE("returning cached wildcard data" << V_(schema) << V_(table));
           return;
         }
       }
@@ -151,6 +166,14 @@ namespace virtdb { namespace dsproxy {
                   " timed out in" <<
                   V_(util::SHORT_TIMEOUT_MS));
         return;
+      }
+      else
+      {
+        LOG_TRACE("have valid metadata client" <<
+                  V_(server_.meta_data_server::rep_base_type::name()) <<
+                  V_(server_.meta_data_server::rep_base_type::service_name()) <<
+                  V_(schema) <<
+                  V_(table));
       }
       
       size_t timeout_ms = 60000;
@@ -186,7 +209,15 @@ namespace virtdb { namespace dsproxy {
         return true;
       }, timeout_ms);
       
-      if( !send_res )
+      if( send_res )
+      {
+        LOG_TRACE("successfully forwarded metadat request" <<
+                  V_(server_.meta_data_server::rep_base_type::name()) <<
+                  V_(server_.meta_data_server::rep_base_type::service_name()) <<
+                  V_(schema) <<
+                  V_(table));
+      }
+      else
       {
         server_ctx_->increase_stat("Failed to forward metadata request");
         LOG_ERROR("failed to forward meta-data request to" <<

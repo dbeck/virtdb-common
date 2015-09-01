@@ -84,7 +84,7 @@ namespace virtdb { namespace connector {
     {
       if( rep.has_err() )
       {
-        LOG_ERROR(V_(rep.err().msg()));
+        LOG_ERROR(V_(rep.err().msg()) << V_(srcsys_name));
       }
       return false;
     }

@@ -53,17 +53,18 @@ namespace virtdb { namespace connector {
   
   bool
   meta_data_server::get_srcsys_token(const std::string & input_token,
+                                     const std::string & service_name,
                                      query_context::sptr qctx)
   {
     if( !user_mgr_cli_->wait_valid(100) )
     {
-      LOG_ERROR("user manager client is not valid" << V_(ctx_->service_name()));
+      LOG_ERROR("user manager client is not valid" << V_(service_name));
       return false;
     }
     
     // TODO : let's cache this later ...
     if( !user_mgr_cli_->get_srcsys_token(input_token,
-                                         ctx_->service_name(),
+                                         service_name,
                                          *(qctx->token()),
                                          util::DEFAULT_TIMEOUT_MS) )
     {
@@ -71,7 +72,7 @@ namespace virtdb { namespace connector {
     }
     
     return sscred_cli_->get_credential(qctx->token()->sourcesystoken(),
-                                       ctx_->service_name(),
+                                       service_name,
                                        *(qctx->credentials()),
                                        util::DEFAULT_TIMEOUT_MS);
   }
@@ -96,7 +97,11 @@ namespace virtdb { namespace connector {
     }
     if( req.has_usertoken() )
     {
-      if( !get_srcsys_token(req.usertoken(), qctx) )
+      std::string svc_name{rep_base_type::service_name()};
+      LOG_TRACE("requesting source system token for" << V_(svc_name));
+      if( !get_srcsys_token(req.usertoken(),
+                            svc_name,
+                            qctx) )
       {
         LOG_ERROR("cannot gather source system token for" << M_(req));
       }

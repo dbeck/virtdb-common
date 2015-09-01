@@ -35,6 +35,7 @@ namespace virtdb { namespace dsproxy {
 
     {
       std::unique_lock<std::mutex> l(mtx_);
+      client_ctx_->name(server);
       client_sptr_.reset(new connector::query_client(client_ctx_,
                                                      *ep_client_, server));
     }
@@ -452,6 +453,8 @@ namespace virtdb { namespace dsproxy {
     server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli},
     ep_client_(&(cfg_clnt.get_endpoint_client()))
   {
+    // make sure we return the client name as the server name for the sake of proxying
+    server_.override_service_name( [this](connector::server_context::sptr){ return client_ctx_->name(); } );    
     server_.watch("", [&](const std::string & provider_name,
                           connector::query_server::query_sptr q,
                           connector::query_context::sptr qctx) {
@@ -461,6 +464,8 @@ namespace virtdb { namespace dsproxy {
         segment_id = q->segmentid();
       
       LOG_TRACE("query arrived" <<
+               V_(server_.name()) <<
+               V_(server_.service_name()) <<        
                V_(q->queryid()) <<
                V_(q->table()) <<
                V_(q->fields_size()) <<

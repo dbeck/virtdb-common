@@ -20,12 +20,11 @@ namespace virtdb { namespace connector {
   {
   public:
     typedef std::function<void(const interface::pb::MetaDataRequest &,
-                               query_context::sptr qctx)>  on_request;
-    
-  private:
+                               query_context::sptr qctx)>  on_request;    
     typedef rep_server<interface::pb::MetaDataRequest,
                        interface::pb::MetaData>            rep_base_type;
     typedef pub_server<interface::pb::MetaData>            pub_base_type;
+  private:
     typedef std::map<std::string, meta_data_store::sptr>   meta_store_map;
     typedef std::lock_guard<std::mutex>                    lock;
     
@@ -46,6 +45,7 @@ namespace virtdb { namespace connector {
                          rep_base_type::send_rep_handler handler);
     
     bool get_srcsys_token(const std::string & input_token,
+                          const std::string & service_name,
                           query_context::sptr qctx);
         
   public:
