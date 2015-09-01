@@ -40,6 +40,7 @@ Debug/
 # xcode and Mac
 ._*.hh
 ._*.cc
+._*.gyp
 npm-debug.log
 *A\ Document\ Being\ Saved*
 DS_Store
