@@ -23,7 +23,7 @@ namespace virtdb { namespace connector {
   
   bool
   srcsys_credential_client::set_template(const std::string & src_system,
-                                         const name_type_map & name_types)
+                                         const name_type_vector & name_types)
   {
     interface::pb::SourceSystemCredentialRequest req;
     {

@@ -158,7 +158,7 @@ namespace virtdb { namespace connector {
         if( !stream.ReadVarint64(&size) ) break;
         if( size == 0 ) break;
         pb::Config cfg;
-        if( cfg.ParseFromCodedStream(&stream) )
+        if( cfg.ParsePartialFromCodedStream(&stream) )
         {
           //
           lock l(mtx_);
@@ -178,18 +178,18 @@ namespace virtdb { namespace connector {
       google::protobuf::io::OstreamOutputStream fs(&of);
       google::protobuf::io::CodedOutputStream stream(&fs);
       
-      // eps.SerializeToOstream(&of);
       lock l(mtx_);
       for( auto const & cfg : configs_ )
       {
-        if( cfg.second.name() != rep_base_type::name() )
-        {
-          int bs = cfg.second.ByteSize();
-          if( bs <= 0 ) continue;
-          
-          stream.WriteVarint64((uint64_t)bs);
-          cfg.second.SerializeToCodedStream(&stream);
-        }
+        pb::Config cfgsvd{cfg.second};
+        if( cfgsvd.has_name() == false )
+          cfgsvd.set_name(cfg.first);
+        
+        int bs = cfgsvd.ByteSize();
+        if( bs <= 0 ) continue;
+        
+        stream.WriteVarint64((uint64_t)bs);
+        cfgsvd.SerializePartialToCodedStream(&stream);
       }
     }
   }

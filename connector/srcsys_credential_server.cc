@@ -247,7 +247,7 @@ namespace virtdb { namespace connector {
                 if( size != 0 )
                 {
                   cred_sptr cptr{new interface::pb::CredentialValues};
-                  if( cptr->ParseFromCodedStream(&stream) )
+                  if( cptr->ParsePartialFromCodedStream(&stream) )
                   {
                     lock l(mtx_);
                     credentials_[std::make_pair(name,token)] = cptr;
@@ -273,7 +273,7 @@ namespace virtdb { namespace connector {
                 if( size != 0 )
                 {
                   tmpl_sptr tmptr{new interface::pb::SourceSystemCredentialReply::GetTemplate};
-                  if( tmptr->ParseFromCodedStream(&stream) )
+                  if( tmptr->ParsePartialFromCodedStream(&stream) )
                   {
                     lock l(mtx_);
                     templates_[name] = tmptr;
@@ -315,7 +315,7 @@ namespace virtdb { namespace connector {
         if( bs <= 0 ) continue;
           
         stream.WriteVarint64((uint64_t)bs);
-        crd.second->SerializeToCodedStream(&stream);
+        crd.second->SerializePartialToCodedStream(&stream);
       }
       
       // templates_
@@ -328,7 +328,7 @@ namespace virtdb { namespace connector {
         if( bs <= 0 ) continue;
           
         stream.WriteVarint64((uint64_t)bs);
-        tmpl.second->SerializeToCodedStream(&stream);
+        tmpl.second->SerializePartialToCodedStream(&stream);
       }
     } 
   } 

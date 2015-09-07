@@ -343,7 +343,7 @@ namespace virtdb { namespace connector {
         if( !stream.ReadVarint64(&size) ) break;
         if( size == 0 ) break;
         cert_sptr cptr{new interface::pb::Certificate};
-        if( cptr->ParseFromCodedStream(&stream) )
+        if( cptr->ParsePartialFromCodedStream(&stream) )
         {
           lock l(mtx_);
           name_key nk{cptr->componentname(), cptr->publickey()};
@@ -374,7 +374,7 @@ namespace virtdb { namespace connector {
         if( bs <= 0 ) continue;
           
         stream.WriteVarint64((uint64_t)bs);
-        crt.second->SerializeToCodedStream(&stream);
+        crt.second->SerializePartialToCodedStream(&stream);
       }
     }    
   }  
