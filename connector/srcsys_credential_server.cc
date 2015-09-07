@@ -4,6 +4,9 @@
 #endif //RELEASE
 
 #include "srcsys_credential_server.hh"
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <fstream>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -207,5 +210,127 @@ namespace virtdb { namespace connector {
   
   srcsys_credential_server::~srcsys_credential_server()
   {
-  }  
+  }
+    
+  void
+  srcsys_credential_server::reload_from(const std::string & path)
+  {
+    std::string inpath{path + "/" + rep_base_type::ep_hash() + "-" + "certstore.data"};
+    std::ifstream ifs{inpath};
+    if( ifs.good() )
+    {
+      google::protobuf::io::IstreamInputStream fs(&ifs);
+      google::protobuf::io::CodedInputStream stream(&fs);
+      
+      auto read_string = [&](std::string & str) {
+        uint64_t sz = 0;
+        if( !stream.ReadVarint64(&sz) ) return false;
+        if( !stream.ReadString(&str, sz) ) return false;
+        return true;
+      };
+      
+      while( true )
+      {
+        // credentials_
+        {
+          uint64_t count = 0;
+          if( !stream.ReadVarint64(&count) ) break;
+          if( count != 0 )
+          {
+            for( uint64_t i=0; i<count; ++i )
+            {
+              std::string name, token;
+              if( read_string(name) && read_string(token) )
+              {
+                uint64_t size = 0;
+                if( !stream.ReadVarint64(&size) ) break;
+                if( size != 0 )
+                {
+                  cred_sptr cptr{new interface::pb::CredentialValues};
+                  if( cptr->ParseFromCodedStream(&stream) )
+                  {
+                    lock l(mtx_);
+                    credentials_[std::make_pair(name,token)] = cptr;
+                  }                  
+                }
+              }                        
+            }
+          }
+        }
+        // templates_
+        {
+          uint64_t count = 0;
+          if( !stream.ReadVarint64(&count) ) break;
+          if( count != 0 )
+          {
+            for( uint64_t i=0; i<count; ++i )
+            {
+              std::string name;
+              if( read_string(name) )
+              {
+                uint64_t size = 0;
+                if( !stream.ReadVarint64(&size) ) break;
+                if( size != 0 )
+                {
+                  tmpl_sptr tmptr{new interface::pb::SourceSystemCredentialReply::GetTemplate};
+                  if( tmptr->ParseFromCodedStream(&stream) )
+                  {
+                    lock l(mtx_);
+                    templates_[name] = tmptr;
+                  }                  
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  void
+  srcsys_credential_server::save_to(const std::string & path)
+  {
+    std::string outpath{path + "/" + rep_base_type::ep_hash() + "-" + "srcsyscred.data"};
+    std::ofstream of{outpath};
+    if( of.good() )
+    {
+      google::protobuf::io::OstreamOutputStream fs(&of);
+      google::protobuf::io::CodedOutputStream stream(&fs);
+      
+      auto write_string = [&](const std::string & str) {
+        stream.WriteVarint64((uint64_t)str.size());
+        stream.WriteString(str);
+      };
+      
+      lock l(mtx_);
+      
+      // credentials_
+      stream.WriteVarint64((uint64_t)credentials_.size());
+      for( auto const & crd : credentials_ )
+      {
+        write_string(crd.first.first); // name
+        write_string(crd.first.second); // token
+        
+        int bs = crd.second->ByteSize();
+        if( bs <= 0 ) continue;
+          
+        stream.WriteVarint64((uint64_t)bs);
+        crd.second->SerializeToCodedStream(&stream);
+      }
+      
+      // templates_
+      stream.WriteVarint64((uint64_t)templates_.size());
+      for( auto const & tmpl : templates_ )
+      {
+        write_string(tmpl.first); // name
+        
+        int bs = tmpl.second->ByteSize();
+        if( bs <= 0 ) continue;
+          
+        stream.WriteVarint64((uint64_t)bs);
+        tmpl.second->SerializeToCodedStream(&stream);
+      }
+    } 
+  } 
+  
 }}

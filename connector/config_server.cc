@@ -92,7 +92,7 @@ namespace virtdb { namespace connector {
           hashes_[request.name()] = hash;
       }
       
-      LOG_INFO("publishing config" << V_(subscription) << V_(rep->name()) << V_(hash) << V_(suppress));
+      LOG_TRACE("publishing config" << V_(subscription) << V_(rep->name()) << V_(hash) << V_(suppress));
       if( !suppress )
       {
         publish(subscription,rep);

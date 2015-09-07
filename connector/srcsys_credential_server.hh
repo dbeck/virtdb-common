@@ -54,5 +54,8 @@ namespace virtdb { namespace connector {
                              config_client & cfg_client);
     virtual ~srcsys_credential_server();
     
+    virtual void reload_from(const std::string & path);
+    virtual void save_to(const std::string & path);
+    
   };
 }}

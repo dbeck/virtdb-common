@@ -4,8 +4,11 @@
 #endif //RELEASE
 
 #include "cert_store_server.hh"
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <logger.hh>
 #include <ctime>
+#include <fstream>
 
 using namespace virtdb::interface;
 using namespace virtdb::util;
@@ -258,7 +261,7 @@ namespace virtdb { namespace connector {
             if( !it->second->has_authcode() )
             {
               authcode = it->second->authcode();
-              auto cit = auth_codes_.find(it->second->authcode());
+              auto cit = auth_codes_.find(authcode);
               if( cit == auth_codes_.end() ) { LOG_ERROR("AuthCode for" << M_(*it->second) << "not found in internal map"); }
               else
               {
@@ -323,5 +326,57 @@ namespace virtdb { namespace connector {
   cert_store_server::~cert_store_server()
   {
   }
+    
+  void
+  cert_store_server::reload_from(const std::string & path)
+  {
+    std::string inpath{path + "/" + rep_base_type::ep_hash() + "-" + "certstore.data"};
+    std::ifstream ifs{inpath};
+    if( ifs.good() )
+    {
+      google::protobuf::io::IstreamInputStream fs(&ifs);
+      google::protobuf::io::CodedInputStream stream(&fs);
+      
+      while( true )
+      {
+        uint64_t size = 0;
+        if( !stream.ReadVarint64(&size) ) break;
+        if( size == 0 ) break;
+        cert_sptr cptr{new interface::pb::Certificate};
+        if( cptr->ParseFromCodedStream(&stream) )
+        {
+          lock l(mtx_);
+          name_key nk{cptr->componentname(), cptr->publickey()};
+          certs_[nk] = cptr;
+          if( cptr->has_authcode() && !cptr->approved() )
+          {
+            auth_codes_[cptr->authcode()] = nk;
+          }
+        }
+      }
+    }
+  }
+  
+  void
+  cert_store_server::save_to(const std::string & path)
+  {
+    std::string outpath{path + "/" + rep_base_type::ep_hash() + "-" + "certstore.data"};
+    std::ofstream of{outpath};
+    if( of.good() )
+    {
+      google::protobuf::io::OstreamOutputStream fs(&of);
+      google::protobuf::io::CodedOutputStream stream(&fs);
+      
+      lock l(mtx_);
+      for( auto const & crt : certs_ )
+      {
+        int bs = crt.second->ByteSize();
+        if( bs <= 0 ) continue;
+          
+        stream.WriteVarint64((uint64_t)bs);
+        crt.second->SerializeToCodedStream(&stream);
+      }
+    }    
+  }  
   
 }}

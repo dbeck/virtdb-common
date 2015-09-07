@@ -62,11 +62,13 @@ namespace virtdb { namespace connector {
     
     virtual
     bool allow_authcode_listing() const;
-                                   
-    
+        
   public:
     cert_store_server(server_context::sptr ctx,
                       config_client & cfg_client);
     virtual ~cert_store_server();    
+    
+    virtual void reload_from(const std::string & path);
+    virtual void save_to(const std::string & path);
   };
 }}
