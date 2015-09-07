@@ -215,7 +215,7 @@ namespace virtdb { namespace connector {
   void
   srcsys_credential_server::reload_from(const std::string & path)
   {
-    std::string inpath{path + "/" + rep_base_type::ep_hash() + "-" + "certstore.data"};
+    std::string inpath{path + "/" + rep_base_type::ep_hash() + "-" + "srcsyscred.data"};
     std::ifstream ifs{inpath};
     if( ifs.good() )
     {
@@ -227,6 +227,12 @@ namespace virtdb { namespace connector {
         if( !stream.ReadVarint64(&sz) ) return false;
         if( !stream.ReadString(&str, sz) ) return false;
         return true;
+      };
+      
+      auto read_sep = [&]() {
+        unsigned char x[4];
+        stream.ReadRaw(x,4);
+        LOG_TRACE(V_((int)x[0]) << V_((int)x[1]) << V_((int)x[2]) << V_((int)x[3]));
       };
       
       while( true )
@@ -247,11 +253,14 @@ namespace virtdb { namespace connector {
                 if( size != 0 )
                 {
                   cred_sptr cptr{new interface::pb::CredentialValues};
-                  if( cptr->ParsePartialFromCodedStream(&stream) )
+                  auto limit = stream.PushLimit(size);
+                  if( cptr->ParseFromCodedStream(&stream) )
                   {
                     lock l(mtx_);
                     credentials_[std::make_pair(name,token)] = cptr;
-                  }                  
+                  }
+                  stream.PopLimit(limit);
+                  read_sep();                
                 }
               }                        
             }
@@ -273,11 +282,14 @@ namespace virtdb { namespace connector {
                 if( size != 0 )
                 {
                   tmpl_sptr tmptr{new interface::pb::SourceSystemCredentialReply::GetTemplate};
-                  if( tmptr->ParsePartialFromCodedStream(&stream) )
+                  auto limit = stream.PushLimit(size);
+                  if( tmptr->ParseFromCodedStream(&stream) )
                   {
                     lock l(mtx_);
                     templates_[name] = tmptr;
-                  }                  
+                  }
+                  stream.PopLimit(limit);
+                  read_sep();                
                 }
               }
             }
@@ -302,6 +314,11 @@ namespace virtdb { namespace connector {
         stream.WriteString(str);
       };
       
+      auto write_sep = [&]() {
+        unsigned char x[4] = { 0xff, 0, 0xff, 0 };
+        stream.WriteRaw(x,4);
+      };
+      
       lock l(mtx_);
       
       // credentials_
@@ -315,7 +332,8 @@ namespace virtdb { namespace connector {
         if( bs <= 0 ) continue;
           
         stream.WriteVarint64((uint64_t)bs);
-        crd.second->SerializePartialToCodedStream(&stream);
+        crd.second->SerializeToCodedStream(&stream);
+        write_sep();
       }
       
       // templates_
@@ -328,7 +346,8 @@ namespace virtdb { namespace connector {
         if( bs <= 0 ) continue;
           
         stream.WriteVarint64((uint64_t)bs);
-        tmpl.second->SerializePartialToCodedStream(&stream);
+        tmpl.second->SerializeToCodedStream(&stream);
+        write_sep();
       }
     } 
   } 

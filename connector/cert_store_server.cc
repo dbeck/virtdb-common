@@ -337,13 +337,20 @@ namespace virtdb { namespace connector {
       google::protobuf::io::IstreamInputStream fs(&ifs);
       google::protobuf::io::CodedInputStream stream(&fs);
       
+      auto read_sep = [&]() {
+        unsigned char x[4];
+        stream.ReadRaw(x,4);
+        LOG_TRACE(V_((int)x[0]) << V_((int)x[1]) << V_((int)x[2]) << V_((int)x[3]));
+      };
+      
       while( true )
       {
         uint64_t size = 0;
         if( !stream.ReadVarint64(&size) ) break;
         if( size == 0 ) break;
         cert_sptr cptr{new interface::pb::Certificate};
-        if( cptr->ParsePartialFromCodedStream(&stream) )
+        auto limit = stream.PushLimit(size);
+        if( cptr->ParseFromCodedStream(&stream) )
         {
           lock l(mtx_);
           name_key nk{cptr->componentname(), cptr->publickey()};
@@ -353,6 +360,8 @@ namespace virtdb { namespace connector {
             auth_codes_[cptr->authcode()] = nk;
           }
         }
+        stream.PopLimit(limit);
+        read_sep();
       }
     }
   }
@@ -367,6 +376,11 @@ namespace virtdb { namespace connector {
       google::protobuf::io::OstreamOutputStream fs(&of);
       google::protobuf::io::CodedOutputStream stream(&fs);
       
+      auto write_sep = [&]() {
+        unsigned char x[4] = { 0xff, 0, 0xff, 0 };
+        stream.WriteRaw(x,4);
+      };
+      
       lock l(mtx_);
       for( auto const & crt : certs_ )
       {
@@ -374,7 +388,8 @@ namespace virtdb { namespace connector {
         if( bs <= 0 ) continue;
           
         stream.WriteVarint64((uint64_t)bs);
-        crt.second->SerializePartialToCodedStream(&stream);
+        crt.second->SerializeToCodedStream(&stream);
+        write_sep();
       }
     }    
   }  

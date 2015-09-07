@@ -152,18 +152,27 @@ namespace virtdb { namespace connector {
       google::protobuf::io::IstreamInputStream fs(&ifs);
       google::protobuf::io::CodedInputStream stream(&fs);
       
+      auto read_sep = [&]() {
+        unsigned char x[4];
+        stream.ReadRaw(x,4);
+        LOG_TRACE(V_((int)x[0]) << V_((int)x[1]) << V_((int)x[2]) << V_((int)x[3]));
+      };
+      
       while( true )
       {
         uint64_t size = 0;
         if( !stream.ReadVarint64(&size) ) break;
         if( size == 0 ) break;
         pb::Config cfg;
-        if( cfg.ParsePartialFromCodedStream(&stream) )
+        auto limit = stream.PushLimit(size);
+        if( cfg.ParseFromCodedStream(&stream) )
         {
           //
           lock l(mtx_);
           configs_[cfg.name()] = cfg;
         }
+        stream.PopLimit(limit);
+        read_sep();
       }
     }
   }
@@ -178,6 +187,11 @@ namespace virtdb { namespace connector {
       google::protobuf::io::OstreamOutputStream fs(&of);
       google::protobuf::io::CodedOutputStream stream(&fs);
       
+      auto write_sep = [&]() {
+        unsigned char x[4] = { 0xff, 0, 0xff, 0 };
+        stream.WriteRaw(x,4);
+      };
+      
       lock l(mtx_);
       for( auto const & cfg : configs_ )
       {
@@ -186,10 +200,10 @@ namespace virtdb { namespace connector {
           cfgsvd.set_name(cfg.first);
         
         int bs = cfgsvd.ByteSize();
-        if( bs <= 0 ) continue;
-        
+        if( bs <= 0 ) continue;        
         stream.WriteVarint64((uint64_t)bs);
-        cfgsvd.SerializePartialToCodedStream(&stream);
+        cfgsvd.SerializeToCodedStream(&stream);
+        write_sep();
       }
     }
   }
