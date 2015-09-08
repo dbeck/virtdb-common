@@ -67,6 +67,7 @@ namespace virtdb {  namespace engine {
 
     // User Token
     void set_usertoken(const std::string& token);
+    std::string get_usertoken() const;
     
     // Accessing encapsulated object
     virtdb::interface::pb::Query& get_message();

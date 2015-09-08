@@ -296,7 +296,7 @@ namespace virtdb { namespace engine {
       tr->set_loop(2, lp);
       tr->set_action(3, act);
       state_machine_.add_transition(tr);
-      // can go to:
+      // can go to::
       // ST_TIMED_OUT_ (terminate)
       // ST_IN_PROGRESS_ + EV_OK_
       // ST_COMPLETE_ + EV_DONE_
@@ -452,12 +452,25 @@ namespace virtdb { namespace engine {
       case ST_TIMED_OUT_:
         LOG_ERROR("Query timed out");
         return false;
+      
+      case ST_NO_MORE_DATA_:
+      {
+        if( prev_state != ST_COMPLETE_ )
+        {
+          LOG_ERROR("Unexpected state 1" <<
+                    V_(state_machine_.state_name(last_state_)) <<
+                    V_(state_machine_.state_name(prev_state)) );          
+        }
+        return false;
+      }
         
       default:
-        LOG_ERROR("Unexpected state" <<
+      {
+        LOG_ERROR("Unexpected state 2" <<
                   V_(state_machine_.state_name(last_state_)) <<
                   V_(state_machine_.state_name(prev_state)) );
         return false;
+      }
     };
   }
     

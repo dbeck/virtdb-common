@@ -143,6 +143,7 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
     // LOG_TRACE("saving data handler for" << V_((int64_t)node));
     active_queries_[node] =
       handler_sptr(new data_handler(query_data,
+                                    // resend function is: 
                                     [query_data, query_cli](const std::vector<std::string> & cols,
                                                             sequence_id_t seqno)
                                     {
@@ -160,6 +161,8 @@ receiver_thread::add_query(connector::query_client::sptr query_cli,
                                       new_query.set_queryid(query_data.id());
                                       new_query.set_table(query_data.table_name());
                                       new_query.set_segmentid(query_data.segment_id());
+                                      new_query.set_usertoken(query_data.get_usertoken());
+                                      
                                       for( auto const & colname : cols )
                                       {
                                         new_query.add_fields(colname);
