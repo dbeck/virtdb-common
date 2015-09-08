@@ -108,10 +108,13 @@ namespace virtdb { namespace engine {
                   size_t col_id,
                   column_sptr data)
   {
+    LOG_TRACE(V_(block_id) << V_(col_id) << V_(data->seqno()) << V_(data->endofdata()));
+    
     item::sptr i{new item};
     i->col_       = data;
     i->block_id_  = block_id;
     i->col_id_    = col_id;
+    
     {
       lock l(mtx_);
       ++n_received_;

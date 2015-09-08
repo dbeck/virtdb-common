@@ -13,7 +13,8 @@
 
 namespace virtdb { namespace engine {
 
-  data_handler::data_handler(const query& query_data, query::resend_function_t ask_for_resend)
+  data_handler::data_handler(const query& query_data,
+                             query::resend_function_t ask_for_resend)
   : query_id_{query_data.id()},
     table_name_{query_data.table_name()},
     resend_{ask_for_resend}
@@ -69,6 +70,14 @@ namespace virtdb { namespace engine {
       
       return;
     }
+    
+    LOG_TRACE(V_(name) <<
+              V_(query_id()) <<
+              V_(table_name()) <<
+              V_(new_data->seqno()) <<
+              V_(it->second) <<
+              V_(new_data->seqno()) <<
+              V_(new_data->endofdata()));
     
     collector_->push(new_data->seqno(),
                      it->second,
