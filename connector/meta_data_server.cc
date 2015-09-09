@@ -104,12 +104,18 @@ namespace virtdb { namespace connector {
                             svc_name,
                             qctx) )
       {
-        LOG_ERROR("cannot gather source system token for" << M_(req));
+        LOG_ERROR("cannot gather source system token for" <<
+                  V_(req.name()) <<
+                  V_(req.schema()) <<
+                  V_(req.withfields()));
       }
     }
     else
     {
-      LOG_ERROR("no user token in metadata request" << M_(req));
+      LOG_ERROR("no user token in metadata request" <<
+                V_(req.name()) <<
+                V_(req.schema()) <<
+                V_(req.withfields()));
     }
 
     std::string sstok{qctx->token()->sourcesystoken()};
@@ -167,12 +173,20 @@ namespace virtdb { namespace connector {
     if( !rep )
     {
       ctx_->increase_stat("Error gathering metadata");
-      LOG_ERROR("couldn't gather metadata for" << V_(store->size()) << M_(req));
+      LOG_ERROR("couldn't gather metadata for" <<
+                V_(store->size()) <<
+                V_(req.name()) <<
+                V_(req.schema()) <<
+                V_(req.withfields()));
     }
     else if( rep->tables_size() == 0 )
     {
       ctx_->increase_stat("Metadata is empty");
-      LOG_ERROR("couldn't gather metadata for" << V_(store->size()) << M_(req));
+      LOG_ERROR("couldn't gather metadata for" <<
+                V_(store->size()) <<
+                V_(req.name()) <<
+                V_(req.schema()) <<
+                V_(req.withfields()));
     }
     
     handler(rep, false);

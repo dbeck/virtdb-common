@@ -34,9 +34,9 @@ namespace virtdb { namespace connector {
                            interface::pb::ConnectionType ct) const;
     
     virtual const interface::pb::Connection & conn() const;
-    virtual const std::string & name() const;
-    virtual const std::string & ep_hash() const;
-    virtual const std::string & service_name() const;
+    virtual std::string name() const;
+    virtual std::string ep_hash() const;
+    virtual std::string service_name() const;
     virtual void override_service_name(service_name_cb);
     
     virtual ~server_base() {}

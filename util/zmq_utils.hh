@@ -56,6 +56,7 @@ namespace virtdb { namespace util {
                          bool same_host_once=false);
     void connect(const char * addr);
     void reconnect(const char * addr);
+    void reconnect_all();
     void disconnect_all();
     bool valid() const;
     const endpoint_set & endpoints() const;

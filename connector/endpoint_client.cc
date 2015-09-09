@@ -43,6 +43,13 @@ namespace virtdb { namespace connector {
     return ep_req_socket_.wait_valid(timeout_ms);
   }
   
+  void
+  endpoint_client::reconnect()
+  {
+    ep_sub_socket_.reconnect_all();
+    ep_req_socket_.reconnect_all();
+  }
+  
   endpoint_client::endpoint_client(client_context::sptr ctx,
                                    const std::string & svc_config_ep,
                                    const std::string & service_name)
@@ -89,7 +96,7 @@ namespace virtdb { namespace connector {
               if( conn.type() == pb::ConnectionType::PUB_SUB )
               {
                 if( !ep_sub_socket_.connected_to(conn.address().begin(),
-                                          conn.address().end()) )
+                                                 conn.address().end()) )
                 {
                   for( int ii=0; ii<conn.address_size(); ++ii )
                   {
@@ -185,6 +192,7 @@ namespace virtdb { namespace connector {
       
       {
         int i=0;
+        bool ok = false;
         for( ; i<20; ++i )
         {
           if( !ep_req_socket_.poll_in(DEFAULT_TIMEOUT_MS,
@@ -194,10 +202,11 @@ namespace virtdb { namespace connector {
           }
           else
           {
+            ok = true;
             break;
           }
         }
-        if( i > 19 )
+        if( !ok )
         {
           THROW_("no response for EndpointMessage. giving up");
         }

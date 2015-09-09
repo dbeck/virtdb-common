@@ -456,9 +456,10 @@ namespace virtdb { namespace connector {
     timer_svc_.rethrow_error();
   }
 
-  const std::string &
+  std::string
   endpoint_server::name() const
   {
-    return context_->service_name();
+    std::string ret{context_->service_name()};
+    return ret;
   }
 }}

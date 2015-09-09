@@ -34,7 +34,7 @@ namespace virtdb { namespace connector {
     virtual ~server_context();
     
     // utilities
-    void keep_alive(endpoint_client & ep_cli);
+    bool keep_alive(endpoint_client & ep_cli);
     void increase_stat(const std::string & name,
                        double by_value=1.0);
     
@@ -46,9 +46,9 @@ namespace virtdb { namespace connector {
     void add_endpoint(const interface::pb::EndpointData & ep);
     
     // getters
-    const std::string & service_name() const;
-    const std::string & endpoint_svc_addr() const;
-    const std::string & endpoint_hash() const;
+    std::string service_name() const;
+    std::string endpoint_svc_addr() const;
+    std::string endpoint_hash() const;
     uint64_t ip_discovery_timeout_ms() const;
     const hosts_set & bind_also_to() const;
     const ep_data_set & endpoints() const;

@@ -11,10 +11,11 @@ namespace virtdb { namespace connector {
   {
   }
   
-  const std::string &
+  std::string
   client_context::name() const
   {
-    return name_;
+    std::string ret{name_};
+    return ret;
   }
   
   void

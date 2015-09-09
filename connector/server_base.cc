@@ -84,16 +84,18 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
-  const std::string &
+  std::string
   server_base::ep_hash() const
   {
-    return context_->endpoint_hash();
+    std::string ret{context_->endpoint_hash()};
+    return ret;
   }
     
-  const std::string &
+  std::string
   server_base::name() const
   {
-    return context_->service_name();
+    std::string ret{context_->service_name()};
+    return ret;
   }
   
   void
@@ -102,14 +104,13 @@ namespace virtdb { namespace connector {
     service_name_cb_ = cb;
   }
   
-  const std::string &
+  std::string
   server_base::service_name() const
   {
-    static const std::string unknown{"UNKNOWN"};
+    std::string ret{"UNKNOWN"};
     if( service_name_cb_ )
-      return service_name_cb_(context_);
-    else
-      return unknown;
+      ret = service_name_cb_(context_);
+    return ret;
   }
   
 }}
