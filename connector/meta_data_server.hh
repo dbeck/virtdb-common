@@ -59,7 +59,6 @@ namespace virtdb { namespace connector {
     virtual ~meta_data_server();
     
     meta_data_store::sptr get_store(const std::string & srcsys_token);
-    meta_data_store::sptr get_store(const interface::pb::UserManagerReply::GetSourceSysToken & srcsys_token);
     
     void watch_requests(on_request);
     void remove_watch();

@@ -70,13 +70,31 @@ namespace virtdb { namespace connector {
                                          *(qctx->token()),
                                          util::DEFAULT_TIMEOUT_MS) )
     {
+      LOG_TRACE("get_srcsys_token() failed" <<
+                V_(input_token) <<
+                V_(service_name));
       return false;
     }
     
-    return sscred_cli_->get_credential(qctx->token()->sourcesystoken(),
-                                       service_name,
-                                       *(qctx->credentials()),
-                                       util::DEFAULT_TIMEOUT_MS);
+    if( sscred_cli_->get_credential(qctx->token()->sourcesystoken(),
+                                    service_name,
+                                    *(qctx->credentials()),
+                                    util::DEFAULT_TIMEOUT_MS) )
+    {
+      LOG_TRACE("found credential for" <<
+                V_(input_token) <<
+                V_(service_name) <<
+                V_(qctx->token()->sourcesystoken()));
+      return true;                                  
+    }
+    else
+    {
+      LOG_TRACE("get_credential() failed" <<
+                V_(input_token) <<
+                V_(qctx->token()->sourcesystoken()) <<
+                V_(service_name));
+      return false;
+    }
   }
   
   void
@@ -90,7 +108,10 @@ namespace virtdb { namespace connector {
   meta_data_server::process_replies(const rep_base_type::req_item & req,
                                     rep_base_type::send_rep_handler handler)
   {
+    std::string sstok;
+    std::string svc_name{rep_base_type::service_name()};
     query_context::sptr qctx{new query_context};
+    
     if( !skip_token_check_ )
     {
       query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
@@ -99,14 +120,14 @@ namespace virtdb { namespace connector {
       qctx->credentials(cred_reply);
     }
 
-    std::string sstok{"ANY"};
-
     if( !skip_token_check_ )
-    {    
+    {
       if( req.has_usertoken() )
       {
-        std::string svc_name{rep_base_type::service_name()};
-        LOG_TRACE("requesting source system token for" << V_(svc_name));
+        LOG_TRACE("requesting source system token for" <<
+                  V_(svc_name) <<
+                  V_(req.usertoken()));
+        
         if( !get_srcsys_token(req.usertoken(),
                               svc_name,
                               qctx) )
@@ -116,6 +137,15 @@ namespace virtdb { namespace connector {
                     V_(req.schema()) <<
                     V_(req.withfields()));
         }
+        else
+        {
+          sstok = qctx->token()->sourcesystoken();
+          LOG_TRACE("got:" <<
+                    V_(svc_name) <<
+                    V_(req.usertoken()) <<
+                    V_(qctx->token()->sourcesystoken()) <<
+                    V_(sstok));
+        }
       }
       else
       {
@@ -124,13 +154,16 @@ namespace virtdb { namespace connector {
                   V_(req.schema()) <<
                   V_(req.withfields()));
       }
-      sstok = qctx->token()->sourcesystoken();
     }
-    else if(req.has_usertoken());
+    
+    // fallback to usertoken
+    if(sstok.size() == 0 && req.has_usertoken())
     {
       sstok = req.usertoken();
     }
-
+    
+    LOG_TRACE(V_(skip_token_check_) << V_(svc_name) << V_(sstok) << V_(req.usertoken()));
+    
     {
       lock l(watch_mtx_);
       if( on_request_ )
@@ -235,12 +268,6 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
-  meta_data_store::sptr
-  meta_data_server::get_store(const interface::pb::UserManagerReply::GetSourceSysToken & srcsys_token)
-  {
-    return get_store(srcsys_token.sourcesystoken());
-  }
-
   meta_data_server::~meta_data_server() {}
   
   server_context::sptr

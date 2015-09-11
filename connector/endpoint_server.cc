@@ -332,7 +332,7 @@ namespace virtdb { namespace connector {
           return true;
         }
         
-        LOG_TRACE("sent reply" << M_(reply_data));
+        // LOG_TRACE("sent reply" << M_(reply_data));
         
         // publish new messages one by one, so subscribers can choose what to
         // receive
