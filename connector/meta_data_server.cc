@@ -14,7 +14,8 @@ namespace virtdb { namespace connector {
   meta_data_server::meta_data_server(server_context::sptr ctx,
                                      config_client & cfg_client,
                                      user_manager_client::sptr umgr_cli,
-                                     srcsys_credential_client::sptr sscred_cli)
+                                     srcsys_credential_client::sptr sscred_cli,
+                                     bool skip_token_check)
   : rep_base_type(ctx,
                   cfg_client,
                   std::bind(&meta_data_server::process_replies,
@@ -31,7 +32,8 @@ namespace virtdb { namespace connector {
                   pb::ServiceType::META_DATA),
     ctx_{ctx},
     user_mgr_cli_{umgr_cli},
-    sscred_cli_{sscred_cli}
+    sscred_cli_{sscred_cli},
+    skip_token_check_{skip_token_check}
   {
     if( !ctx || !umgr_cli || !sscred_cli)
     {
@@ -89,36 +91,46 @@ namespace virtdb { namespace connector {
                                     rep_base_type::send_rep_handler handler)
   {
     query_context::sptr qctx{new query_context};
+    if( !skip_token_check_ )
     {
       query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
       query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
       qctx->token(tok_reply);
       qctx->credentials(cred_reply);
     }
-    
-    if( req.has_usertoken() )
-    {
-      std::string svc_name{rep_base_type::service_name()};
-      LOG_TRACE("requesting source system token for" << V_(svc_name));
-      if( !get_srcsys_token(req.usertoken(),
-                            svc_name,
-                            qctx) )
+
+    std::string sstok{"ANY"};
+
+    if( !skip_token_check_ )
+    {    
+      if( req.has_usertoken() )
       {
-        LOG_ERROR("cannot gather source system token for" <<
+        std::string svc_name{rep_base_type::service_name()};
+        LOG_TRACE("requesting source system token for" << V_(svc_name));
+        if( !get_srcsys_token(req.usertoken(),
+                              svc_name,
+                              qctx) )
+        {
+          LOG_ERROR("cannot gather source system token for" <<
+                    V_(req.name()) <<
+                    V_(req.schema()) <<
+                    V_(req.withfields()));
+        }
+      }
+      else
+      {
+        LOG_ERROR("no user token in metadata request" <<
                   V_(req.name()) <<
                   V_(req.schema()) <<
                   V_(req.withfields()));
       }
+      sstok = qctx->token()->sourcesystoken();
     }
-    else
+    else if(req.has_usertoken());
     {
-      LOG_ERROR("no user token in metadata request" <<
-                V_(req.name()) <<
-                V_(req.schema()) <<
-                V_(req.withfields()));
+      qctx->token()->set_sourcesystoken(req.usertoken());
+      sstok = req.usertoken();
     }
-
-    std::string sstok{qctx->token()->sourcesystoken()};
 
     {
       lock l(watch_mtx_);

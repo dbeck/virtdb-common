@@ -9,7 +9,8 @@ namespace virtdb { namespace connector {
   query_server::query_server(server_context::sptr ctx,
                              config_client & cfg_client,
                              user_manager_client::sptr umgr_cli,
-                             srcsys_credential_client::sptr sscred_cli)
+                             srcsys_credential_client::sptr sscred_cli,
+                             bool skip_token_check)
   : pull_base_type(ctx,
                    cfg_client,
                    std::bind(&query_server::handler_function,
@@ -18,7 +19,8 @@ namespace virtdb { namespace connector {
                    pb::ServiceType::QUERY),
     ctx_{ctx},
     umgr_cli_{umgr_cli},
-    sscred_cli_{sscred_cli}
+    sscred_cli_{sscred_cli},
+    skip_token_check_{skip_token_check}
   {
     if( !ctx || !umgr_cli || ! sscred_cli  )
     {
@@ -119,20 +121,23 @@ namespace virtdb { namespace connector {
       return;
     }
     
-    if( !qsptr->has_usertoken() )
+    if( !skip_token_check_ )
     {
-      ctx_->increase_stat("Missing user token");
-      auto q = qsptr;
-      LOG_ERROR("missing user token" <<
-                V_(q->queryid()) <<
-                V_(q->table()) <<
-                V_(q->schema()) <<
-                V_(q->fields_size()) <<
-                V_(q->limit()) <<
-                V_(q->filter_size()) <<
-                V_(q->has_querycontrol()) <<
-                V_(q->has_usertoken()));
-      return;
+      if( !qsptr->has_usertoken() )
+      {
+        ctx_->increase_stat("Missing user token");
+        auto q = qsptr;
+        LOG_ERROR("missing user token" <<
+                  V_(q->queryid()) <<
+                  V_(q->table()) <<
+                  V_(q->schema()) <<
+                  V_(q->fields_size()) <<
+                  V_(q->limit()) <<
+                  V_(q->filter_size()) <<
+                  V_(q->has_querycontrol()) <<
+                  V_(q->has_usertoken()));
+        return;
+      }
     }
     
     std::string svc_name{service_name()};
@@ -140,55 +145,58 @@ namespace virtdb { namespace connector {
     {
       qctx->query(qsptr);
     
-      query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
-      query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
-            
-      std::string user_token{qsptr->usertoken()};
-      
-      if( !umgr_cli_->get_srcsys_token(user_token,
-                                       svc_name,
-                                       *tok_reply,
-                                       util::DEFAULT_TIMEOUT_MS) )
+      if( !skip_token_check_ )
       {
-        auto q = qsptr;
-        ctx_->increase_stat("User token check failed");
-        LOG_ERROR("cannot validate user token" <<
-                  V_(ctx_->service_name()) <<
-                  V_(svc_name) <<
-                  V_(q->queryid()) <<
-                  V_(q->table()) <<
-                  V_(q->schema()) <<
-                  V_(q->fields_size()) <<
-                  V_(q->limit()) <<
-                  V_(q->filter_size()) <<
-                  V_(q->has_querycontrol()) <<
-                  V_(q->has_usertoken()));
-        return;
-      }
-      qctx->token(tok_reply);
+        query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
+        query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
             
-      if( !sscred_cli_->get_credential(tok_reply->sourcesystoken(),
-                                       svc_name,
-                                       *cred_reply,
-                                       util::DEFAULT_TIMEOUT_MS) )
-      {
-        auto q = qsptr;
-        ctx_->increase_stat("Invalid source system token");
-        LOG_ERROR("cannot validate source system token" <<
-                  V_(ctx_->service_name()) <<
-                  V_(svc_name) <<
-                  V_(q->queryid()) <<
-                  V_(q->table()) <<
-                  V_(q->schema()) <<
-                  V_(q->fields_size()) <<
-                  V_(q->limit()) <<
-                  V_(q->filter_size()) <<
-                  V_(q->has_querycontrol()) <<
-                  V_(q->has_usertoken()));
-        return;
-      }
+        std::string user_token{qsptr->usertoken()};
+        
+        if( !umgr_cli_->get_srcsys_token(user_token,
+                                         svc_name,
+                                         *tok_reply,
+                                         util::DEFAULT_TIMEOUT_MS) )
+        {
+          auto q = qsptr;
+          ctx_->increase_stat("User token check failed");
+          LOG_ERROR("cannot validate user token" <<
+                    V_(ctx_->service_name()) <<
+                    V_(svc_name) <<
+                    V_(q->queryid()) <<
+                    V_(q->table()) <<
+                    V_(q->schema()) <<
+                    V_(q->fields_size()) <<
+                    V_(q->limit()) <<
+                    V_(q->filter_size()) <<
+                    V_(q->has_querycontrol()) <<
+                    V_(q->has_usertoken()));
+          return;
+        }
+        qctx->token(tok_reply);
+
+        if( !sscred_cli_->get_credential(tok_reply->sourcesystoken(),
+                                         svc_name,
+                                         *cred_reply,
+                                         util::DEFAULT_TIMEOUT_MS) )
+        {
+          auto q = qsptr;
+          ctx_->increase_stat("Invalid source system token");
+          LOG_ERROR("cannot validate source system token" <<
+                    V_(ctx_->service_name()) <<
+                    V_(svc_name) <<
+                    V_(q->queryid()) <<
+                    V_(q->table()) <<
+                    V_(q->schema()) <<
+                    V_(q->fields_size()) <<
+                    V_(q->limit()) <<
+                    V_(q->filter_size()) <<
+                    V_(q->has_querycontrol()) <<
+                    V_(q->has_usertoken()));
+          return;
+        }
       
-      qctx->credentials(cred_reply);
+        qctx->credentials(cred_reply);
+      }
     }    
     
     ctx_->increase_stat("Valid query");

@@ -35,6 +35,7 @@ namespace virtdb { namespace connector {
     meta_store_map                    meta_stores_;
     user_manager_client::sptr         user_mgr_cli_;
     srcsys_credential_client::sptr    sscred_cli_;
+    bool                              skip_token_check_;
     std::mutex                        stores_mtx_;
     std::mutex                        watch_mtx_;
     
@@ -52,7 +53,9 @@ namespace virtdb { namespace connector {
     meta_data_server(server_context::sptr ctx,
                      config_client & cfg_client,
                      user_manager_client::sptr umgr_cli,
-                     srcsys_credential_client::sptr sscred_cli);
+                     srcsys_credential_client::sptr sscred_cli,
+                     bool skip_token_check=false);
+                     
     virtual ~meta_data_server();
     
     meta_data_store::sptr get_store(const std::string & srcsys_token);

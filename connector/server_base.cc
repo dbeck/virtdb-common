@@ -20,8 +20,7 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
     
   server_base::server_base(server_context::sptr ctx)
-  : context_{ctx},
-    service_name_cb_{[](server_context::sptr c){ return c->service_name(); }}
+  : context_{ctx}
   {
   }
   
@@ -98,19 +97,10 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
-  void
-  server_base::override_service_name(service_name_cb cb)
-  {
-    service_name_cb_ = cb;
-  }
-  
   std::string
   server_base::service_name() const
   {
-    std::string ret{"UNKNOWN"};
-    if( service_name_cb_ )
-      ret = service_name_cb_(context_);
-    return ret;
+    return name();
   }
   
 }}

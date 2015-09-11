@@ -26,6 +26,7 @@ namespace virtdb { namespace connector {
     monitor_map                      table_monitors_;
     user_manager_client::sptr        umgr_cli_;
     srcsys_credential_client::sptr   sscred_cli_;
+    bool                             skip_token_check_;
     mutable std::mutex               monitors_mtx_;
     
     void handler_function(query_sptr);
@@ -34,7 +35,8 @@ namespace virtdb { namespace connector {
     query_server(server_context::sptr ctx,
                  config_client & cfg_client,
                  user_manager_client::sptr umgr_cli,
-                 srcsys_credential_client::sptr sscred_cli);
+                 srcsys_credential_client::sptr sscred_cli,
+                 bool skip_token_check=false);
     
     virtual ~query_server();
     
