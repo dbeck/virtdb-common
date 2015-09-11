@@ -112,7 +112,6 @@ namespace virtdb { namespace connector {
     std::string svc_name{rep_base_type::service_name()};
     query_context::sptr qctx{new query_context};
     
-    if( !skip_token_check_ )
     {
       query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
       query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
@@ -155,11 +154,27 @@ namespace virtdb { namespace connector {
                   V_(req.withfields()));
       }
     }
-    
-    // fallback to usertoken
-    if(sstok.size() == 0 && req.has_usertoken())
+    else if(sstok.size() == 0 && req.has_usertoken())
     {
+      LOG_TRACE("got:" <<
+                V_(svc_name) <<
+                V_(req.usertoken()) <<
+                P_(qctx->token().get()));
+      
+      // fallback to usertoken
+      if( qctx->token() )
+        qctx->token()->set_sourcesystoken(req.usertoken());
+      
       sstok = req.usertoken();
+    }
+    else
+    {
+      LOG_TRACE("unexpected:" <<
+                V_(svc_name) <<
+                V_(skip_token_check_) <<
+                V_(sstok.size()) <<
+                V_(req.has_usertoken()) <<
+                P_(qctx->token().get()));
     }
     
     LOG_TRACE(V_(skip_token_check_) << V_(svc_name) << V_(sstok) << V_(req.usertoken()));
