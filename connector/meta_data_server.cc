@@ -128,7 +128,6 @@ namespace virtdb { namespace connector {
     }
     else if(req.has_usertoken());
     {
-      qctx->token()->set_sourcesystoken(req.usertoken());
       sstok = req.usertoken();
     }
 
