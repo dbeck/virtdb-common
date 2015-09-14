@@ -16,7 +16,7 @@ namespace virtdb { namespace connector {
     
     client_context();
     client_context(const std::string & epname);    
-    const std::string & name() const;
+    std::string name() const;
     void name(const std::string & epname);
     virtual ~client_context();
   };

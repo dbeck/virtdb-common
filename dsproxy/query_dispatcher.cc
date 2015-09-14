@@ -450,11 +450,9 @@ namespace virtdb { namespace dsproxy {
                                      connector::srcsys_credential_client::sptr sscred_cli)
   : server_ctx_{sr_ctx},
     client_ctx_{cl_ctx},
-    server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli},
+    server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli, true},
     ep_client_(&(cfg_clnt.get_endpoint_client()))
   {
-    // make sure we return the client name as the server name for the sake of proxying
-    server_.override_service_name( [this](connector::server_context::sptr){ return client_ctx_->name(); } );    
     server_.watch("", [&](const std::string & provider_name,
                           connector::query_server::query_sptr q,
                           connector::query_context::sptr qctx) {

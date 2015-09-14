@@ -11,13 +11,8 @@ namespace virtdb { namespace connector {
 
   class server_base
   {
-  public:
-    typedef std::function<const std::string & (server_context::sptr)> service_name_cb;
-    
-  private:
     server_context::sptr            context_;
     interface::pb::Connection       conn_;
-    service_name_cb                 service_name_cb_;
     
   protected:
     interface::pb::Connection & conn();
@@ -34,10 +29,9 @@ namespace virtdb { namespace connector {
                            interface::pb::ConnectionType ct) const;
     
     virtual const interface::pb::Connection & conn() const;
-    virtual const std::string & name() const;
-    virtual const std::string & ep_hash() const;
-    virtual const std::string & service_name() const;
-    virtual void override_service_name(service_name_cb);
+    virtual std::string name() const;
+    virtual std::string ep_hash() const;
+    virtual std::string service_name() const;
     
     virtual ~server_base() {}
 

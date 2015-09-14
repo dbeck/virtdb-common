@@ -370,6 +370,17 @@ namespace virtdb { namespace util {
   }
   
   void
+  zmq_socket_wrapper::reconnect_all()
+  {
+    endpoint_set eps{endpoints()};
+    disconnect_all();
+    for( auto ep : eps )
+    {
+      connect(ep.c_str());
+    }
+  }
+  
+  void
   zmq_socket_wrapper::disconnect_all()
   {
     // disconnect from all endpoints if any

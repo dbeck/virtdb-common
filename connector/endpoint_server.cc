@@ -332,7 +332,7 @@ namespace virtdb { namespace connector {
           return true;
         }
         
-        LOG_TRACE("sent reply" << M_(reply_data));
+        // LOG_TRACE("sent reply" << M_(reply_data));
         
         // publish new messages one by one, so subscribers can choose what to
         // receive
@@ -456,9 +456,10 @@ namespace virtdb { namespace connector {
     timer_svc_.rethrow_error();
   }
 
-  const std::string &
+  std::string
   endpoint_server::name() const
   {
-    return context_->service_name();
+    std::string ret{context_->service_name()};
+    return ret;
   }
 }}

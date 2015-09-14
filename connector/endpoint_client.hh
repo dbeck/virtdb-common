@@ -75,6 +75,8 @@ namespace virtdb { namespace connector {
     bool wait_valid_req(uint64_t timeout_ms);
     bool wait_valid_sub(uint64_t timeout_ms);
     
+    void reconnect();
+    
   private:
     endpoint_client() = delete;
     endpoint_client(const endpoint_client &) = delete;

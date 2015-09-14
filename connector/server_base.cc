@@ -20,8 +20,7 @@ using namespace virtdb::util;
 namespace virtdb { namespace connector {
     
   server_base::server_base(server_context::sptr ctx)
-  : context_{ctx},
-    service_name_cb_{[](server_context::sptr c){ return c->service_name(); }}
+  : context_{ctx}
   {
   }
   
@@ -84,32 +83,24 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
-  const std::string &
+  std::string
   server_base::ep_hash() const
   {
-    return context_->endpoint_hash();
+    std::string ret{context_->endpoint_hash()};
+    return ret;
   }
     
-  const std::string &
+  std::string
   server_base::name() const
   {
-    return context_->service_name();
+    std::string ret{context_->service_name()};
+    return ret;
   }
   
-  void
-  server_base::override_service_name(service_name_cb cb)
-  {
-    service_name_cb_ = cb;
-  }
-  
-  const std::string &
+  std::string
   server_base::service_name() const
   {
-    static const std::string unknown{"UNKNOWN"};
-    if( service_name_cb_ )
-      return service_name_cb_(context_);
-    else
-      return unknown;
+    return name();
   }
   
 }}

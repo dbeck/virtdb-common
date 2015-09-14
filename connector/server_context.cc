@@ -50,9 +50,10 @@ namespace virtdb { namespace connector {
   }
   
   // utilities
-  void
+  bool
   server_context::keep_alive(endpoint_client & ep_cli)
   {
+    bool ret = true;
     for( auto it : endpoints_ )
     {
       try
@@ -61,9 +62,11 @@ namespace virtdb { namespace connector {
       }
       catch (const std::exception & e)
       {
+        ret = false;
         LOG_ERROR("caugth" << E_(e));
       }
     }
+    return ret;
   }
   
   void
@@ -78,22 +81,25 @@ namespace virtdb { namespace connector {
   }
   
   // getters
-  const std::string &
+  std::string
   server_context::service_name() const
   {
-    return service_name_;
+    std::string ret{service_name_};
+    return ret;
   }
   
-  const std::string &
+  std::string
   server_context::endpoint_svc_addr() const
   {
-    return endpoint_svc_addr_;
+    std::string ret{endpoint_svc_addr_};
+    return ret;
   }
   
-  const std::string &
+  std::string
   server_context::endpoint_hash() const
   {
-    return endpoint_hash_;
+    std::string ret{endpoint_hash_};
+    return ret;
   }
 
   uint64_t

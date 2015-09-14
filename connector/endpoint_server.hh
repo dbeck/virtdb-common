@@ -47,7 +47,7 @@ namespace virtdb { namespace connector {
     
     const std::string & local_ep() const;
     const std::string & global_ep() const;
-    const std::string & name() const;
+    std::string name() const;
     
     void reload_from(const std::string & path);
     void save_to(const std::string & path);

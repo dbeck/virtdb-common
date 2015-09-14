@@ -14,7 +14,8 @@ namespace virtdb { namespace connector {
   meta_data_server::meta_data_server(server_context::sptr ctx,
                                      config_client & cfg_client,
                                      user_manager_client::sptr umgr_cli,
-                                     srcsys_credential_client::sptr sscred_cli)
+                                     srcsys_credential_client::sptr sscred_cli,
+                                     bool skip_token_check)
   : rep_base_type(ctx,
                   cfg_client,
                   std::bind(&meta_data_server::process_replies,
@@ -31,7 +32,8 @@ namespace virtdb { namespace connector {
                   pb::ServiceType::META_DATA),
     ctx_{ctx},
     user_mgr_cli_{umgr_cli},
-    sscred_cli_{sscred_cli}
+    sscred_cli_{sscred_cli},
+    skip_token_check_{skip_token_check}
   {
     if( !ctx || !umgr_cli || !sscred_cli)
     {
@@ -68,13 +70,31 @@ namespace virtdb { namespace connector {
                                          *(qctx->token()),
                                          util::DEFAULT_TIMEOUT_MS) )
     {
+      LOG_TRACE("get_srcsys_token() failed" <<
+                V_(input_token) <<
+                V_(service_name));
       return false;
     }
     
-    return sscred_cli_->get_credential(qctx->token()->sourcesystoken(),
-                                       service_name,
-                                       *(qctx->credentials()),
-                                       util::DEFAULT_TIMEOUT_MS);
+    if( sscred_cli_->get_credential(qctx->token()->sourcesystoken(),
+                                    service_name,
+                                    *(qctx->credentials()),
+                                    util::DEFAULT_TIMEOUT_MS) )
+    {
+      LOG_TRACE("found credential for" <<
+                V_(input_token) <<
+                V_(service_name) <<
+                V_(qctx->token()->sourcesystoken()));
+      return true;                                  
+    }
+    else
+    {
+      LOG_TRACE("get_credential() failed" <<
+                V_(input_token) <<
+                V_(qctx->token()->sourcesystoken()) <<
+                V_(service_name));
+      return false;
+    }
   }
   
   void
@@ -88,32 +108,77 @@ namespace virtdb { namespace connector {
   meta_data_server::process_replies(const rep_base_type::req_item & req,
                                     rep_base_type::send_rep_handler handler)
   {
+    std::string sstok;
+    std::string svc_name{rep_base_type::service_name()};
     query_context::sptr qctx{new query_context};
+    
     {
       query_context::srcsys_tok_reply_sptr tok_reply{new interface::pb::UserManagerReply::GetSourceSysToken};
       query_context::srcsys_cred_reply_stptr cred_reply{new interface::pb::SourceSystemCredentialReply::GetCredential};
       qctx->token(tok_reply);
       qctx->credentials(cred_reply);
     }
-    
-    if( req.has_usertoken() )
+
+    if( !skip_token_check_ )
     {
-      std::string svc_name{rep_base_type::service_name()};
-      LOG_TRACE("requesting source system token for" << V_(svc_name));
-      if( !get_srcsys_token(req.usertoken(),
-                            svc_name,
-                            qctx) )
+      if( req.has_usertoken() )
       {
-        LOG_ERROR("cannot gather source system token for" << M_(req));
+        LOG_TRACE("requesting source system token for" <<
+                  V_(svc_name) <<
+                  V_(req.usertoken()));
+        
+        if( !get_srcsys_token(req.usertoken(),
+                              svc_name,
+                              qctx) )
+        {
+          LOG_ERROR("cannot gather source system token for" <<
+                    V_(req.name()) <<
+                    V_(req.schema()) <<
+                    V_(req.withfields()));
+        }
+        else
+        {
+          sstok = qctx->token()->sourcesystoken();
+          LOG_TRACE("got:" <<
+                    V_(svc_name) <<
+                    V_(req.usertoken()) <<
+                    V_(qctx->token()->sourcesystoken()) <<
+                    V_(sstok));
+        }
       }
+      else
+      {
+        LOG_ERROR("no user token in metadata request" <<
+                  V_(req.name()) <<
+                  V_(req.schema()) <<
+                  V_(req.withfields()));
+      }
+    }
+    else if(sstok.size() == 0 && req.has_usertoken())
+    {
+      LOG_TRACE("got:" <<
+                V_(svc_name) <<
+                V_(req.usertoken()) <<
+                P_(qctx->token().get()));
+      
+      // fallback to usertoken
+      if( qctx->token() )
+        qctx->token()->set_sourcesystoken(req.usertoken());
+      
+      sstok = req.usertoken();
     }
     else
     {
-      LOG_ERROR("no user token in metadata request" << M_(req));
+      LOG_TRACE("unexpected:" <<
+                V_(svc_name) <<
+                V_(skip_token_check_) <<
+                V_(sstok.size()) <<
+                V_(req.has_usertoken()) <<
+                P_(qctx->token().get()));
     }
-
-    std::string sstok{qctx->token()->sourcesystoken()};
-
+    
+    LOG_TRACE(V_(skip_token_check_) << V_(svc_name) << V_(sstok) << V_(req.usertoken()));
+    
     {
       lock l(watch_mtx_);
       if( on_request_ )
@@ -167,12 +232,20 @@ namespace virtdb { namespace connector {
     if( !rep )
     {
       ctx_->increase_stat("Error gathering metadata");
-      LOG_ERROR("couldn't gather metadata for" << V_(store->size()) << M_(req));
+      LOG_ERROR("couldn't gather metadata for" <<
+                V_(store->size()) <<
+                V_(req.name()) <<
+                V_(req.schema()) <<
+                V_(req.withfields()));
     }
     else if( rep->tables_size() == 0 )
     {
       ctx_->increase_stat("Metadata is empty");
-      LOG_ERROR("couldn't gather metadata for" << V_(store->size()) << M_(req));
+      LOG_ERROR("couldn't gather metadata for" <<
+                V_(store->size()) <<
+                V_(req.name()) <<
+                V_(req.schema()) <<
+                V_(req.withfields()));
     }
     
     handler(rep, false);
@@ -210,12 +283,6 @@ namespace virtdb { namespace connector {
     return ret;
   }
   
-  meta_data_store::sptr
-  meta_data_server::get_store(const interface::pb::UserManagerReply::GetSourceSysToken & srcsys_token)
-  {
-    return get_store(srcsys_token.sourcesystoken());
-  }
-
   meta_data_server::~meta_data_server() {}
   
   server_context::sptr
