@@ -97,7 +97,10 @@ namespace virtdb { namespace engine {
     inline bool
     has_more() const
     {
-      return (readers_.size() > 0 && readers_[0]->has_more());
+      if(readers_.size() == 0)
+        return false;
+      else 
+        return readers_[0]->has_more();
     }
     
     inline bool
