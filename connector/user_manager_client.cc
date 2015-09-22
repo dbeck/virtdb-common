@@ -107,4 +107,51 @@ namespace virtdb { namespace connector {
     return true;
   }
   
+  bool
+  user_manager_client::create_login_token(const std::string & user_name,
+                                          const std::string & password,
+                                          std::string & result,
+                                          unsigned long timeout_ms)
+  {
+    if( user_name.empty() )
+    {
+      LOG_ERROR("empty user_name");
+      return false;
+    }
+    
+    if( password.empty() )
+    {
+      LOG_ERROR("empty password");
+      return false;
+    }
+    
+    interface::pb::UserManagerRequest req;
+    req.set_type(interface::pb::UserManagerRequest::CREATE_LOGIN_TOKEN);
+    auto * ssreq = req.mutable_crlogintok();
+    ssreq->set_username(user_name);
+    ssreq->set_password(password);
+    
+    interface::pb::UserManagerReply rep;
+    
+    auto fun = [&rep](const interface::pb::UserManagerReply & tmp_rep) {
+      rep.MergeFrom(tmp_rep);
+      return true;
+    };
+    
+    bool res = this->send_request(req, fun, timeout_ms);
+    if( !res || rep.has_err() || rep.type() != interface::pb::UserManagerReply::CREATE_LOGIN_TOKEN )
+    {
+      if( rep.has_err() )
+      {
+        LOG_ERROR(V_(rep.err().msg()) << V_(user_name));
+      }
+      return false;
+    }
+    
+    auto const & repmsg = rep.crlogintok();
+    result = repmsg.logintoken();
+    return true;
+  }
+
+  
 }}

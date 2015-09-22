@@ -29,5 +29,10 @@ namespace virtdb { namespace connector {
                                   const std::string & srcsys_name,
                                   interface::pb::UserManagerReply::GetSourceSysToken & result,
                                   unsigned long timeout_ms);
+    
+    virtual bool create_login_token(const std::string & user_name,
+                                    const std::string & password,
+                                    std::string & result,
+                                    unsigned long timeout_ms);
   };
 }}
