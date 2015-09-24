@@ -105,18 +105,12 @@ TEST_F(CachedbHashUtilTest, HashQuery)
   
   // add column: MANDT
   {
-    auto * f = q.add_fields();
-    f->set_name("MANDT");
-    auto * d = f->mutable_desc();
-    d->set_type(pb::Kind::STRING);
+    q.add_fields("MANDT");
   }
 
   // add column: LAND1
   {
-    auto * f = q.add_fields();
-    f->set_name("LAND1");
-    auto * d = f->mutable_desc();
-    d->set_type(pb::Kind::NUMERIC);
+    q.add_fields("LAND1");
   }
   
   std::string tab_hash;
