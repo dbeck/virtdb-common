@@ -1,6 +1,6 @@
 #pragma once
 
-#include <connector/rep_server.hh>
+#include <connector/router_server.hh>
 #include <monitoring.pb.h>
 #include <list>
 #include <map>
@@ -10,12 +10,12 @@
 namespace virtdb { namespace connector {
   
   class monitoring_server :
-    public rep_server<interface::pb::MonitoringRequest,
-                      interface::pb::MonitoringReply>
+    public router_server<interface::pb::MonitoringRequest,
+                         interface::pb::MonitoringReply>
   {
   public:
-    typedef rep_server<interface::pb::MonitoringRequest,
-                       interface::pb::MonitoringReply>      rep_base_type;
+    typedef router_server<interface::pb::MonitoringRequest,
+                          interface::pb::MonitoringReply>      rep_base_type;
     typedef std::shared_ptr<monitoring_server>              sptr;
     
   private:

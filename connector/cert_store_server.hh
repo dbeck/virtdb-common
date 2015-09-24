@@ -1,19 +1,19 @@
 #pragma once
 
-#include <connector/rep_server.hh>
+#include <connector/router_server.hh>
 #include <security.pb.h>
 
 namespace virtdb { namespace connector {
   
   class cert_store_server :
-      public rep_server<interface::pb::CertStoreRequest,
-                        interface::pb::CertStoreReply>
+      public router_server<interface::pb::CertStoreRequest,
+                           interface::pb::CertStoreReply>
   {
   public:
-    typedef rep_server<interface::pb::CertStoreRequest,
-                       interface::pb::CertStoreReply>     rep_base_type;
-    typedef std::shared_ptr<cert_store_server>            sptr;
-    typedef std::shared_ptr<interface::pb::Certificate>   cert_sptr;
+    typedef router_server<interface::pb::CertStoreRequest,
+                          interface::pb::CertStoreReply>     rep_base_type;
+    typedef std::shared_ptr<cert_store_server>               sptr;
+    typedef std::shared_ptr<interface::pb::Certificate>      cert_sptr;
     
   private:
     typedef std::lock_guard<std::mutex>                  lock;

@@ -86,7 +86,7 @@ namespace virtdb { namespace connector {
         raw_msg_sptr raw_msg{new raw_message};
         
         // poll said we have data ...
-        zmq::message_t message;
+        zmq::message_t message(0);
         
         if( !socket_.get().recv(&message) )
         {
@@ -96,7 +96,7 @@ namespace virtdb { namespace connector {
           return true;
         }
         
-        if( !message.data() || !message.size() || !message.more())
+        if( !message.data() || !message.size() || !message.more() )
         {
           LOG_ERROR("invalid message received" <<
                     V_(dbg.GetTypeName()) <<
@@ -110,7 +110,7 @@ namespace virtdb { namespace connector {
         
         while( true )
         {
-          typename raw_message::msg_sptr msg_item{new zmq::message_t()};
+          typename raw_message::msg_sptr msg_item{new zmq::message_t(0)};
           
           if( !socket_.get().recv(msg_item.get()) )
           {

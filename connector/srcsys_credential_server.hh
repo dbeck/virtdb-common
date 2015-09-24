@@ -1,6 +1,6 @@
 #pragma once
 
-#include <connector/rep_server.hh>
+#include <connector/router_server.hh>
 #include <security.pb.h>
 #include <map>
 #include <string>
@@ -9,13 +9,13 @@
 namespace virtdb { namespace connector {
   
   class srcsys_credential_server :
-      public rep_server<interface::pb::SourceSystemCredentialRequest,
-                        interface::pb::SourceSystemCredentialReply>
+      public router_server<interface::pb::SourceSystemCredentialRequest,
+                           interface::pb::SourceSystemCredentialReply>
   {
   public:
-    typedef rep_server<interface::pb::SourceSystemCredentialRequest,
-                       interface::pb::SourceSystemCredentialReply>     rep_base_type;
-    typedef std::shared_ptr<srcsys_credential_server>                  sptr;
+    typedef router_server<interface::pb::SourceSystemCredentialRequest,
+                          interface::pb::SourceSystemCredentialReply>     rep_base_type;
+    typedef std::shared_ptr<srcsys_credential_server>                     sptr;
     
   private:
     typedef std::shared_ptr<interface::pb::CredentialValues>                           cred_sptr;

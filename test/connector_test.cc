@@ -1394,7 +1394,7 @@ ConnSrcsysCredTest::del_cred(connector::srcsys_credential_client & cli,
 bool
 ConnSrcsysCredTest::set_tmpl(connector::srcsys_credential_client & cli,
                              const std::string & srcsys,
-                             const connector::srcsys_credential_client::name_type_map & m)
+                             const connector::srcsys_credential_client::name_type_vector & m)
 {
   return cli.set_template(srcsys, m);
 }
@@ -1529,9 +1529,9 @@ TEST_F(ConnSrcsysCredTest, SetTemplate2)
   endpoint_client ep_clnt(cctx_, global_mock_ep, name);
   srcsys_credential_client cli{cctx_, ep_clnt, "security-service"};
   EXPECT_TRUE(cli.wait_valid(100));
-  srcsys_credential_client::name_type_map m;
-  m["hello"] = pb::FieldTemplate::FieldType::FieldTemplate_FieldType_STRING;
-  m["world"] = pb::FieldTemplate::FieldType::FieldTemplate_FieldType_PASSWORD;
+  srcsys_credential_client::name_type_vector m;
+  m.push_back(std::make_pair("hello",pb::FieldTemplate::FieldType::FieldTemplate_FieldType_STRING));
+  m.push_back(std::make_pair("world",pb::FieldTemplate::FieldType::FieldTemplate_FieldType_PASSWORD));
   EXPECT_TRUE(set_tmpl(cli, name, m));
   size_t count = 0;
   EXPECT_TRUE(get_tmpl(cli, name, count));

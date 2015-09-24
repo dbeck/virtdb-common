@@ -33,7 +33,7 @@ namespace virtdb { namespace connector {
         return true;
       
       // poll said we have data ...
-      zmq::message_t message;
+      zmq::message_t message(0);
       
       if( !socket_.get().recv(&message) )
         return true;

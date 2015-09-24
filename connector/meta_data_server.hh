@@ -1,6 +1,6 @@
 #pragma once
 
-#include <connector/rep_server.hh>
+#include <connector/router_server.hh>
 #include <connector/pub_server.hh>
 #include <connector/meta_data_store.hh>
 #include <connector/user_manager_client.hh>
@@ -14,16 +14,16 @@
 namespace virtdb { namespace connector {
   
   class meta_data_server final :
-      public rep_server<interface::pb::MetaDataRequest,
-                        interface::pb::MetaData>,
+      public router_server<interface::pb::MetaDataRequest,
+                           interface::pb::MetaData>,
       public pub_server<interface::pb::MetaData>
   {
   public:
     typedef std::function<void(const interface::pb::MetaDataRequest &,
-                               query_context::sptr qctx)>  on_request;    
-    typedef rep_server<interface::pb::MetaDataRequest,
-                       interface::pb::MetaData>            rep_base_type;
-    typedef pub_server<interface::pb::MetaData>            pub_base_type;
+                               query_context::sptr qctx)>     on_request;
+    typedef router_server<interface::pb::MetaDataRequest,
+                          interface::pb::MetaData>            rep_base_type;
+    typedef pub_server<interface::pb::MetaData>               pub_base_type;
   private:
     typedef std::map<std::string, meta_data_store::sptr>   meta_store_map;
     typedef std::lock_guard<std::mutex>                    lock;

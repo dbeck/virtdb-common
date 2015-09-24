@@ -6,6 +6,7 @@
 #include <util/async_worker.hh>
 #include <util/flex_alloc.hh>
 #include <util/constants.hh>
+#include <util/hex_util.hh>
 #include <logger.hh>
 #include <connector/config_client.hh>
 #include <connector/server_base.hh>
@@ -15,7 +16,7 @@ namespace virtdb { namespace connector {
   
   template <typename REQ_ITEM,
             typename REP_ITEM>
-  class rep_server : public server_base
+  class router_server : public server_base
   {
   public:
     typedef REQ_ITEM                                        req_item;
@@ -38,39 +39,52 @@ namespace virtdb { namespace connector {
     
     bool worker_function()
     {
+      static req_item _req_itm;
+      static rep_item _rep_itm;
+      
       if( !socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
                            util::SHORT_TIMEOUT_MS) )
         return true;
 
       // poll said we have data ...
+      zmq::message_t id(0);
+      zmq::message_t separator(0);
       zmq::message_t message(0);
       
-      if( !socket_.get().recv(&message) )
-        return true;
-      
-      if( !message.data() || !message.size())
-        return true;
+      // read ID
+      if( !socket_.get().recv(&id) )   { LOG_ERROR("failed to receive ID" << V_(_req_itm.GetTypeName()) ); return true; }
+      if( !id.data() || !id.size())    { LOG_ERROR("ID has invalid content" << V_(_req_itm.GetTypeName()) << P_(id.data()) << V_(id.size()) ); return true; }
+      if( !id.more() )                 { LOG_ERROR("No more data after ID" << V_(_req_itm.GetTypeName()) << P_(id.data()) << V_(id.size()) ); return true; }
+      // separator
+      if( !socket_.get().recv(&separator) )  { LOG_ERROR("failed to receive separator" << V_(_req_itm.GetTypeName()) ); return true; }
+      if( !separator.more() )                { LOG_ERROR("No more data after separator" << V_(_req_itm.GetTypeName()) << P_(separator.data()) << V_(separator.size()) ); return true; }
+      // message
+      if( !socket_.get().recv(&message) )      { LOG_ERROR("failed to receive message" << V_(_req_itm.GetTypeName()) ); return true; }
+      if( !message.data() || !message.size())  { LOG_ERROR("message has invalid content" << V_(_req_itm.GetTypeName()) << P_(message.data()) << V_(message.size()) ); return true; }
       
       try
       {
-        static req_item _req_itm;
-        static rep_item _rep_itm;
         
         LOG_SCOPED("handle message" <<
                    V_(message.size()) <<
+                   V_(message.more()) <<
                    V_(_req_itm.GetTypeName()) <<
                    V_(_rep_itm.GetTypeName()));
-                
+        
         REQ_ITEM req;
         if( req.ParseFromArray(message.data(), message.size()) )
         {
           try
           {
+            // send ID and separator first
+            socket_.send(id.data(), id.size(), ZMQ_SNDMORE);
+            socket_.send(separator.data(), separator.size(), ZMQ_SNDMORE);
+            
+            // we can send our stuff afterwards
             rep_handler_(req,[this,&req](const rep_item_sptr & rep,
                                          bool has_more) {
               if( rep )
               {
-                LOG_SCOPED("handler" << V_(has_more));
                 int rep_size = rep->ByteSize();
                 util::flex_alloc<unsigned char, 1024> buffer(rep_size);
   
@@ -149,15 +163,15 @@ namespace virtdb { namespace connector {
     }
 
   public:
-    rep_server(server_context::sptr ctx,
-               config_client & cfg_client,
-               rep_handler handler,
-               on_reply on_rep,
-               interface::pb::ServiceType st)
+    router_server(server_context::sptr ctx,
+                  config_client & cfg_client,
+                  rep_handler handler,
+                  on_reply on_rep,
+                  interface::pb::ServiceType st)
     : server_base{ctx},
       zmqctx_(1),
-      socket_(zmqctx_, ZMQ_REP),
-      worker_(std::bind(&rep_server::worker_function,
+      socket_(zmqctx_, ZMQ_ROUTER),
+      worker_(std::bind(&router_server::worker_function,
                         this),
               /* catch exception and ignore request.
                  users are expected to check exceptions by calling
@@ -192,7 +206,7 @@ namespace virtdb { namespace connector {
         *(conn().add_address()) = ep;
     }
     
-    virtual ~rep_server()
+    virtual ~router_server()
     {
       socket_.stop();
       worker_.stop();
@@ -211,9 +225,9 @@ namespace virtdb { namespace connector {
     }
     
   private:
-    rep_server() = delete;
-    rep_server(const rep_server &) = delete;
-    rep_server & operator=(const rep_server &) = delete;
+    router_server() = delete;
+    router_server(const router_server &) = delete;
+    router_server & operator=(const router_server &) = delete;
   };
   
 }}

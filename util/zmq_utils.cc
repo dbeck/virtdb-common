@@ -422,7 +422,7 @@ namespace virtdb { namespace util {
           {
             if( poll_in(10) )
             {
-              zmq::message_t m;
+              zmq::message_t m(0);
               auto ret = socket_.recv(&m);
               if( ret )
               {
@@ -479,7 +479,7 @@ namespace virtdb { namespace util {
           {
             if( poll_in(10) )
             {
-              zmq::message_t m;
+              zmq::message_t m(0);
               auto ret = socket_.recv(&m);
               if( ret )
               {

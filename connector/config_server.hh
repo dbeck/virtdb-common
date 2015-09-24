@@ -1,6 +1,6 @@
 #pragma once
 
-#include <connector/rep_server.hh>
+#include <connector/router_server.hh>
 #include <connector/pub_server.hh>
 #include <connector/config_client.hh>
 #include <svc_config.pb.h>
@@ -9,14 +9,14 @@
 namespace virtdb { namespace connector {
   
   class config_server :
-      public rep_server<interface::pb::Config,
-                        interface::pb::Config>,
+      public router_server<interface::pb::Config,
+                           interface::pb::Config>,
       public pub_server<interface::pb::Config>
   {
   public:
-    typedef rep_server<interface::pb::Config,
-                       interface::pb::Config>     rep_base_type;
-    typedef pub_server<interface::pb::Config>     pub_base_type;
+    typedef router_server<interface::pb::Config,
+                          interface::pb::Config>      rep_base_type;
+    typedef pub_server<interface::pb::Config>         pub_base_type;
     
   private:
     typedef std::map<std::string, interface::pb::Config>    config_map;

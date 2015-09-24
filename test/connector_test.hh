@@ -90,7 +90,7 @@ namespace virtdb { namespace test {
 
     bool set_tmpl(connector::srcsys_credential_client & cli,
                   const std::string & srcsys,
-                  const connector::srcsys_credential_client::name_type_map & m);
+                  const connector::srcsys_credential_client::name_type_vector & m);
     
     bool get_tmpl(connector::srcsys_credential_client & cli,
                   const std::string & srcsys,

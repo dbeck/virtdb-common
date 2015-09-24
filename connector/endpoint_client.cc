@@ -176,7 +176,7 @@ namespace virtdb { namespace connector {
       
       if( !serialized ) { THROW_("Couldn't serialize endpoint data"); }
       
-      zmq::message_t msg;
+      zmq::message_t msg(0);
       bool message_sent = false;
       try
       {
@@ -286,7 +286,7 @@ namespace virtdb { namespace connector {
     
     try
     {
-      zmq::message_t msg;
+      zmq::message_t msg(0);
 
       if( ep_sub_socket_.get().recv(&msg) )
       {

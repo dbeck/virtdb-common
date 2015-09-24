@@ -269,7 +269,7 @@ namespace virtdb { namespace connector {
                                 util::SHORT_TIMEOUT_MS) )
       return true;
     
-    zmq::message_t message;
+    zmq::message_t message(0);
     if( !ep_rep_socket_.get().recv(&message) )
       return true;
     

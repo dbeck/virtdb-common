@@ -3,7 +3,6 @@
 #include <connector/config_client.hh>
 #include <connector/pull_server.hh>
 #include <connector/pub_server.hh>
-#include <connector/rep_server.hh>
 #include <util/zmq_utils.hh>
 #include <util/active_queue.hh>
 #include <util/compare_messages.hh>
@@ -15,7 +14,6 @@
 
 namespace virtdb { namespace connector {
   
-  // TODO : integrate rep_server too ... 
   class log_record_server final :
       public pull_server<interface::pb::LogRecord>,
       public pub_server<interface::pb::LogRecord>

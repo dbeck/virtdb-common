@@ -1,17 +1,17 @@
 #pragma once
 
-#include <connector/rep_server.hh>
+#include <connector/router_server.hh>
 #include <security.pb.h>
 
 namespace virtdb { namespace connector {
   
   class user_manager_server :
-      public rep_server<interface::pb::UserManagerRequest,
-                        interface::pb::UserManagerReply>
+      public router_server<interface::pb::UserManagerRequest,
+                           interface::pb::UserManagerReply>
   {
   public:
-    typedef rep_server<interface::pb::UserManagerRequest,
-                       interface::pb::UserManagerReply>   rep_base_type;
+    typedef router_server<interface::pb::UserManagerRequest,
+                          interface::pb::UserManagerReply>   rep_base_type;
   private:
     typedef std::lock_guard<std::mutex>  lock;
     

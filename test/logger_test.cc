@@ -111,7 +111,7 @@ LoggerTest::receiver_entry()
   {
     while( true )
     {
-      zmq::message_t message;
+      zmq::message_t message(0);
       if( !receiver_sptr_->get().recv(&message) )
         break;
     

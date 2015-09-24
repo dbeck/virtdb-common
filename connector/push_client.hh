@@ -89,7 +89,7 @@ namespace virtdb { namespace connector {
     {
       if( !socket_.valid() ) return false;
       
-      zmq::message_t msg;
+      zmq::message_t msg(0);
       int item_size = item.ByteSize();
       
       if( item_size )

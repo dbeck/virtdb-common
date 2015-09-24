@@ -1,4 +1,5 @@
 #include <util/hex_util.hh>
+#include <vector>
 
 namespace virtdb { namespace util {
   
@@ -21,6 +22,25 @@ namespace virtdb { namespace util {
       result[i] = hex_vals[(hashed >> ((15-i)*4)) & 0x0f];
     }
     res = result;
+  }
+  
+  void hex_util(const std::string & in, std::string & out)
+  {
+    if( in.empty() )
+      return;
+    
+    std::vector<char> result;
+    result.reserve(in.size()*2);
+    
+    char hex[] = "0123456789abcdef";
+
+    for( auto c : in )
+    {
+      result.push_back(hex[(c>>4)&0x0f]);
+      result.push_back(hex[c&0x0f]);
+    }
+    std::string tmp(result.begin(), result.end());
+    out.swap(tmp);
   }
   
 }}
