@@ -110,6 +110,7 @@ namespace virtdb { namespace connector {
         
         while( true )
         {
+          // TODO : check this if we shall rather copy out the message from this place
           typename raw_message::msg_sptr msg_item{new zmq::message_t(0)};
           
           if( !socket_.get().recv(msg_item.get()) )
@@ -166,6 +167,24 @@ namespace virtdb { namespace connector {
     
     void process_raw_message(raw_msg_sptr msg)
     {
+      if( !msg )
+      {
+        LOG_ERROR("invalid message");
+        return;
+      }
+      
+      if( msg->subscription_.size() == 0 )
+      {
+        LOG_ERROR("subscription for message is empty" << V_(msg->messages_.size()));
+        return;
+      }
+      
+      if( msg->messages_.size() == 0 )
+      {
+        LOG_ERROR("empty messages arrived for" << V_(msg->subscription_));
+        return;
+      }
+      
       for( auto & m : msg->messages_ )
       {
         auto i = sub_item_sptr{new sub_item};
@@ -185,6 +204,18 @@ namespace virtdb { namespace connector {
     
     void dispatch_function(channel_item_sptr it)
     {
+      if( it.first.size() == 0 )
+      {
+        LOG_ERROR("no subscription for message");
+        return;
+      }
+      
+      if( !it.second )
+      {
+        LOG_ERROR("invald message arrived for" << V_(it.first));
+        return;
+      }
+      
       // dispatch through monitors
       lock l(monitors_mtx_);
       for( auto & m : monitors_)

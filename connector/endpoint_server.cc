@@ -270,30 +270,37 @@ namespace virtdb { namespace connector {
       return true;
     
     // poll said we have data ...
-    zmq::message_t id(0);
-    zmq::message_t separator(0);
-    zmq::message_t message(0);
+    zmq::message_t tmp(0);
     
     // read ID
-    if( !ep_router_socket_.get().recv(&id) ) { LOG_ERROR("failed to receive ID"); return true; }
-    if( !id.data() || !id.size())            { LOG_ERROR("ID has invalid content" << P_(id.data()) << V_(id.size()) ); return true; }
-    if( !id.more() )                         { LOG_ERROR("No more data after ID" << P_(id.data()) << V_(id.size()) ); return true; }
-    // separator
-    if( !ep_router_socket_.get().recv(&separator) ) { LOG_ERROR("failed to receive separator"); return true; }
-    if( !separator.more() )                         { LOG_ERROR("No more data after separator" << P_(separator.data()) << V_(separator.size()) ); return true; }
-    // message
-    if( !ep_router_socket_.get().recv(&message) ) { LOG_ERROR("failed to receive message"); return true; }
-    if( !message.data() || !message.size())       { LOG_ERROR("message has invalid content" << P_(message.data()) << V_(message.size()) ); return true; }
-
-    pb::Endpoint request;
-    if( !message.data() || !message.size())
-      return true;
+    if( !ep_router_socket_.get().recv(&tmp) ) { LOG_ERROR("failed to receive ID"); return true; }
+    if( !tmp.data() || !tmp.size()) { LOG_ERROR("ID has invalid content" << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+    if( !tmp.more() )               { LOG_ERROR("No more data after ID" << P_(tmp.data()) << V_(tmp.size()) ); return true; }
     
+    // copy out data from the ZMQ message
+    auto id_size = tmp.size();
+    util::flex_alloc<unsigned char, 64> id(tmp.size());
+    memcpy(id.get(), tmp.data(), id_size);
+    
+    // separator
+    if( !ep_router_socket_.get().recv(&tmp) ) { LOG_ERROR("failed to receive separator"); return true; }
+    if( !tmp.more() )               { LOG_ERROR("No more data after separator" << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+    
+    // message
+    if( !ep_router_socket_.get().recv(&tmp) ) { LOG_ERROR("failed to receive message"); return true; }
+    if( !tmp.data() || !tmp.size()) { LOG_ERROR("message has invalid content" << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+    
+    // copy out data from the ZMQ message
+    auto msg_size = tmp.size();
+    util::flex_alloc<unsigned char, 1024> msg(msg_size);
+    memcpy(msg.get(), tmp.data(), msg_size);
+    
+    pb::Endpoint request;
     ep_data_set to_publish;
     
     try
     {
-      if( request.ParseFromArray(message.data(), message.size()) )
+      if( request.ParseFromArray(msg.get(), msg_size) )
       {
         for( auto epr : request.endpoints() )
         {
@@ -336,7 +343,7 @@ namespace virtdb { namespace connector {
       {
         // send ID and separator first
         size_t send_ret = 0;
-        if( (send_ret=ep_router_socket_.send(id.data(), id.size(), ZMQ_SNDMORE)) == 0 )
+        if( (send_ret=ep_router_socket_.send(id.get(), id_size, ZMQ_SNDMORE)) == 0 )
         {
           LOG_ERROR("failed to send ID" <<
                     V_(send_ret) <<
@@ -344,7 +351,7 @@ namespace virtdb { namespace connector {
           return true;
         }
         
-        ep_router_socket_.send(separator.data(), separator.size(), ZMQ_SNDMORE);
+        ep_router_socket_.send("", 0, ZMQ_SNDMORE);
 
         // send reply
         send_ret = ep_router_socket_.send(reply_msg.get(), reply_size);

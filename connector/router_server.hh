@@ -11,6 +11,7 @@
 #include <connector/config_client.hh>
 #include <connector/server_base.hh>
 #include <list>
+#include <thread>
 
 namespace virtdb { namespace connector {
   
@@ -47,38 +48,47 @@ namespace virtdb { namespace connector {
         return true;
 
       // poll said we have data ...
-      zmq::message_t id(0);
-      zmq::message_t separator(0);
-      zmq::message_t message(0);
+      zmq::message_t tmp(0);
       
       // read ID
-      if( !socket_.get().recv(&id) )   { LOG_ERROR("failed to receive ID" << V_(_req_itm.GetTypeName()) ); return true; }
-      if( !id.data() || !id.size())    { LOG_ERROR("ID has invalid content" << V_(_req_itm.GetTypeName()) << P_(id.data()) << V_(id.size()) ); return true; }
-      if( !id.more() )                 { LOG_ERROR("No more data after ID" << V_(_req_itm.GetTypeName()) << P_(id.data()) << V_(id.size()) ); return true; }
+      if( !socket_.get().recv(&tmp) ) { LOG_ERROR("failed to receive ID" << V_(_req_itm.GetTypeName()) ); return true; }
+      if( !tmp.data() || !tmp.size()) { LOG_ERROR("ID has invalid content" << V_(_req_itm.GetTypeName()) << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+      if( !tmp.more() )               { LOG_ERROR("No more data after ID" << V_(_req_itm.GetTypeName()) << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+      
+      // copy out data from the ZMQ message
+      auto id_size = tmp.size();
+      util::flex_alloc<unsigned char, 64> id(id_size);
+      memcpy(id.get(), tmp.data(), id_size);
+      
       // separator
-      if( !socket_.get().recv(&separator) )  { LOG_ERROR("failed to receive separator" << V_(_req_itm.GetTypeName()) ); return true; }
-      if( !separator.more() )                { LOG_ERROR("No more data after separator" << V_(_req_itm.GetTypeName()) << P_(separator.data()) << V_(separator.size()) ); return true; }
+      if( !socket_.get().recv(&tmp) ) { LOG_ERROR("failed to receive separator" << V_(_req_itm.GetTypeName()) ); return true; }
+      if( !tmp.more() )               { LOG_ERROR("No more data after separator" << V_(_req_itm.GetTypeName()) << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+      
       // message
-      if( !socket_.get().recv(&message) )      { LOG_ERROR("failed to receive message" << V_(_req_itm.GetTypeName()) ); return true; }
-      if( !message.data() || !message.size())  { LOG_ERROR("message has invalid content" << V_(_req_itm.GetTypeName()) << P_(message.data()) << V_(message.size()) ); return true; }
+      if( !socket_.get().recv(&tmp) ) { LOG_ERROR("failed to receive message" << V_(_req_itm.GetTypeName()) ); return true; }
+      if( !tmp.data() || !tmp.size()) { LOG_ERROR("message has invalid content" << V_(_req_itm.GetTypeName()) << P_(tmp.data()) << V_(tmp.size()) ); return true; }
+
+      // copy out data from the ZMQ message
+      auto msg_size = tmp.size();
+      util::flex_alloc<unsigned char, 1024> msg(msg_size);
+      memcpy(msg.get(),tmp.data(),msg_size);
       
       try
       {
-        
         LOG_SCOPED("handle message" <<
-                   V_(message.size()) <<
-                   V_(message.more()) <<
+                   V_(msg_size) <<
+                   V_(id_size) <<
                    V_(_req_itm.GetTypeName()) <<
                    V_(_rep_itm.GetTypeName()));
         
         REQ_ITEM req;
-        if( req.ParseFromArray(message.data(), message.size()) )
+        if( req.ParseFromArray(msg.get(), msg_size) )
         {
           try
           {
             // send ID and separator first
-            socket_.send(id.data(), id.size(), ZMQ_SNDMORE);
-            socket_.send(separator.data(), separator.size(), ZMQ_SNDMORE);
+            socket_.send(id.get(), id_size, ZMQ_SNDMORE);
+            socket_.send("", 0, ZMQ_SNDMORE);
             
             // we can send our stuff afterwards
             rep_handler_(req,[this,&req](const rep_item_sptr & rep,

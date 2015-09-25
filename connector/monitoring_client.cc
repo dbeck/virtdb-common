@@ -50,9 +50,11 @@ namespace virtdb { namespace connector {
     inner->set_impactedpeer(name);
     inner->set_reportedby(reported_by);
     
+    // TODO : frequent crashes here
     return send_request(req,
                         [](const MonitoringReply & rep) { return true; },
                         util::DEFAULT_TIMEOUT_MS);
+    return true;
   }
   
   bool

@@ -31,6 +31,13 @@ struct CfgSvcMock::impl
   connector::monitoring_server::sptr         monsrv_sptr_;
   connector::monitoring_client::sptr         moncli_sptr_;
   util::timer_service                        timer_;
+  std::mutex                                 mtx_;
+  
+  ~impl()
+  {
+    std::unique_lock<std::mutex> lck(mtx_);
+    moncli_sptr_.reset();
+  }
   
   impl(const std::string & ep)
   : cfg_srv_contex_{new connector::server_context},
@@ -95,7 +102,12 @@ struct CfgSvcMock::impl
       moncli_sptr_->wait_valid();
       
       ep_srv_->on_up_down([this](const std::string & name, bool is_up) {
-        moncli_sptr_->report_up_down(name, is_up, "config-service");
+        std::unique_lock<std::mutex> lck(mtx_);
+        if(moncli_sptr_)
+        {
+          moncli_sptr_->wait_valid();
+          moncli_sptr_->report_up_down(name, is_up, "config-service");
+        }
       });
     }
     
@@ -109,4 +121,7 @@ struct CfgSvcMock::impl
 };
 
 CfgSvcMock::CfgSvcMock(const std::string & ep) : impl_(new impl(ep)) {}
-CfgSvcMock::~CfgSvcMock() {}
+CfgSvcMock::~CfgSvcMock()
+{
+  
+}

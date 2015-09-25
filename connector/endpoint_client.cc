@@ -176,7 +176,7 @@ namespace virtdb { namespace connector {
       
       if( !serialized ) { THROW_("Couldn't serialize endpoint data"); }
       
-      zmq::message_t msg(0);
+      zmq::message_t tmp_msg(0);
       bool message_sent = false;
       try
       {
@@ -212,15 +212,23 @@ namespace virtdb { namespace connector {
         }
       }
       
-      ep_req_socket_.get().recv(&msg);
+      if( !ep_req_socket_.get().recv(&tmp_msg) )
+      {
+        THROW_("failed to receive Endpoint message");
+      }
       
-      if( !msg.data() || !msg.size() )
+      if( !tmp_msg.data() || !tmp_msg.size() )
       {
         THROW_("invalid Endpoint message received");
       }
       
+      // copy out data from the ZMQ message
+      auto msg_size = tmp_msg.size();
+      util::flex_alloc<unsigned char, 64> msg(msg_size);
+      ::memcpy(msg.get(), tmp_msg.data(), msg_size);
+      
       pb::Endpoint peers;
-      serialized = peers.ParseFromArray(msg.data(), msg.size());
+      serialized = peers.ParseFromArray(msg.get(), msg_size);
       if( !serialized )
       {
         THROW_("couldn't process peer Endpoints");
@@ -363,8 +371,8 @@ namespace virtdb { namespace connector {
         else
         {
           // check data content tooo
-          util::flex_alloc<unsigned char, 4096> old_ep(it->ByteSize());
-          util::flex_alloc<unsigned char, 4096> new_ep(ep.ByteSize());
+          util::flex_alloc<unsigned char, 1024> old_ep(it->ByteSize());
+          util::flex_alloc<unsigned char, 1024> new_ep(ep.ByteSize());
           
           if( it->SerializeToArray(old_ep.get(), it->ByteSize()) &&
               ep.SerializeToArray(new_ep.get(), ep.ByteSize()) )
