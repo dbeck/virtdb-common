@@ -93,6 +93,7 @@ namespace virtdb { namespace dsproxy {
       return;
     }
     
+    std::string service_name{server_ctx_->service_name()};
     server_ctx_->increase_stat("Incoming query");
     
     using namespace virtdb::connector;
@@ -115,7 +116,7 @@ namespace virtdb { namespace dsproxy {
                 V_(q->filter_size()));
       
       if( mon_cli )
-        mon_cli->report_bad_table_request(server_ctx_->service_name(),
+        mon_cli->report_bad_table_request(service_name,
                                           pb::MonitoringRequest::RequestError::INVALID_REQUEST,
                                           q->queryid(),
                                           q->table(),
@@ -170,13 +171,13 @@ namespace virtdb { namespace dsproxy {
         LOG_ERROR("query client not yet initialized");
         if( mon_cli )
         {
-          mon_cli->report_bad_table_request(server_ctx_->service_name(),
+          mon_cli->report_bad_table_request(service_name,
                                             pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                             q->queryid(),
                                             q->table(),
                                             (q->has_schema()?q->schema().c_str():nullptr),
                                             "Upstream provider not connected");
-          mon_cli->report_state(server_ctx_->service_name(),
+          mon_cli->report_state(service_name,
                                 pb::MonitoringRequest::SetState::NOT_INITIALIZED);
         }
         return;
@@ -260,7 +261,7 @@ namespace virtdb { namespace dsproxy {
           if( !client_copy->send_request(*q) )
           {
             if( mon_cli )
-              mon_cli->report_bad_table_request(server_ctx_->service_name(),
+              mon_cli->report_bad_table_request(service_name,
                                                 pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                                 q->queryid(),
                                                 q->table(),
@@ -287,7 +288,7 @@ namespace virtdb { namespace dsproxy {
         if( !client_copy->send_request(*q) )
         {
           if( mon_cli )
-            mon_cli->report_bad_table_request(server_ctx_->service_name(),
+            mon_cli->report_bad_table_request(service_name,
                                               pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                               q->queryid(),
                                               q->table(),

@@ -46,7 +46,7 @@ namespace virtdb { namespace connector {
     local_ep_{ctx->endpoint_svc_addr()},
     global_ep_{ctx->endpoint_svc_addr()},
     zmqctx_(1),
-    ep_rep_socket_(zmqctx_, ZMQ_REP),
+    ep_router_socket_(zmqctx_, ZMQ_ROUTER),
     ep_pub_socket_(zmqctx_, ZMQ_PUB),
     worker_{std::bind(&endpoint_server::worker_function,this),
             /* the preferred way is to rethrow exceptions if any on the other
@@ -71,7 +71,7 @@ namespace virtdb { namespace connector {
       hosts.insert(ep_local.first);
       hosts.insert("*");
     }
-    ep_rep_socket_.bind(ctx->endpoint_svc_addr().c_str());
+    ep_router_socket_.bind(ctx->endpoint_svc_addr().c_str());
     ep_pub_socket_.batch_tcp_bind(hosts);
     
     // start worker before we report endpoints
@@ -122,7 +122,7 @@ namespace virtdb { namespace connector {
           ++svc_config_address_count;
         }
         
-        for( const auto & bound_to : ep_rep_socket_.endpoints() )
+        for( const auto & bound_to : ep_router_socket_.endpoints() )
         {
           if( bound_to != svc_endpoint )
           {
@@ -265,14 +265,26 @@ namespace virtdb { namespace connector {
   bool
   endpoint_server::worker_function()
   {
-    if( !ep_rep_socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
-                                util::SHORT_TIMEOUT_MS) )
+    if( !ep_router_socket_.poll_in(util::DEFAULT_TIMEOUT_MS,
+                                   util::SHORT_TIMEOUT_MS) )
       return true;
     
+    // poll said we have data ...
+    zmq::message_t id(0);
+    zmq::message_t separator(0);
     zmq::message_t message(0);
-    if( !ep_rep_socket_.get().recv(&message) )
-      return true;
     
+    // read ID
+    if( !ep_router_socket_.get().recv(&id) ) { LOG_ERROR("failed to receive ID"); return true; }
+    if( !id.data() || !id.size())            { LOG_ERROR("ID has invalid content" << P_(id.data()) << V_(id.size()) ); return true; }
+    if( !id.more() )                         { LOG_ERROR("No more data after ID" << P_(id.data()) << V_(id.size()) ); return true; }
+    // separator
+    if( !ep_router_socket_.get().recv(&separator) ) { LOG_ERROR("failed to receive separator"); return true; }
+    if( !separator.more() )                         { LOG_ERROR("No more data after separator" << P_(separator.data()) << V_(separator.size()) ); return true; }
+    // message
+    if( !ep_router_socket_.get().recv(&message) ) { LOG_ERROR("failed to receive message"); return true; }
+    if( !message.data() || !message.size())       { LOG_ERROR("message has invalid content" << P_(message.data()) << V_(message.size()) ); return true; }
+
     pb::Endpoint request;
     if( !message.data() || !message.size())
       return true;
@@ -322,8 +334,20 @@ namespace virtdb { namespace connector {
       bool serialzied = reply_data.SerializeToArray(reply_msg.get(),reply_size);
       if( serialzied )
       {
+        // send ID and separator first
+        size_t send_ret = 0;
+        if( (send_ret=ep_router_socket_.send(id.data(), id.size(), ZMQ_SNDMORE)) == 0 )
+        {
+          LOG_ERROR("failed to send ID" <<
+                    V_(send_ret) <<
+                    M_(reply_data));
+          return true;
+        }
+        
+        ep_router_socket_.send(separator.data(), separator.size(), ZMQ_SNDMORE);
+
         // send reply
-        size_t send_ret = ep_rep_socket_.send(reply_msg.get(), reply_size);
+        send_ret = ep_router_socket_.send(reply_msg.get(), reply_size);
         if( !send_ret )
         {
           LOG_ERROR("failed to send reply" <<
@@ -331,8 +355,6 @@ namespace virtdb { namespace connector {
                     M_(reply_data));
           return true;
         }
-        
-        // LOG_TRACE("sent reply" << M_(reply_data));
         
         // publish new messages one by one, so subscribers can choose what to
         // receive

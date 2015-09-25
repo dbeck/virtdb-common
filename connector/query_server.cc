@@ -160,7 +160,6 @@ namespace virtdb { namespace connector {
           auto q = qsptr;
           ctx_->increase_stat("User token check failed");
           LOG_ERROR("cannot validate user token" <<
-                    V_(ctx_->service_name()) <<
                     V_(svc_name) <<
                     V_(q->queryid()) <<
                     V_(q->table()) <<
@@ -182,7 +181,6 @@ namespace virtdb { namespace connector {
           auto q = qsptr;
           ctx_->increase_stat("Invalid source system token");
           LOG_ERROR("cannot validate source system token" <<
-                    V_(ctx_->service_name()) <<
                     V_(svc_name) <<
                     V_(q->queryid()) <<
                     V_(q->table()) <<

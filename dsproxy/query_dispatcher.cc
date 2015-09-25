@@ -101,6 +101,7 @@ namespace virtdb { namespace dsproxy {
     }
     
     server_ctx_->increase_stat("Incoming query");
+    std::string service_name{server_ctx_->service_name()};
 
     
     using namespace virtdb::connector;
@@ -122,7 +123,7 @@ namespace virtdb { namespace dsproxy {
                 V_(q->filter_size()));
       
       if( mon_cli )
-        mon_cli->report_bad_table_request(server_ctx_->service_name(),
+        mon_cli->report_bad_table_request(service_name,
                                           pb::MonitoringRequest::RequestError::INVALID_REQUEST,
                                           q->queryid(),
                                           q->table(),
@@ -203,13 +204,13 @@ namespace virtdb { namespace dsproxy {
         LOG_ERROR("query client not yet initialized");
         if( mon_cli )
         {
-          mon_cli->report_bad_table_request(server_ctx_->service_name(),
+          mon_cli->report_bad_table_request(service_name,
                                             pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                             q->queryid(),
                                             q->table(),
                                             (q->has_schema()?q->schema().c_str():nullptr),
                                             "Upstream provider not connected");
-          mon_cli->report_state(server_ctx_->service_name(),
+          mon_cli->report_state(service_name,
                                 pb::MonitoringRequest::SetState::NOT_INITIALIZED);
         }
         return;
@@ -299,7 +300,7 @@ namespace virtdb { namespace dsproxy {
           if( !client_copy->send_request(*q) )
           {
             if( mon_cli )
-              mon_cli->report_bad_table_request(server_ctx_->service_name(),
+              mon_cli->report_bad_table_request(service_name,
                                                 pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                                 q->queryid(),
                                                 q->table(),
@@ -356,7 +357,7 @@ namespace virtdb { namespace dsproxy {
           if( !client_copy->send_request(*q) )
           {
             if( mon_cli )
-              mon_cli->report_bad_table_request(server_ctx_->service_name(),
+              mon_cli->report_bad_table_request(service_name,
                                                 pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                                 q->queryid(),
                                                 q->table(),
@@ -372,7 +373,7 @@ namespace virtdb { namespace dsproxy {
         if( !client_copy->send_request(*q) )
         {
           if( mon_cli )
-            mon_cli->report_bad_table_request(server_ctx_->service_name(),
+            mon_cli->report_bad_table_request(service_name,
                                               pb::MonitoringRequest::RequestError::UPSTREAM_ERROR,
                                               q->queryid(),
                                               q->table(),
@@ -453,9 +454,10 @@ namespace virtdb { namespace dsproxy {
     server_{sr_ctx, cfg_clnt, umgr_cli, sscred_cli, true},
     ep_client_(&(cfg_clnt.get_endpoint_client()))
   {
-    server_.watch("", [&](const std::string & provider_name,
-                          connector::query_server::query_sptr q,
-                          connector::query_context::sptr qctx) {
+    std::string service_name{server_.service_name()};
+    server_.watch("", [this,service_name](const std::string & provider_name,
+                                          connector::query_server::query_sptr q,
+                                          connector::query_context::sptr qctx) {
       
       std::string segment_id;
       if( q->has_segmentid() )
@@ -463,7 +465,7 @@ namespace virtdb { namespace dsproxy {
       
       LOG_TRACE("query arrived" <<
                V_(server_.name()) <<
-               V_(server_.service_name()) <<        
+               V_(service_name) <<        
                V_(q->queryid()) <<
                V_(q->table()) <<
                V_(q->fields_size()) <<

@@ -76,7 +76,7 @@ namespace virtdb { namespace connector {
     auto instance = monitoring_client::global_instance();
     if( instance )
     {
-      instance->add_stat(service_name(), name, by_value);
+      instance->add_stat(service_name_, name, by_value);
     }
   }
   
