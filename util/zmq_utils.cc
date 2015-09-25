@@ -72,8 +72,6 @@ namespace virtdb { namespace util {
     n_waiting_{0},
     valid_{false}
   {
-    if( type == ZMQ_REQ )
-      set_correlate(true);
   }
   
   void
@@ -133,24 +131,6 @@ namespace virtdb { namespace util {
     {
       std::cerr << "unknown exception during ZMQ socket close";
     }
-  }
-  
-  void
-  zmq_socket_wrapper::set_correlate(bool yesno)
-  {
-    /* BUGGY WARNING , experimental code, needs more testing
-    int opt = (yesno?1:0);
-    socket_.setsockopt(ZMQ_REQ_CORRELATE, &opt, sizeof(opt));
-    */
-  }
-  
-  void
-  zmq_socket_wrapper::set_relaxed(bool yesno)
-  {
-    /* BUGGY WARNING , experimental code, needs more testing
-    int opt = (yesno?1:0);
-    socket_.setsockopt(ZMQ_REQ_RELAXED, &opt, sizeof(opt));
-    */
   }
   
   zmq_socket_wrapper::~zmq_socket_wrapper()
@@ -414,38 +394,9 @@ namespace virtdb { namespace util {
       }
       catch( const zmq::error_t & e )
       {
-        std::cerr << "caught '" << e.what() << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
-        if( type_ == ZMQ_REQ )
-        {
-          std::string errmsg{e.what()};
-          if( errmsg.find("current state") != std::string::npos )
-          {
-            if( poll_in(10) )
-            {
-              zmq::message_t m(0);
-              auto ret = socket_.recv(&m);
-              if( ret )
-              {
-                std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
-                while( m.more() )
-                {
-                  ret = socket_.recv(&m);
-                  std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
-                  if( !ret ) break;
-                }
-              }
-            }
-          }
-#ifdef RELEASE
-          set_relaxed(true);
-#endif
-        }
+        std::cerr << "caught '" << e.what() << " socket type:" << type_ << " ' @" << __FILE__ << ':' << __LINE__ <<  "\n";
         throw;
       }
-      
-#ifdef RELEASE
-      if( type_ == ZMQ_REQ ) set_relaxed(false);
-#endif
       return ret;
     }
     else
@@ -471,38 +422,9 @@ namespace virtdb { namespace util {
       }
       catch( const zmq::error_t & e )
       {
-        std::cerr << "caught '" << e.what() << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
-        if( type_ == ZMQ_REQ )
-        {
-          std::string errmsg{e.what()};
-          if( errmsg.find("current state") != std::string::npos )
-          {
-            if( poll_in(10) )
-            {
-              zmq::message_t m(0);
-              auto ret = socket_.recv(&m);
-              if( ret )
-              {
-                std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
-                while( m.more() )
-                {
-                  ret = socket_.recv(&m);
-                  std::cerr << "read unexpected data of: " << m.size() << " bytes\n";
-                  if( !ret ) break;
-                }
-              }
-            }
-          }
-#ifdef RELEASE
-          set_relaxed(true);
-#endif
-        }
+        std::cerr << "caught '" << e.what() << " socket type:" << type_ << "' @" << __FILE__ << ':' << __LINE__ <<  "\n";
         throw;
       }
-      
-#ifdef RELEASE
-      if( type_ == ZMQ_REQ ) set_relaxed(false);
-#endif
       return ret;
     }
     else
